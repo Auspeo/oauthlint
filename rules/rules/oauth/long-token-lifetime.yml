@@ -16,6 +16,7 @@ rules:
       with proper rotation (RFC 6749 §6, RFC 9700 §4.14) for "stay
       logged in" semantics.
     pattern-either:
+      # Numeric literal as an object property.
       - patterns:
           - pattern-either:
               - pattern: '{ ..., expires_in: $TTL, ... }'
@@ -26,6 +27,24 @@ rules:
           - metavariable-comparison:
               metavariable: $TTL
               comparison: $TTL > 86400
+      # Numeric literal via member assignment (config.expires_in = N).
+      - patterns:
+          - pattern-either:
+              - pattern: '$X.expires_in = $TTL'
+              - pattern: '$X.expiresIn = $TTL'
+              - pattern: '$X.access_token_ttl = $TTL'
+              - pattern: '$X.accessTokenTtl = $TTL'
+              - pattern: '$X.tokenLifetime = $TTL'
+          - metavariable-comparison:
+              metavariable: $TTL
+              comparison: $TTL > 86400
+      # jsonwebtoken / `ms`-style string durations longer than a day: >=2 days,
+      # or any weeks / months / years. ('1d', '15m', '12h' are <= 24h and are
+      # intentionally not matched.)
+      - pattern-regex: |-
+          (?:expiresIn|expires_in)\s*[:=]\s*['"](?:[2-9]|[1-9][0-9]+)\s*(?:d|days?)['"]
+      - pattern-regex: |-
+          (?:expiresIn|expires_in)\s*[:=]\s*['"][1-9][0-9]*\s*(?:w|y|weeks?|years?|months?)['"]
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-009
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-long-token-lifetime

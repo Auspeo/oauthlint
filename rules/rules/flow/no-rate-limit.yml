@@ -12,22 +12,19 @@ rules:
 
       Add `express-rate-limit`, `@fastify/rate-limit`, or a gateway-level
       WAF rule. Per-IP + per-account is the typical pairing.
-    # Fires only when the registration is the 2-argument form (path,
-    # handler). The intent: "route declared without any middleware in
-    # the chain at all". When devs add rate-limit middleware, they
-    # almost always go through the 3+ argument form, e.g.
-    # `app.post('/login', loginLimiter, loginHandler)`.
-    pattern-either:
-      - pattern: 'app.post("/login", $HANDLER)'
-      - pattern: 'app.post("/signin", $HANDLER)'
-      - pattern: 'app.post("/auth", $HANDLER)'
-      - pattern: 'app.post("/reset-password", $HANDLER)'
-      - pattern: 'app.post("/forgot-password", $HANDLER)'
-      - pattern: 'router.post("/login", $HANDLER)'
-      - pattern: 'router.post("/signin", $HANDLER)'
-      - pattern: "app.post('/login', $HANDLER)"
-      - pattern: "app.post('/signin', $HANDLER)"
-      - pattern: "router.post('/login', $HANDLER)"
+    # 2-argument route registration (path, handler) on any router-like object
+    # (app / router / fastify / …) whose path looks like an auth endpoint. The
+    # 2-arg form means no middleware is in the chain; adding rate-limit
+    # middleware uses the 3+-arg form (or fastify's options object) and so is
+    # not flagged. Path matching is a regex, so `/api/login`, `/v1/auth`,
+    # `/auth/signin` etc. are all covered.
+    # NOTE: app-level rate limiting (`app.use(rateLimit())`) is invisible to a
+    # purely syntactic rule — hence INFO severity.
+    patterns:
+      - pattern: '$APP.post($PATH, $HANDLER)'
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ^['"][^'"]*\/(?:login|signin|sign-in|signup|sign-up|authenticate|auth|reset-password|forgot-password)(?![a-z-])[^'"]*['"]$
     metadata:
       oauthlint-rule-id: AUTH-FLOW-002
       oauthlint-doc-url: https://oauthlint.dev/rules/flow-no-rate-limit

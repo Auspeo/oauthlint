@@ -17,3 +17,16 @@ export const badCorsReversed = cors({
   credentials: true,
   origin: '*',
 });
+
+// ruleid: auth.cors.wildcard-with-credentials -- echoes the request origin back
+export const badCorsEcho = cors({
+  origin: (_origin: string, cb: (e: null, ok: boolean) => void) => cb(null, true),
+  credentials: true,
+});
+
+declare const res: { setHeader: (k: string, v: string) => void };
+// ruleid: auth.cors.wildcard-with-credentials -- manual headers
+export function manualCors() {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+}
