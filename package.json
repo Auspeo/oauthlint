@@ -61,7 +61,6 @@
   },
   "dependencies": {
     "@fontsource-variable/hanken-grotesk": "5.2.8",
-    "@fontsource-variable/hubot-sans": "5.2.8",
     "@fontsource-variable/martian-mono": "5.2.7"
   }
 }
