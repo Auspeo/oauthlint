@@ -1,71 +1,82 @@
-# OAuthLint
+<div align="center">
+
+<img src="docs/public/logo.svg" width="76" alt="oauthlint logo" />
+
+# oauthlint
+
+**Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
+
+30 Semgrep rules · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-5b3df5.svg)](https://oauthlint.dev)
 
-> **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
-> 30 Semgrep rules curated by an IAM engineer · CLI + GitHub Action + VS Code extension · MIT licensed.
+</div>
 
 ```bash
 npx oauthlint scan ./src
 ```
 
-Requires [Semgrep](https://semgrep.dev) on your PATH (`pipx install semgrep` or `brew install semgrep`).
+> Requires [Semgrep](https://semgrep.dev) on the machine running the scan (`pipx install semgrep` or `brew install semgrep`).
+
+📖 **Full documentation & rule catalogue: [oauthlint.dev](https://oauthlint.dev)**
 
 ---
 
-## 🎯 What this is
+## What it is
 
-LLMs (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) ship the same
-OAuth/JWT bugs across every project they touch:
+LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) ship the same OAuth/JWT bugs across every project they touch:
 
 - JWT verified with `alg: none` accepted
-- `client_secret` hardcoded in source
+- `client_secret` hard-coded in source
 - `redirect_uri` whitelisted with `*` wildcards
-- Token written to `localStorage` (XSS-readable)
+- token written to `localStorage` (XSS-readable)
 - OAuth flow without `state` / without PKCE
-- `/login` POST without rate limit
-- Password persisted in plaintext
-- Math.random() used for CSRF tokens
+- `/login` POST without rate limiting
+- password persisted in plaintext
+- `Math.random()` used for CSRF tokens
 - …and 22 more
 
-OAuthLint is the missing layer between generic SAST (Snyk, Semgrep) and
-enterprise IAM ($50K+/year). Free, focused, developer-first.
+oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): **free, focused, developer-first.** Every finding links to a page explaining *why it matters* and *how to fix it*.
 
-## 📦 What's in this repo
+## What it looks like
 
-| Package | Status | What it does |
-|---------|:------:|--------------|
-| [`rules/`](rules) | ✅ | 30 Semgrep rules, schema-validated, with vulnerable + safe fixtures |
-| [`cli/`](cli) | ✅ | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
-| [`action/`](action) | ✅ | Docker-based GitHub Action wrapping the CLI |
-| [`vscode/`](vscode) | ✅ | VS Code extension: diagnostics + Quick Fix suppressions |
-| [`examples/`](examples) | ✅ | Deliberately-vulnerable demo apps (Express today, more coming) |
+```text
+ MEDIUM  auth.cookie.no-secure (AUTH-COOKIE-001)
+   src/server.ts:37
+   → A session/auth cookie is set without the Secure flag — it will be sent over plain HTTP.
+   📖 https://oauthlint.dev/rules/cookie-no-secure
 
-## 🚀 Quick start
+ HIGH    auth.oauth.no-pkce (AUTH-OAUTH-003)
+   src/auth.ts:21
+   → Public-client OAuth authorization request without PKCE.
+   📖 https://oauthlint.dev/rules/oauth-no-pkce
+```
+
+## Quick start
 
 ### CLI
 
 ```bash
-# one-shot
+# one-shot scan, no install
 npx oauthlint scan ./src
 
-# CI-friendly fail threshold
+# fail CI on HIGH severity and above
 npx oauthlint scan ./src --fail-on HIGH
 
-# machine-readable
+# machine-readable output
 npx oauthlint scan ./src --json
 
 # GitHub Code Scanning
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
-# auto-apply safe fixes (cookie flags)
+# auto-apply safe fixes (e.g. cookie flags)
 npx oauthlint scan ./src --fix
 ```
 
-Requires Semgrep on PATH (`pipx install semgrep` or `brew install semgrep`).
+Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a config), `oauthlint doctor` (check your setup).
 
 ### GitHub Action
 
@@ -76,9 +87,11 @@ Requires Semgrep on PATH (`pipx install semgrep` or `brew install semgrep`).
     fail-on: HIGH
 ```
 
-The Action is **Docker-based**, so it runs in any repository's CI regardless
-of the project's language — you only need rules that cover your language (see
-[Language support](#-language-support) below).
+The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language.
+
+### VS Code extension
+
+Install **oauthlint** from the Marketplace for inline diagnostics as you type, plus Quick Fix suppressions.
 
 ### Inline suppression
 
@@ -87,20 +100,17 @@ of the project's language — you only need rules that cover your language (see
 return jwt.verify(token, key, { algorithms: ['RS256', 'none'] });
 ```
 
-Wholesale silencing (`oauthlint-disable-file *`) is intentionally not
-supported — the next reviewer needs to see exactly which lines opted out.
+Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported — the next reviewer needs to see exactly which lines opted out.
 
-## 📚 Rule catalogue
+## Rules
 
-See [docs/rules/](docs/rules) for the auto-generated per-rule pages
-(one Markdown file per rule, regenerated by `pnpm docs:rules`).
+30 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene — each mapped to CWE & OWASP, each with a documentation page.
 
-## 🌍 Language support
+👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
-oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is
-**language-agnostic** (Java, Go, Python, C#, Ruby, PHP, Rust, Kotlin, and
-more). The rules are plain YAML data, so adding a language is a matter of
-**writing rule packs** — not re-architecting anything.
+## Language support
+
+oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language-agnostic**. The rules are plain YAML data, so adding a language is a matter of **writing rule packs** — not re-architecting anything.
 
 | Language | Status |
 |----------|:------:|
@@ -110,43 +120,37 @@ more). The rules are plain YAML data, so adding a language is a matter of
 | Go (golang-jwt, oauth2) | 🗺️ planned |
 | Rust (jsonwebtoken, oauth2) | 🗺️ planned |
 
-**Why JS/TS first?** That's where AI coding tools generate the most code —
-and therefore the most OAuth/JWT bugs. It's the highest-density beachhead,
-not the ceiling. Language packs are added based on real demand: if you want
-your stack covered, [open an issue](https://github.com/Auspeo/oauthlint/issues).
+**Why JS/TS first?** That's where AI coding tools generate the most code — and therefore the most OAuth/JWT bugs. It's the highest-density beachhead, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
 
-Two of the three surfaces are already language-neutral today: the **Semgrep
-engine** and the **Docker GitHub Action** (runs in any repo's CI). Only the
-npm CLI is Node-native; a standalone binary / Docker image for non-Node
-shops is on the roadmap.
+## What's in this repo
 
-## 🛠️ Develop
+| Package | What it does |
+|---------|--------------|
+| [`rules/`](rules) | 30 Semgrep rules, schema-validated, with vulnerable + safe fixtures |
+| [`cli/`](cli) | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
+| [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
+| [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |
+| [`examples/`](examples) | Deliberately-vulnerable demo apps used for dogfooding |
+
+## Develop
 
 ```bash
 pnpm install
-pnpm test:run     # 128 tests (rule pack + CLI + action + vscode + scripts)
+pnpm test:run     # full suite: rule pack + CLI + Action + VS Code + scripts
 pnpm lint
 pnpm build
 pnpm typecheck
+pnpm docs:dev     # preview the docs site locally
 ```
 
-Adding a rule: drop a YAML in `rules/rules/<category>/`, add
-`vulnerable.ts` + `safe.ts` fixtures, the schema-driven tests pick it up
-automatically. Re-run `pnpm docs:rules` to refresh the docs.
+**Adding a rule:** drop a YAML file in `rules/rules/<category>/`, add `vulnerable.ts` + `safe.ts` fixtures, and the schema-driven tests pick it up automatically. Run `pnpm docs:rules` to refresh the generated docs.
 
 ### Commits & releases
 
-- **[Conventional Commits](https://www.conventionalcommits.org)** are
-  enforced (`feat:`, `fix:`, `docs:`, `chore:`, …) via a `commit-msg` hook.
-- **Git hooks** (husky): `pre-commit` runs Biome on staged files via
-  lint-staged; `pre-push` runs typecheck + the full test suite. Bypass in an
-  emergency with `--no-verify`.
-- **Releases** use [Changesets](https://github.com/changesets/changesets).
-  Add one with `pnpm changeset`, then `pnpm version-packages` bumps versions
-  and writes the changelog; `pnpm release` builds and publishes.
+- **[Conventional Commits](https://www.conventionalcommits.org)** are enforced (`feat:`, `fix:`, `docs:`, `chore:`, …) via a `commit-msg` hook.
+- **Git hooks** (husky): `pre-commit` runs Biome on staged files; `pre-push` runs typecheck + the full test suite.
+- **Releases** use [Changesets](https://github.com/changesets/changesets) — see [RELEASE.md](RELEASE.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
-Built by [Maurice Anney](https://github.com/Mauriceanney) — WSO2 IAM engineer.
+MIT — see [LICENSE](LICENSE). Built by [Maurice Anney](https://github.com/Mauriceanney), an IAM engineer.
