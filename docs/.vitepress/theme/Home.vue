@@ -220,11 +220,11 @@ h2 {
 h3 { font-family: var(--font-display); font-weight: 700; }
 
 .lede {
-  font-size: clamp(1.05rem, 1.4vw, 1.3rem);
+  font-size: clamp(1.05rem, 1.4vw, 1.25rem);
   line-height: 1.6;
   color: var(--vp-c-text-2);
-  max-width: 36ch;
-  margin: 0 0 30px;
+  max-width: 44ch;
+  margin: 0 0 28px;
 }
 .prose {
   font-size: 1.12rem;
@@ -241,11 +241,11 @@ code {
 }
 
 /* HERO */
-.hero { padding: clamp(48px, 8vw, 104px) 0 clamp(40px, 6vw, 80px); }
+.hero { padding: clamp(40px, 6vw, 80px) 0 clamp(36px, 5vw, 64px); }
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(32px, 5vw, 72px);
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 4vw, 56px);
   align-items: center;
 }
 .hero-demo { display: flex; justify-content: center; }
@@ -275,9 +275,9 @@ code {
 .btn-ghost:hover { border-color: var(--vp-c-brand-1); color: var(--vp-c-brand-1); }
 
 /* Bands */
-.band { padding: clamp(56px, 8vw, 104px) 0; }
+.band { padding: clamp(52px, 6vw, 88px) 0; }
 .band:nth-of-type(even) { background: var(--vp-c-bg-alt); }
-.catches, .surfaces, .closing { padding: clamp(56px, 8vw, 104px) 0; }
+.catches, .surfaces, .closing { padding: clamp(52px, 6vw, 88px) 0; }
 .catches { background: var(--vp-c-bg-alt); }
 
 /* What it catches grid */
@@ -336,7 +336,7 @@ code {
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow-x: auto;
 }
-.cmd-prompt { color: #9a8cff; margin-right: 14px; font-weight: 700; }
+.cmd-prompt { color: var(--vp-c-brand-1); margin-right: 14px; font-weight: 700; }
 
 /* Steps */
 .steps {

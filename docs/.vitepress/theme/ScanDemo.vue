@@ -1,114 +1,212 @@
 <script setup lang="ts">
-// Hero signature: a realistic oauthlint scan-output panel.
-// Static (no autoplay) per the Vercel interface guidelines.
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+
+const CMD = 'npx oauthlint scan ./src';
+const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+const findings = [
+  { sev: 'error', label: 'ERROR', rule: 'jwt.alg-none', loc: 'src/auth.ts:14' },
+  { sev: 'warn', label: 'WARN', rule: 'cookie.no-secure', loc: 'src/server.ts:37' },
+  { sev: 'high', label: 'HIGH', rule: 'oauth.no-pkce', loc: 'src/auth.ts:48' },
+];
+
+const typed = ref('');
+const typing = ref(false);
+const scanning = ref(false);
+const spin = ref(0);
+const revealed = ref(0);
+const done = ref(false);
+const root = ref<HTMLElement | null>(null);
+
+const timeouts: ReturnType<typeof setTimeout>[] = [];
+let spinTimer: ReturnType<typeof setInterval> | null = null;
+let io: IntersectionObserver | null = null;
+const wait = (ms: number) => new Promise<void>((r) => timeouts.push(setTimeout(r, ms)));
+
+function finalState() {
+  typed.value = CMD;
+  typing.value = false;
+  scanning.value = false;
+  revealed.value = findings.length;
+  done.value = true;
+}
+
+async function play() {
+  typing.value = true;
+  await wait(350);
+  for (let i = 1; i <= CMD.length; i++) {
+    typed.value = CMD.slice(0, i);
+    await wait(34);
+  }
+  typing.value = false;
+  await wait(250);
+
+  scanning.value = true;
+  spinTimer = setInterval(() => {
+    spin.value = (spin.value + 1) % SPIN.length;
+  }, 80);
+  await wait(1100);
+  if (spinTimer) clearInterval(spinTimer);
+  scanning.value = false;
+
+  for (let i = 0; i < findings.length; i++) {
+    revealed.value = i + 1;
+    await wait(320);
+  }
+  await wait(150);
+  done.value = true;
+}
+
+onMounted(() => {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window) || !root.value) {
+    finalState();
+    return;
+  }
+  io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          io?.disconnect();
+          play();
+        }
+      }
+    },
+    { threshold: 0.4 },
+  );
+  io.observe(root.value);
+});
+
+onBeforeUnmount(() => {
+  for (const t of timeouts) clearTimeout(t);
+  if (spinTimer) clearInterval(spinTimer);
+  io?.disconnect();
+});
 </script>
 
 <template>
   <div
-    class="scan-demo"
+    ref="root"
+    class="term"
     role="img"
-    aria-label="oauthlint terminal output: an ERROR for a JWT alg:none vulnerability and a WARN for an insecure cookie, three issues found"
+    aria-label="oauthlint scan output: an ERROR for jwt.alg-none, a WARN for cookie.no-secure, a HIGH for oauth.no-pkce, three issues found"
   >
-    <div class="sd-bar" aria-hidden="true">
-      <span class="sd-dot" /><span class="sd-dot" /><span class="sd-dot" />
-      <span class="sd-tab">~/app</span>
+    <div class="bar" aria-hidden="true">
+      <span class="dot" /><span class="dot" /><span class="dot" />
+      <span class="tab">~/app</span>
     </div>
-    <div class="sd-body">
-      <p class="sd-cmd"><span class="sd-prompt">$</span>npx oauthlint scan ./src</p>
-      <p class="sd-gap" />
+    <div class="body">
+      <p class="cmd">
+        <span class="prompt">$</span>{{ typed }}<span v-if="!done" class="caret">▋</span>
+      </p>
 
-      <p class="sd-find"><span class="sev sev-error">ERROR</span><span class="rule">jwt.alg-none</span></p>
-      <p class="sd-meta">src/auth.ts:14</p>
-      <p class="sd-msg">A forged token would pass: <code>alg: none</code> is allowed.</p>
-      <p class="sd-doc">→ rules/jwt-alg-none</p>
-      <p class="sd-gap" />
+      <p class="status" :class="{ on: scanning }">{{ SPIN[spin] }} scanning 47 files…</p>
 
-      <p class="sd-find"><span class="sev sev-warn">WARN</span><span class="rule">cookie.no-secure</span></p>
-      <p class="sd-meta">src/server.ts:37</p>
-      <p class="sd-msg">Session cookie has no <code>Secure</code> flag.</p>
-      <p class="sd-gap" />
+      <template v-for="(f, i) in findings" :key="f.rule">
+        <p class="find" :class="{ on: i < revealed }">
+          <span class="chip" :class="'c-' + f.sev">{{ f.label }}</span>
+          <span class="rule">{{ f.rule }}</span>
+          <span class="loc">{{ f.loc }}</span>
+        </p>
+      </template>
 
-      <p class="sd-summary">
-        <span class="sd-pip" aria-hidden="true">●</span>3 issues, 1 high, scanned in 1.7s
+      <p class="sum" :class="{ on: done }">
+        <span class="ok">✔</span> 3 issues · 1 high · scanned in 1.7s
       </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.scan-demo {
+.term {
   width: 100%;
-  max-width: 560px;
-  border-radius: 16px;
+  max-width: 520px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  background: #0c0f17;
+  background: #0b0e16;
   box-shadow:
     0 1px 1px rgba(8, 6, 26, 0.4),
-    0 28px 60px -18px rgba(24, 14, 70, 0.6);
+    0 24px 50px -16px rgba(6, 10, 30, 0.55);
   overflow: hidden;
   font-family: var(--vp-font-family-mono);
   text-align: left;
 }
-
-.sd-bar {
+.bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 13px 18px;
-  background: #141826;
+  padding: 12px 16px;
+  background: #12161f;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-.sd-dot { width: 11px; height: 11px; border-radius: 50%; }
-.sd-dot:nth-child(1) { background: #ff5f57; }
-.sd-dot:nth-child(2) { background: #febc2e; }
-.sd-dot:nth-child(3) { background: #28c840; }
-.sd-tab { margin-left: 10px; color: #67708d; font-size: 12px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot:nth-child(1) { background: #ff5f57; }
+.dot:nth-child(2) { background: #febc2e; }
+.dot:nth-child(3) { background: #28c840; }
+.tab { margin-left: 10px; color: #626b85; font-size: 12px; }
 
-.sd-body {
-  padding: 22px 22px 24px;
+.body {
+  padding: 20px 20px 22px;
   color: #c2cae0;
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 232px;
 }
-.sd-body p { margin: 0; }
-.sd-gap { height: 1em; }
+.body p { margin: 0; }
 
-.sd-cmd { color: #eef1f9; }
-.sd-prompt { color: #9a8cff; margin-right: 12px; font-weight: 700; }
+.cmd { color: #eef1f9; margin-bottom: 14px; }
+.prompt { color: var(--vp-c-brand-1); margin-right: 12px; font-weight: 700; }
+.caret { color: var(--vp-c-brand-1); animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 
-.sd-find { display: flex; align-items: center; gap: 12px; }
-.sev {
+.status {
+  color: #8a93af;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+.status.on { height: auto; opacity: 1; margin-bottom: 6px; }
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 12px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.find.on { opacity: 1; transform: none; }
+.chip {
   font-weight: 700;
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.06em;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-.sev-error { color: #ff7a7a; background: rgba(255, 90, 90, 0.14); }
-.sev-warn { color: #ffba5c; background: rgba(255, 165, 60, 0.14); }
-.rule { color: #eef1f9; }
-.sd-meta { color: #67708d; margin-top: 4px; }
-.sd-msg { color: #9aa3bf; margin-top: 2px; }
-.sd-msg code {
-  font-family: inherit;
-  background: rgba(255, 122, 122, 0.13);
-  color: #ff9595;
-  padding: 1px 6px;
+  padding: 3px 7px;
   border-radius: 5px;
+  flex-shrink: 0;
 }
-.sd-doc { color: #9a8cff; margin-top: 2px; }
+.c-error { color: var(--sev-error); background: color-mix(in srgb, var(--sev-error) 16%, transparent); }
+.c-high { color: var(--sev-high); background: color-mix(in srgb, var(--sev-high) 16%, transparent); }
+.c-warn { color: var(--sev-warn); background: color-mix(in srgb, var(--sev-warn) 16%, transparent); }
+.rule { color: #eef1f9; }
+.loc { color: #626b85; margin-left: auto; }
 
-.sd-summary {
-  margin-top: 18px;
-  padding-top: 16px;
+.sum {
+  margin-top: 6px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
-  color: #828bab;
+  color: #8a93af;
   font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
-.sd-pip { color: #ff7a7a; margin-right: 10px; }
+.sum.on { opacity: 1; }
+.ok { color: #28c840; margin-right: 8px; }
 
 @media (max-width: 640px) {
-  .scan-demo { border-radius: 14px; }
-  .sd-body { padding: 18px 16px 20px; font-size: 12px; }
+  .term { max-width: 100%; }
+  .body { font-size: 12px; padding: 18px 16px; min-height: 220px; }
+  .loc { font-size: 11px; }
 }
 </style>

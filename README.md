@@ -11,7 +11,7 @@
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![docs](https://img.shields.io/badge/docs-oauthlint.dev-5b3df5.svg)](https://oauthlint.dev)
+[![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
 
 </div>
 

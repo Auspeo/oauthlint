@@ -8,10 +8,10 @@ importers:
 
   .:
     dependencies:
-      '@fontsource-variable/bricolage-grotesque':
-        specifier: 5.2.10
-        version: 5.2.10
       '@fontsource-variable/hanken-grotesk':
+        specifier: 5.2.8
+        version: 5.2.8
+      '@fontsource-variable/hubot-sans':
         specifier: 5.2.8
         version: 5.2.8
       '@fontsource-variable/martian-mono':
@@ -755,11 +755,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@fontsource-variable/bricolage-grotesque@5.2.10':
-    resolution: {integrity: sha512-5EDsCqgGpKVcJWE4sg9ydli+t5WM97mISYw5lla/Ev4z71FwXh1oN0YUU8xjkRW9+wBCGD9R+ntAvI8G4bUFJg==}
-
   '@fontsource-variable/hanken-grotesk@5.2.8':
     resolution: {integrity: sha512-K7hu09ZKReBc7EifRLeM4K94NZBrxFEg0nGcISmVwlFQOJo4EmYkLXTWEwr5JcNW4z2hr5zy8vLS2sxC8JDmrQ==}
+
+  '@fontsource-variable/hubot-sans@5.2.8':
+    resolution: {integrity: sha512-snt3rHAg6IrE0DKltYvjsIoeB+GSUpQHY3PAkMGUzxp8gN31kTl8yFuyuK6RcknIjtCVo7v0S6i31Oif3QxtjA==}
 
   '@fontsource-variable/martian-mono@5.2.7':
     resolution: {integrity: sha512-tchlJXmyjMLQLbhYh5kCwZIVXsTxfvfTAZ32nIrszWCJnEIqTpRloMvJPOpQA9BBCaOvvV5k0nI633dlqJsPRw==}
@@ -2887,9 +2887,9 @@ snapshots:
   '@esbuild/win32-x64@0.23.1':
     optional: true
 
-  '@fontsource-variable/bricolage-grotesque@5.2.10': {}
-
   '@fontsource-variable/hanken-grotesk@5.2.8': {}
+
+  '@fontsource-variable/hubot-sans@5.2.8': {}
 
   '@fontsource-variable/martian-mono@5.2.7': {}
 
