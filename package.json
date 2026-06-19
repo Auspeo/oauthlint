@@ -16,12 +16,25 @@
     "clean": "pnpm -r exec rm -rf dist node_modules .turbo",
     "scan:self": "node cli/bin/oauthlint.js scan ./examples",
     "docs:rules": "tsx scripts/generate-rule-docs.ts",
-    "validate": "tsx scripts/validate-rules.ts"
+    "validate": "tsx scripts/validate-rules.ts",
+    "prepare": "husky",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
+  },
+  "lint-staged": {
+    "*.{ts,js,json,jsonc}": ["biome check --write --no-errors-on-unmatched"],
+    "*.{yml,yaml,md}": ["biome format --write --no-errors-on-unmatched"]
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "2.31.0",
+    "@commitlint/cli": "21.0.2",
+    "@commitlint/config-conventional": "21.0.2",
     "@vitest/coverage-v8": "2.1.9",
     "execa": "9.6.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.7",
     "oauthlint-rules": "workspace:*",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
