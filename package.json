@@ -15,7 +15,7 @@
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r exec rm -rf dist node_modules .turbo",
     "scan:self": "node cli/bin/oauthlint.js scan ./examples",
-    "docs:rules": "tsx scripts/generate-rule-docs.ts",
+    "docs:rules": "pnpm --filter oauthlint-rules build && tsx scripts/generate-rule-docs.ts",
     "docs:dev": "pnpm docs:rules && vitepress dev docs",
     "docs:build": "pnpm docs:rules && vitepress build docs",
     "docs:preview": "vitepress preview docs",
