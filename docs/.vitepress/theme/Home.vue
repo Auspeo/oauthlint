@@ -203,17 +203,17 @@ const steps = [
 
 h1 {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2.6rem, 6vw, 4.4rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  font-size: clamp(2.05rem, 5vw, 3.35rem);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
   margin: 0 0 22px;
 }
 h2 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
-  line-height: 1.08;
+  font-size: clamp(1.55rem, 3.1vw, 2.3rem);
+  line-height: 1.14;
   letter-spacing: -0.02em;
   margin: 0 0 20px;
 }
