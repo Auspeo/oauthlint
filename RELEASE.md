@@ -62,13 +62,41 @@ The repo publishes two npm packages plus two marketplace artifacts:
 
 ## Post-publish smoke tests
 
+> **Mandatory — this catches monorepo hoisting bugs.** Always test a *clean
+> external install*, not the workspace. v0.1.0 shipped broken because
+> `oauthlint-rules` listed `fast-glob` as a devDependency; it resolved via
+> workspace hoisting in every local test, then crashed on real installs with
+> `ERR_MODULE_NOT_FOUND`. The fix shipped as 0.1.1; 0.1.0 was `npm deprecate`d.
+
 ```bash
-# fresh dir, no workspace
+# fresh dir, OUTSIDE the workspace
+D=$(mktemp -d); cd "$D"; npm init -y
+npm i oauthlint@latest
+node node_modules/oauthlint/bin/oauthlint.js --version   # must not crash
 npx oauthlint@latest scan ./some-app --fail-on HIGH
 # confirm a finding's doc URL resolves (oauthlint.dev/rules/<id>)
 ```
+Sanity-check every published package's runtime imports are in `dependencies`
+(not `devDependencies`): `grep -rhoE "from '[^.]" <pkg>/dist` vs its
+`dependencies`.
 - Add the Action to a throwaway repo and confirm it runs.
 - Install the extension from the Marketplace and confirm diagnostics appear.
+
+## Auth & follow-ups
+
+- **Publish auth:** the repo's global `~/.npmrc` token may be stale. Publish with
+  the `auspeo` granular token from `~/.secrets/npm.env`, injected via a temp
+  `.npmrc` line `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` (no secret on
+  disk). Verify identity first: `npm whoami` should print `auspeo`.
+- **Token expiry:** the current granular token **expires 2026-09-17**. Renew it
+  (npm → Access Tokens) before then or CI/local publishes will fail.
+- **Migrate to Trusted Publishing:** now that the packages exist on npm,
+  configure OIDC Trusted Publishing per package (npm package settings → linked to
+  this repo + `release.yml`), then revoke the long-lived token. Can't be done for
+  a brand-new package's first publish — only after it exists.
+- **GitHub Marketplace (Action) + repo visibility:** publishing the Action to
+  Marketplace requires a **public** repo. The repo is currently private; make it
+  public (the OSS wedge anyway) to list the Action.
 
 ## Automated path (optional)
 
