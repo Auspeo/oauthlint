@@ -1,8 +1,8 @@
 {
   "name": "oauthlint-vscode",
   "displayName": "OAuthLint",
-  "description": "Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce \u2014 right inside VS Code.",
-  "version": "0.1.0",
+  "description": "Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce — right inside VS Code.",
+  "version": "0.1.1",
   "publisher": "auspeo",
   "private": true,
   "type": "commonjs",

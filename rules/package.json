@@ -1,6 +1,6 @@
 {
   "name": "oauthlint-rules",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Semgrep rules catching the OAuth/OIDC/JWT anti-patterns that AI coding tools systematically produce.",
   "type": "module",
   "main": "./dist/index.js",
@@ -32,12 +32,12 @@
     "ai-code"
   ],
   "dependencies": {
+    "fast-glob": "3.3.3",
     "yaml": "2.6.1",
     "zod": "3.24.1"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
-    "fast-glob": "3.3.3",
     "typescript": "5.7.3",
     "vitest": "2.1.9"
   },

@@ -102,6 +102,9 @@ importers:
 
   rules:
     dependencies:
+      fast-glob:
+        specifier: 3.3.3
+        version: 3.3.3
       yaml:
         specifier: 2.6.1
         version: 2.6.1
@@ -112,9 +115,6 @@ importers:
       '@types/node':
         specifier: 22.10.5
         version: 22.10.5
-      fast-glob:
-        specifier: 3.3.3
-        version: 3.3.3
       typescript:
         specifier: 5.7.3
         version: 5.7.3
