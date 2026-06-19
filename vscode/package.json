@@ -1,0 +1,99 @@
+{
+  "name": "oauthlint-vscode",
+  "displayName": "OAuthLint",
+  "description": "Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce \u2014 right inside VS Code.",
+  "version": "0.1.0",
+  "publisher": "auspeo",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "vscode": "^1.95.0",
+    "node": ">=20.0.0"
+  },
+  "main": "./dist/extension.js",
+  "categories": ["Linters", "Other"],
+  "keywords": [
+    "oauthlint",
+    "oauthlint",
+    "oauth",
+    "oidc",
+    "jwt",
+    "security",
+    "sast",
+    "ai",
+    "vibe-coding"
+  ],
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "OAuthLint",
+      "properties": {
+        "oauthlint.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run OAuthLint on save."
+        },
+        "oauthlint.minSeverity": {
+          "type": "string",
+          "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+          "default": "MEDIUM",
+          "description": "Only surface findings at this severity or above."
+        },
+        "oauthlint.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Override path to the oauthlint CLI binary. Empty = use the bundled one."
+        },
+        "oauthlint.rulesDir": {
+          "type": "string",
+          "default": "",
+          "description": "Override the rules directory passed to the CLI. Empty = bundled rule pack."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "oauthlint.scanFile",
+        "title": "OAuthLint: Scan current file",
+        "category": "OAuthLint"
+      },
+      {
+        "command": "oauthlint.scanWorkspace",
+        "title": "OAuthLint: Scan workspace",
+        "category": "OAuthLint"
+      },
+      {
+        "command": "oauthlint.openDoc",
+        "title": "OAuthLint: Open rule documentation",
+        "category": "OAuthLint"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "oauthlint": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "@types/vscode": "1.95.0",
+    "typescript": "5.7.3",
+    "vitest": "2.1.9"
+  },
+  "license": "MIT",
+  "author": "Maurice Anney <webofboss@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Auspeo/oauthlint.git",
+    "directory": "products/oauthlint/vscode"
+  }
+}

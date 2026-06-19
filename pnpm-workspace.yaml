@@ -1,0 +1,5 @@
+packages:
+  - "rules"
+  - "cli"
+  - "action"
+  - "vscode"

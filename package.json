@@ -1,0 +1,45 @@
+{
+  "name": "oauthlint",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OAuthLint — Semgrep rule pack + CLI + GitHub Action + VS Code extension catching the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:run": "pnpm -r run test:run && pnpm test:scripts",
+    "test:scripts": "vitest run --config scripts/vitest.config.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "pnpm -r exec rm -rf dist node_modules .turbo",
+    "scan:self": "node cli/bin/oauthlint.js scan ./examples",
+    "docs:rules": "tsx scripts/generate-rule-docs.ts",
+    "validate": "tsx scripts/validate-rules.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@vitest/coverage-v8": "2.1.9",
+    "execa": "9.6.0",
+    "oauthlint-rules": "workspace:*",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "2.1.9",
+    "yaml": "2.6.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.26.2",
+  "author": "Maurice Anney <webofboss@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Auspeo/oauthlint.git"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
+  }
+}

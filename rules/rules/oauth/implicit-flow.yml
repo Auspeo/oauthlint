@@ -1,0 +1,34 @@
+rules:
+  - id: auth.oauth.implicit-flow
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth implicit flow (`response_type=token` or `response_type=id_token
+      token`) is deprecated by OAuth 2.0 Security BCP (RFC 9700) and the
+      OAuth 2.1 working draft. The access token leaks into the URL
+      fragment, browser history, and referrer headers, and there is no
+      refresh-token mechanism.
+
+      Migrate to authorization code + PKCE (`response_type=code` with a
+      `code_challenge`). All modern OAuth providers (Google, Microsoft,
+      Auth0, Okta, Keycloak, WSO2) support this for SPAs and native apps.
+    pattern-either:
+      - pattern-regex: |-
+              response_type\s*[:=]\s*['"]token['"]
+      - pattern-regex: |-
+              response_type\s*[:=]\s*['"]id_token\s+token['"]
+      - pattern-regex: |-
+              response_type\s*[:=]\s*['"]token\s+id_token['"]
+      - pattern-regex: |-
+              [?&]response_type=token(?:&|['"])
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-implicit-flow
+      category: security
+      cwe: CWE-1004
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700

@@ -1,0 +1,39 @@
+rules:
+  - id: auth.cookie.no-httponly
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A session/auth cookie is being set WITHOUT the `HttpOnly` flag.
+      Any XSS that lands on a page in the same origin will be able to
+      read this cookie via `document.cookie` and exfiltrate the session.
+
+      Set `{ httpOnly: true }` on every authentication cookie. If a
+      front-end framework genuinely needs to read it from JS, that is a
+      design problem — server-side state is the right answer.
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., httpOnly: true, ...}'
+                - pattern-not: '{..., httpOnly: $X, ...}'
+                - pattern: '{...}'
+    fix: '$RES.cookie($NAME, $VAL, { ...$OPTS, httpOnly: true })'
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-httponly
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - express
+        - fastify
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.6

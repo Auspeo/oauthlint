@@ -1,0 +1,36 @@
+rules:
+  - id: auth.oauth.no-state-validation
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth callback handler reads `state` from the request but never
+      compares it to a stored value. Sending `state` on the authorize
+      call is half of the CSRF mitigation; verifying it on the callback
+      is the other half.
+
+      Compare the received `state` to the value you stored before
+      redirecting (session, signed cookie, or Redis). Reject the callback
+      if it's missing or doesn't match.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: '$REQ.query.state'
+              - pattern: '$REQ.body.state'
+              - pattern: '$URL.searchParams.get("state")'
+          - pattern-not-inside: |
+              if ($X === $REQ.query.state) { ... }
+          - pattern-not-inside: |
+              if ($X !== $REQ.query.state) { ... }
+          - pattern-not-inside: |
+              if ($X === $URL.searchParams.get("state")) { ... }
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state-validation
+      category: security
+      cwe: CWE-352
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12

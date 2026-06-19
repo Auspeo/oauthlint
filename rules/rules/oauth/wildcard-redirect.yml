@@ -1,0 +1,36 @@
+rules:
+  - id: auth.oauth.wildcard-redirect
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth `redirect_uri` allow-list contains a wildcard, an `http://` URL,
+      or `localhost`. Wildcards (and HTTP) let an attacker register their own
+      callback URL and harvest authorization codes; `localhost` whitelisting
+      is acceptable for dev tooling but disastrous in production.
+
+      Pin redirect URIs to exact, HTTPS URLs of subdomains you control. RFC 6749
+      §10.6 explicitly requires "exact match" or restricted matching.
+    pattern-either:
+      - patterns:
+          - pattern-regex: |-
+              redirect_uris?\s*[:=]\s*\[[^\]]*['"][^'"]*\*[^'"]*['"]
+      - patterns:
+          - pattern-regex: |-
+              redirect_uris?\s*[:=]\s*\[[^\]]*['"]http://[^'"]*['"]
+          - pattern-not-regex: |-
+              http://localhost
+      - patterns:
+          - pattern-regex: |-
+              redirect_uri\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-wildcard-redirect
+      category: security
+      cwe: CWE-601
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.6
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-7.3

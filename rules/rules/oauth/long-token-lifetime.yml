@@ -1,0 +1,38 @@
+rules:
+  - id: auth.oauth.long-token-lifetime
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth `expires_in` (or comparable token-lifetime field) is being
+      set to a literal value greater than 86_400 seconds — i.e. longer
+      than 24 hours. Long-lived access tokens make every token theft
+      catastrophic because they remain valid for days or weeks; the
+      industry standard is 15-60 minutes for access tokens, paired with
+      a refresh-token rotation flow for longer sessions.
+
+      Don't issue access tokens longer than a day. Use refresh tokens
+      with proper rotation (RFC 6749 §6, RFC 9700 §4.14) for "stay
+      logged in" semantics.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: '{ ..., expires_in: $TTL, ... }'
+              - pattern: '{ ..., expiresIn: $TTL, ... }'
+              - pattern: '{ ..., access_token_ttl: $TTL, ... }'
+              - pattern: '{ ..., accessTokenTtl: $TTL, ... }'
+              - pattern: '{ ..., tokenLifetime: $TTL, ... }'
+          - metavariable-comparison:
+              metavariable: $TTL
+              comparison: $TTL > 86400
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-long-token-lifetime
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-4.14
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-6

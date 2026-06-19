@@ -1,0 +1,30 @@
+rules:
+  - id: auth.session.id-in-url
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A session token / id appears in a URL query string. URLs are
+      logged everywhere (web server logs, reverse proxies, browser
+      history, referrer headers leaking to third-party CDNs and ad
+      networks), so this leaks the credential.
+
+      Pass session ids/tokens in the `Authorization` header or in a
+      `Secure; HttpOnly` cookie. Never in the URL.
+
+      OWASP ASVS V3.2 explicitly bans this pattern.
+    pattern-either:
+      - pattern-regex: |-
+              [?&](?:session|sid|sess|auth_token|access_token|api[_-]?key|jwt|bearer)=
+      - pattern-regex: |-
+              \?\s*['"]?(?:session|sid|sess|auth_token|access_token|api[_-]?key|jwt|bearer)['"]?\s*:
+    metadata:
+      oauthlint-rule-id: AUTH-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/session-id-in-url
+      category: security
+      cwe: CWE-598
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://owasp.org/www-project-application-security-verification-standard/

@@ -1,0 +1,75 @@
+rules:
+  - id: auth.flow.timing-unsafe-compare
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
+      `csrf`, `hmac`) is being compared with `===` / `!==` /
+      `string1 == string2`. JavaScript's equality operators short-circuit
+      on the first differing byte, which leaks the matching prefix
+      length over the wire — a classic timing-attack vector.
+
+      Use `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` (both
+      buffers must be the same length, so hash first if needed). For
+      password verification, use `argon2.verify`, `bcrypt.compare`, or
+      `scrypt` — they handle constant-time comparison for you.
+    # We want to catch `secretVar === userInput` but NOT the dozens of
+    # legitimate non-secret comparisons that just happen to involve a
+    # variable whose name ends with one of our secret-looking suffixes:
+    #   typeof token === 'string'          (type check)
+    #   signature !== ''                   (presence check)
+    #   parts.length === 3                 (shape check)
+    #   token.length === expectedLength    (length check)
+    # The pattern-not clauses below carve those out — they were the
+    # entirety of the FP class we saw on jose / next-auth in validation.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: '$A === $B'
+              - pattern: '$A !== $B'
+          - metavariable-regex:
+              metavariable: $A
+              regex: ^.*(?:password|secret|token|apiKey|api_key|csrf|hmac|signature|hash)$
+          - pattern-not: 'typeof $X === $Y'
+          - pattern-not: 'typeof $X !== $Y'
+          - pattern-not: '$X === ""'
+          - pattern-not: "$X === ''"
+          - pattern-not: '$X !== ""'
+          - pattern-not: "$X !== ''"
+          - pattern-not: '$X.length === $N'
+          - pattern-not: '$X.length !== $N'
+          - pattern-not: '$X === null'
+          - pattern-not: '$X !== null'
+          - pattern-not: '$X === undefined'
+          - pattern-not: '$X !== undefined'
+      - patterns:
+          - pattern-either:
+              - pattern: '$A === $B'
+              - pattern: '$A !== $B'
+          - metavariable-regex:
+              metavariable: $B
+              regex: ^.*(?:password|secret|token|apiKey|api_key|csrf|hmac|signature|hash)$
+          - pattern-not: 'typeof $X === $Y'
+          - pattern-not: 'typeof $X !== $Y'
+          - pattern-not: '$X === ""'
+          - pattern-not: "$X === ''"
+          - pattern-not: '$X !== ""'
+          - pattern-not: "$X !== ''"
+          - pattern-not: '$X.length === $N'
+          - pattern-not: '$X.length !== $N'
+          - pattern-not: '$X === null'
+          - pattern-not: '$X !== null'
+          - pattern-not: '$X === undefined'
+          - pattern-not: '$X !== undefined'
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-timing-unsafe-compare
+      category: security
+      cwe: CWE-208
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+        - https://nodejs.org/api/crypto.html#cryptotimingsafeequala-b

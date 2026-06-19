@@ -1,0 +1,40 @@
+rules:
+  - id: auth.cookie.no-samesite
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      A session/auth cookie is being set WITHOUT the `SameSite`
+      attribute. Modern browsers default to `Lax`, but explicit is
+      better — and APIs that legitimately need cross-site usage should
+      consciously opt into `None` (with `Secure`), not silently inherit
+      whatever the browser does today.
+
+      For most auth flows, `SameSite=Strict` is the right answer; for
+      OAuth callbacks, `SameSite=Lax` is required.
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., sameSite: ..., ...}'
+                - pattern-not: '{..., "sameSite": ..., ...}'
+                - pattern: '{...}'
+    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, sameSite: 'strict' })"
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-samesite
+      category: security
+      cwe: CWE-1275
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+        - fastify
+      references:
+        - https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-13#section-4.1.2.7

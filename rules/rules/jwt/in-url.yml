@@ -1,0 +1,29 @@
+rules:
+  - id: auth.jwt.in-url
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A JWT-looking value (header `eyJ…`) appears in a URL query string
+      or fragment. URLs leak into server logs, browser history, the
+      `Referer` header (sent to every third-party CDN, ad pixel, and
+      analytics script on the destination page), and even copy-paste
+      operations. A JWT in a URL is a leaked JWT.
+
+      Send JWTs in the `Authorization: Bearer …` header, or in a
+      `Secure; HttpOnly; SameSite` cookie. Never in the URL.
+
+      OWASP ASVS V3.2.3 explicitly forbids credentials in URL parameters.
+    pattern-either:
+      - pattern-regex: '[?&][^=]+=eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
+      - pattern-regex: "#[^=]+=eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-in-url
+      category: security
+      cwe: CWE-598
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://owasp.org/www-project-application-security-verification-standard/

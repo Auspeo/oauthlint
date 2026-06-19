@@ -1,0 +1,69 @@
+# Public repositories used to validate the OAuthLint rule pack against
+# real-world code.
+#
+# Selection criteria :
+#   - JavaScript / TypeScript dominant
+#   - Authentication / OAuth surface area (else there's nothing for the
+#     rule pack to fire on, signal vs noise becomes 0)
+#   - Permissive license (we never fork them; we just clone read-only)
+#   - Active in the last 12 months
+#   - Mix of "auth library" (where firing rules indicates a real bug)
+#     and "app using auth" (where firing rules is the expected case)
+#
+# `expectedSignal` is a soft hint :
+#   - "high"   → we expect ≥ 3 rules to fire, this is a representative
+#                example of "code in the wild that AI tools produce"
+#   - "low"    → mature library, firing rules indicates likely false
+#                positive — anything firing here goes into a triage
+#                queue, not the "we caught a bug" celebration column
+#
+# Don't add targets just to inflate numbers; only add repos whose code
+# you'd be willing to read for ~15 minutes when investigating a finding.
+version: 1
+
+targets:
+  # ─────────────────────────────────────────────────────────────
+  # Mature OAuth libraries — should produce very few findings.
+  # Each finding here is a candidate FP for triage.
+  # ─────────────────────────────────────────────────────────────
+  - repo: panva/node-openid-client
+    ref: main
+    expectedSignal: low
+    notes: Mature OIDC RP client. Findings here are almost certainly FPs.
+
+  - repo: panva/jose
+    ref: main
+    expectedSignal: low
+    notes: Modern JWT / JWS / JWE library. Should fire zero rules.
+
+  - repo: nextauthjs/next-auth
+    ref: main
+    expectedSignal: low
+    notes: Auth.js / NextAuth.js — the most-used auth library in the JS ecosystem.
+
+  # ─────────────────────────────────────────────────────────────
+  # Auth-heavy apps — expect a richer signal.
+  # ─────────────────────────────────────────────────────────────
+  - repo: directus/directus
+    ref: main
+    expectedSignal: high
+    notes: Headless CMS with JWT + OAuth. Reasonable proxy for "real app".
+
+  - repo: supabase/auth
+    ref: master
+    expectedSignal: high
+    notes: Supabase Auth server (Go primarily — only TS fixtures will fire).
+
+  # ─────────────────────────────────────────────────────────────
+  # AI-generated / vibe-coded starter templates — the target audience.
+  # These are where we expect the bulk of "real" findings.
+  # ─────────────────────────────────────────────────────────────
+  - repo: stackblitz/bolt.new
+    ref: main
+    expectedSignal: high
+    notes: AI app builder. Expect classic OAuth / cookie omissions.
+
+  - repo: vercel/ai-chatbot
+    ref: main
+    expectedSignal: high
+    notes: Vercel AI chatbot starter, heavily copied by indie devs.

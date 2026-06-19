@@ -1,0 +1,12 @@
+{
+  "name": "oauthlint-example-vibe-app-express",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example Express app full of OAuth/JWT anti-patterns LLMs love to produce — used for demoing OAuthLint.",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "lint": "echo 'no lint — this app exists to be lint-failed by OAuthLint'"
+  },
+  "license": "MIT"
+}

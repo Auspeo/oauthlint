@@ -1,0 +1,31 @@
+rules:
+  - id: auth.oauth.open-redirect-callback
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The OAuth callback handler redirects to a URL taken straight from
+      the request without validating it. An attacker can craft a phishing
+      link to your real callback that forwards the victim to a malicious
+      site under your domain's trust.
+
+      Maintain an explicit allow-list of post-login redirect destinations
+      (route names or full URLs you control). Never forward to an
+      arbitrary `req.query.redirect_to`, `req.query.next`, or
+      `req.query.return_url` value.
+    pattern-either:
+      - pattern: '$RES.redirect($REQ.query.$ANY)'
+      - pattern: '$RES.redirect($REQ.body.$ANY)'
+      - pattern: '$RES.redirect($REQ.query[$X])'
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-open-redirect-callback
+      category: security
+      cwe: CWE-601
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      technology:
+        - express
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html

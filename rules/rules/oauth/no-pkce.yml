@@ -1,0 +1,56 @@
+rules:
+  - id: auth.oauth.no-pkce
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth 2.0 authorization request looks like a public client (SPA,
+      mobile, or native app) but does not include a `code_challenge`
+      parameter. Without PKCE, the authorization code can be intercepted
+      and exchanged by an attacker.
+
+      RFC 8252 §6 mandates PKCE for native/SPA clients. RFC 9700 (OAuth 2.0
+      Security BCP) recommends PKCE for ALL clients, including confidential
+      ones, as defence in depth.
+
+      Generate a `code_verifier` (43-128 char), derive `code_challenge =
+      BASE64URL-NoPad(SHA256(code_verifier))`, send it with
+      `code_challenge_method=S256` on the authorize call, and POST the
+      `code_verifier` on the token call.
+    pattern-either:
+      # Inline authorize URL — must look like an actual authorize request
+      # (client_id + response_type=code), not a partial provider template.
+      - patterns:
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+/authorize\?[^'"]*response_type=code[^'"]*['"]
+          - pattern-regex: |-
+              client_id=
+          - pattern-not-regex: |-
+              code_challenge
+      # Programmatic URLSearchParams build with both client_id +
+      # response_type=code present.
+      - patterns:
+          - pattern-regex: |-
+              new URLSearchParams\([\s\S]{0,300}client_id[\s\S]{0,300}response_type[\s\S]{0,300}\)
+          - pattern-regex: |-
+              ['"]code['"]
+          - pattern-not-regex: |-
+              code_challenge
+      - patterns:
+          - pattern-regex: |-
+              new URLSearchParams\([\s\S]{0,300}response_type[\s\S]{0,300}client_id[\s\S]{0,300}\)
+          - pattern-regex: |-
+              ['"]code['"]
+          - pattern-not-regex: |-
+              code_challenge
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-pkce
+      category: security
+      cwe: CWE-345
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7636
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-6

@@ -1,0 +1,42 @@
+rules:
+  - id: auth.cookie.long-lived
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      An auth-looking cookie is being set with a `maxAge` greater than
+      30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+      milliseconds). Long-lived session cookies expand the blast radius
+      of any single token theft and bypass server-side revocation if
+      the application doesn't validate freshness on every request.
+
+      Prefer short-lived access cookies (15-60 min) paired with a
+      separate refresh token rotation flow. If you really need a "remember
+      me" cookie, scope it tightly (`SameSite=Strict`, dedicated path) and
+      back it with a server-side allowlist you can revoke.
+    pattern-either:
+      - patterns:
+          - pattern: '$RES.cookie($NAME, $VAL, $OPTS)'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access|remember)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern: '{..., maxAge: $MS, ...}'
+                - metavariable-comparison:
+                    metavariable: $MS
+                    comparison: $MS > 2592000000
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-long-lived
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+        - fastify
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html

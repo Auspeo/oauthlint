@@ -1,0 +1,37 @@
+rules:
+  - id: auth.jwt.no-issuer
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      JWT is being verified without checking the `iss` (issuer) claim. If
+      your verification key is shared across multiple authorization
+      servers (or even tenants on a single IdP), this lets a token signed
+      by one issuer be accepted by code that was meant to trust another.
+
+      Pass `{ issuer: 'https://your-idp.example.com' }` to `jwt.verify` so
+      that the trust chain is explicit. RFC 7519 §4.1.1 defines the
+      `iss` claim for exactly this purpose.
+    # Scoped to `jsonwebtoken` (alias `jwt`) for the same reason as
+    # auth.jwt.no-audience: generic $X.verify() patterns produced too
+    # many FPs on jose/custom signer code.
+    pattern-either:
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $SECRET, $OPTS)'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., issuer: ..., ...}'
+                - pattern: '{...}'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-issuer
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - jsonwebtoken
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1

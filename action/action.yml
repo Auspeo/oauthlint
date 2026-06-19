@@ -1,0 +1,46 @@
+name: OAuthLint
+description: Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.
+author: Maurice Anney <webofboss@gmail.com>
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  path:
+    description: Path to scan (defaults to the repo root).
+    required: false
+    default: '.'
+  severity:
+    description: 'Filter findings: only emit those at this severity or above (INFO|LOW|MEDIUM|HIGH|CRITICAL).'
+    required: false
+    default: ''
+  fail-on:
+    description: 'Fail the job if any finding has this severity or above. Use "off" to never fail.'
+    required: false
+    default: 'HIGH'
+  json:
+    description: 'When true, emit JSON in addition to pretty output.'
+    required: false
+    default: 'false'
+  output:
+    description: 'Path to write the JSON report (only used when json=true).'
+    required: false
+    default: 'oauthlint-report.json'
+
+outputs:
+  findings:
+    description: Number of findings (after severity filtering).
+    value: ${{ steps.run.outputs.findings }}
+  highest-severity:
+    description: Highest severity in the report.
+    value: ${{ steps.run.outputs.highest-severity }}
+
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.path }}
+    - ${{ inputs.severity }}
+    - ${{ inputs.fail-on }}
+    - ${{ inputs.json }}
+    - ${{ inputs.output }}

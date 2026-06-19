@@ -1,0 +1,55 @@
+{
+  "name": "oauthlint-rules",
+  "version": "0.1.0",
+  "description": "Semgrep rules catching the OAuth/OIDC/JWT anti-patterns that AI coding tools systematically produce.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "rules", "README.md"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./rules/*": "./rules/*",
+    "./manifest": "./dist/manifest.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "oauthlint",
+    "oauthlint",
+    "semgrep",
+    "oauth",
+    "oidc",
+    "jwt",
+    "security",
+    "sast",
+    "auth",
+    "ai-code"
+  ],
+  "dependencies": {
+    "yaml": "2.6.1",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "fast-glob": "3.3.3",
+    "typescript": "5.7.3",
+    "vitest": "2.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Auspeo/oauthlint.git",
+    "directory": "products/oauthlint/rules"
+  },
+  "license": "MIT",
+  "author": "Maurice Anney <webofboss@gmail.com>"
+}

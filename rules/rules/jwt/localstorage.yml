@@ -1,0 +1,34 @@
+rules:
+  - id: auth.jwt.localstorage
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A JWT (or other auth token) is being written to `localStorage`. Any
+      XSS that lands on the page can exfiltrate the token via
+      `localStorage.getItem(...)` — and unlike `HttpOnly` cookies, there
+      is no browser-side mitigation.
+
+      Store auth tokens in an `HttpOnly; Secure; SameSite=Strict` cookie
+      set by the server, or in memory only. `sessionStorage` is no safer
+      against XSS — it's the same attacker capability.
+
+      OWASP ASVS V3.4: tokens must not be stored where untrusted scripts
+      can read them.
+    pattern-either:
+      - patterns:
+          - pattern-regex: |-
+              localStorage\.setItem\(\s*['"][^'"\s]*(?:token|jwt|auth|access|refresh|session|id_token|bearer)[^'"]*['"]
+      - patterns:
+          - pattern-regex: |-
+              localStorage\[\s*['"][^'"\s]*(?:token|jwt|auth|access|refresh|session|id_token|bearer)[^'"]*['"]\s*\]\s*=
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-localstorage
+      category: security
+      cwe: CWE-922
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
