@@ -37,6 +37,11 @@ export function loginBad2(res: Response, jwt: string) {
   // ruleid: auth.cookie.no-samesite
   res.cookie('refresh_token', jwt, { httpOnly: true });
 }
+
+export function loginBad3(res: Response, token: string) {
+  // ruleid: auth.cookie.no-samesite -- SameSite=None without Secure
+  res.cookie('session', token, { httpOnly: true, sameSite: 'none' });
+}
 ```
 
 ## ✅ Safe
@@ -59,6 +64,15 @@ export function setOauthCookie(res: Response, state: string) {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
+  });
+}
+
+// ok: auth.cookie.no-samesite -- SameSite=None is valid WITH Secure (legit cross-site)
+export function setCrossSiteCookie(res: Response, token: string) {
+  res.cookie('session', token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
   });
 }
 ```

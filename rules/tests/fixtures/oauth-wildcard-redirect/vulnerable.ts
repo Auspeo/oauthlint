@@ -15,3 +15,9 @@ export const oauthConfigBad3 = {
   client_id: 'abc',
   redirect_uri: 'https://app.example.com/*',
 };
+
+// ruleid: auth.oauth.wildcard-redirect -- scalar http:// redirect_uri
+export const oauthConfigBad4 = {
+  client_id: 'abc',
+  redirect_uri: 'http://app.example.com/callback',
+};

@@ -16,9 +16,9 @@ rules:
       OWASP ASVS V3.2 explicitly bans this pattern.
     pattern-either:
       - pattern-regex: |-
-              [?&](?:session|sid|sess|auth_token|access_token|api[_-]?key|jwt|bearer)=
+              [?&](?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)=
       - pattern-regex: |-
-              \?\s*['"]?(?:session|sid|sess|auth_token|access_token|api[_-]?key|jwt|bearer)['"]?\s*:
+              \?\s*['"]?(?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)['"]?\s*:
     metadata:
       oauthlint-rule-id: AUTH-SESSION-001
       oauthlint-doc-url: https://oauthlint.dev/rules/session-id-in-url

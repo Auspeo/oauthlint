@@ -9,3 +9,7 @@ export const magicLink =
 // ruleid: auth.jwt.in-url
 export const fragmentLink =
   'https://app.example.com/dashboard#access_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.zzz';
+
+// ruleid: auth.jwt.in-url -- JWT in a path segment
+export const pathLink =
+  'https://app.example.com/verify/eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiZm9vIn0.qqq';

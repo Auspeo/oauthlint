@@ -23,6 +23,9 @@ rules:
           - pattern-not: 'jwt.sign({..., expiresIn: ..., ...}, $SECRET)'
       - patterns:
           - pattern: 'jwt.sign($PAYLOAD, $SECRET, $OPTS)'
+          # exp can live in the payload too, not only the options object.
+          - pattern-not: 'jwt.sign({..., exp: ..., ...}, $SECRET, $OPTS)'
+          - pattern-not: 'jwt.sign({..., expiresIn: ..., ...}, $SECRET, $OPTS)'
           - metavariable-pattern:
               metavariable: $OPTS
               patterns:

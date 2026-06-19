@@ -25,6 +25,22 @@ rules:
                 - pattern-not: '{..., sameSite: ..., ...}'
                 - pattern-not: '{..., "sameSite": ..., ...}'
                 - pattern: '{...}'
+      # SameSite=None without Secure: None *requires* Secure, so this cookie is
+      # rejected by modern browsers and signals a real misconfiguration.
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: "{..., sameSite: 'none', ...}"
+                    - pattern: '{..., sameSite: "none", ...}'
+                    - pattern: "{..., sameSite: 'None', ...}"
+                    - pattern: '{..., sameSite: "None", ...}'
+                - pattern-not: '{..., secure: true, ...}'
     fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, sameSite: 'strict' })"
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-003

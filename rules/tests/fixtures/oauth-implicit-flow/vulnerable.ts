@@ -12,3 +12,7 @@ export const badConfig2 = {
   // ruleid: auth.oauth.implicit-flow
   response_type: 'id_token token',
 };
+
+// ruleid: auth.oauth.implicit-flow -- URL-encoded multi-value response_type
+export const badUrlEncoded =
+  'https://accounts.google.com/o/oauth2/v2/auth?response_type=token%20id_token&client_id=spa';
