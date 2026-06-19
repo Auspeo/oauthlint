@@ -13,29 +13,23 @@ rules:
       session/cookie, and validate it on the callback. PKCE alone is not a
       substitute for `state` when handling browser sessions.
     pattern-either:
-      # Inline authorize URL — must look like a real request, i.e. carry
-      # both `client_id=` AND `response_type=`. Partial template URLs
-      # (provider config blobs that the framework fills in at runtime)
-      # don't carry those together, so they no longer fire.
+      # Inline authorize URL carrying both client_id and response_type but no
+      # state. The path is not hardcoded (Google uses /o/oauth2/v2/auth, etc.).
       - patterns:
           - pattern-regex: |-
-              ['"]https?://[^'"\s]+/authorize\?[^'"]*client_id=[^'"]*['"]
+              ['"]https?://[^'"\s]+\?[^'"]*client_id=[^'"]*['"]
           - pattern-regex: |-
               response_type=
           - pattern-not-regex: |-
               state=
-      # Programmatic URLSearchParams build — must include client_id +
-      # response_type to count as "an authorize call".
+      # Programmatic URLSearchParams build (AST object match — robust to key
+      # order and length). Fires when client_id + response_type are present but
+      # state is not (covers both `state: x` and the `state` shorthand).
       - patterns:
-          - pattern-regex: |-
-              new URLSearchParams\([\s\S]{0,300}client_id[\s\S]{0,300}response_type[\s\S]{0,300}\)
-          - pattern-not-regex: |-
-              state
-      - patterns:
-          - pattern-regex: |-
-              new URLSearchParams\([\s\S]{0,300}response_type[\s\S]{0,300}client_id[\s\S]{0,300}\)
-          - pattern-not-regex: |-
-              state
+          - pattern: 'new URLSearchParams({..., client_id: $C, ...})'
+          - pattern: 'new URLSearchParams({..., response_type: $R, ...})'
+          - pattern-not: 'new URLSearchParams({..., state: $S, ...})'
+          - pattern-not: 'new URLSearchParams({..., state, ...})'
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-001
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state
