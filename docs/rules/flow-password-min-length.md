@@ -78,6 +78,4 @@ Disable directives are line-scoped by design — wholesale silencing of a rule a
 - https://pages.nist.gov/800-63-3/sp800-63b.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
 
----
-
-*This page is generated from `packages/oauthlint-rules/rules/` and the fixture pair. Edit those files, not this one — re-run `pnpm docs:rules` to refresh.*
+<!-- Generated from rules/rules/ + the fixture pair. Edit those, not this file — re-run `pnpm docs:rules` to refresh. -->

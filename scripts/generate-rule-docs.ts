@@ -124,10 +124,8 @@ function renderRulePage(
     sections.push('');
   }
 
-  sections.push('---');
-  sections.push('');
   sections.push(
-    '*This page is generated from `packages/oauthlint-rules/rules/` and the fixture pair. Edit those files, not this one — re-run `pnpm docs:rules` to refresh.*',
+    '<!-- Generated from rules/rules/ + the fixture pair. Edit those, not this file — re-run `pnpm docs:rules` to refresh. -->',
   );
   sections.push('');
 
@@ -157,8 +155,10 @@ async function writeIndex(rules: LoadedRule[]): Promise<void> {
   const lines: string[] = [];
   lines.push('# OAuthLint rule catalogue');
   lines.push('');
+  lines.push(`${rules.length} rules grouped by category.`);
+  lines.push('');
   lines.push(
-    `${rules.length} rules grouped by category. Each page is generated from \`packages/oauthlint-rules/rules/\` and the matching fixtures — keep the YAML/fixtures authoritative.`,
+    '<!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->',
   );
   lines.push('');
   for (const cat of [...byCategory.keys()].sort()) {
