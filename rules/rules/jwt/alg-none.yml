@@ -21,6 +21,16 @@ rules:
       - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "None", ...], ... })'
       - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "NONE", ...], ... })'
       - pattern: 'jwt.decode($TOKEN, { complete: true, algorithms: [..., "none", ...] })'
+      # Destructured import: `import { verify } from 'jsonwebtoken'`. Scoped to
+      # the import so a bare verify() from another library is not matched.
+      - patterns:
+          - pattern-inside: |
+              import { ..., verify, ... } from 'jsonwebtoken'
+              ...
+          - pattern-either:
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "none", ...], ... })'
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "None", ...], ... })'
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "NONE", ...], ... })'
     metadata:
       oauthlint-rule-id: AUTH-JWT-001
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-alg-none

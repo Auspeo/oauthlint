@@ -10,3 +10,7 @@ export const token2 = jwt.sign({ uid: 2 }, 'changeme');
 export function verifyBad(t: string) {
   return jwt.verify(t, 'mySecret');
 }
+
+import { sign } from 'jsonwebtoken';
+// ruleid: auth.jwt.weak-secret -- destructured import
+export const token3 = sign({ uid: 3 }, 'secret');

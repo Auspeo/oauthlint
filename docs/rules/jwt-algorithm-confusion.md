@@ -40,9 +40,9 @@ export function badVerify(token: string) {
   return jwt.verify(token, RSA_PUBLIC, { algorithms: ['HS256'] });
 }
 
-// ruleid: auth.jwt.algorithm-confusion
-export function badVerifyNoOpts(token: string) {
-  return jwt.verify(token, RSA_PUBLIC);
+// ruleid: auth.jwt.algorithm-confusion -- mixing HS with an RSA public key
+export function badVerifyMixed(token: string, publicKey: string) {
+  return jwt.verify(token, publicKey, { algorithms: ['HS256', 'RS256'] });
 }
 ```
 

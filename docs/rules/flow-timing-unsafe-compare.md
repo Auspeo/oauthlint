@@ -46,6 +46,11 @@ export function verifyHmac(actualHmac: string) {
   // ruleid: auth.flow.timing-unsafe-compare
   return expectedHmac !== actualHmac;
 }
+
+export function loginLoose(input: string) {
+  // ruleid: auth.flow.timing-unsafe-compare -- loose equality is just as unsafe
+  return input == hashedPassword;
+}
 ```
 
 ## ✅ Safe
@@ -67,6 +72,13 @@ export function verifyHmacSafe(expected: Buffer, actual: Buffer) {
 // ok: auth.flow.timing-unsafe-compare -- comparing non-secret values is fine
 export function compareUsernames(a: string, b: string) {
   return a === b;
+}
+
+// ok: auth.flow.timing-unsafe-compare -- loose null/presence checks are not comparisons
+export function presenceChecks(token?: string) {
+  if (token == null) return false;
+  if (typeof token != 'string') return false;
+  return token.length != 0;
 }
 ```
 

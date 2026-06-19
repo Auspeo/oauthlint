@@ -61,6 +61,19 @@ export async function signupBad3(req: Req) {
   const u = new User({ email: req.body.email, password: req.body.password });
   await db.users.insert(u);
 }
+
+declare const prisma: { user: { create: (args: unknown) => Promise<void> } };
+declare const userRepo: { save: (data: unknown) => Promise<void> };
+
+export async function signupBad4(req: Req) {
+  // ruleid: auth.flow.password-plaintext -- Prisma nested data wrapper
+  await prisma.user.create({ data: { email: req.body.email, password: req.body.password } });
+}
+
+export async function signupBad5(req: Req) {
+  // ruleid: auth.flow.password-plaintext -- repository .save()
+  await userRepo.save({ email: req.body.email, password: req.body.password });
+}
 ```
 
 ## ✅ Safe
@@ -78,8 +91,8 @@ interface Req {
 
 // ok: auth.flow.password-plaintext
 export async function signupGood(req: Req) {
-  const password = await argon2.hash(req.body.password);
-  await db.users.create({ email: req.body.email, password });
+  const hashedPassword = await argon2.hash(req.body.password);
+  await db.users.create({ email: req.body.email, password: hashedPassword });
 }
 
 // ok: auth.flow.password-plaintext

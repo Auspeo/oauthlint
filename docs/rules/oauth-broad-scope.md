@@ -45,6 +45,21 @@ export const badConfig3 = {
 export const badConfig4 = {
   scope: 'openid email *',
 };
+
+// ruleid: auth.oauth.broad-scope -- standalone "admin" among space-delimited scopes
+export const badConfig5 = {
+  scope: 'read admin write',
+};
+
+// ruleid: auth.oauth.broad-scope -- entire GitHub repo access
+export const badConfig6 = {
+  scopes: ['repo', 'read:user'],
+};
+
+// ruleid: auth.oauth.broad-scope -- full Gmail mailbox
+export const badConfig7 = {
+  scope: 'https://mail.google.com/',
+};
 ```
 
 ## ✅ Safe
@@ -59,6 +74,17 @@ export const goodConfig = {
 export const goodConfig2 = {
   scopes: ['read:user', 'repo:status'],
 };
+
+// Narrow structured sub-scopes that merely contain a broad word as a segment —
+// must not be flagged (regression guards for the substring false positive).
+// ok: auth.oauth.broad-scope -- read-only admin sub-scope
+export const narrow1 = { scope: 'admin:read' };
+// ok: auth.oauth.broad-scope -- Slack channel admin, narrow
+export const narrow2 = { scope: 'channels:admin' };
+// ok: auth.oauth.broad-scope -- Google calendar narrow scope
+export const narrow3 = { scope: 'calendar.all' };
+// ok: auth.oauth.broad-scope -- public repos only, narrower than "repo"
+export const narrow4 = { scope: 'public_repo' };
 ```
 
 ## Suppressing this rule (when you really must)

@@ -52,6 +52,19 @@ export const badCorsReversed = cors({
   credentials: true,
   origin: '*',
 });
+
+// ruleid: auth.cors.wildcard-with-credentials -- echoes the request origin back
+export const badCorsEcho = cors({
+  origin: (_origin: string, cb: (e: null, ok: boolean) => void) => cb(null, true),
+  credentials: true,
+});
+
+declare const res: { setHeader: (k: string, v: string) => void };
+// ruleid: auth.cors.wildcard-with-credentials -- manual headers
+export function manualCors() {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+}
 ```
 
 ## ✅ Safe
@@ -70,6 +83,20 @@ export const authedApi = cors({
   origin: ['https://app.example.com', 'https://admin.example.com'],
   credentials: true,
 });
+
+// ok: auth.cors.wildcard-with-credentials -- callback validates against an allow-list
+const allow = new Set(['https://app.example.com']);
+export const checkedApi = cors({
+  origin: (origin: string, cb: (e: null, ok: boolean) => void) => cb(null, allow.has(origin)),
+  credentials: true,
+});
+
+declare const res: { setHeader: (k: string, v: string) => void };
+// ok: auth.cors.wildcard-with-credentials -- explicit origin, not wildcard
+export function manualOk() {
+  res.setHeader('Access-Control-Allow-Origin', 'https://app.example.com');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+}
 ```
 
 ## Suppressing this rule (when you really must)
