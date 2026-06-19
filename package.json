@@ -60,8 +60,8 @@
     "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
   },
   "dependencies": {
-    "@fontsource-variable/bricolage-grotesque": "5.2.10",
     "@fontsource-variable/hanken-grotesk": "5.2.8",
+    "@fontsource-variable/hubot-sans": "5.2.8",
     "@fontsource-variable/martian-mono": "5.2.7"
   }
 }

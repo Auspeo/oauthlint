@@ -1,7 +1,7 @@
 import type { Theme } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
 import '@fontsource-variable/hanken-grotesk/wght.css';
-import '@fontsource-variable/bricolage-grotesque/wght.css';
+import '@fontsource-variable/hubot-sans/wght.css';
 import '@fontsource-variable/martian-mono/wght.css';
 import Home from './Home.vue';
 import './custom.css';

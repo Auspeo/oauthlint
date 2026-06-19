@@ -47,7 +47,7 @@ export default defineConfig({
   lastUpdated: true,
   head: [
     ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
-    ['meta', { name: 'theme-color', content: '#5b3df5' }],
+    ['meta', { name: 'theme-color', content: '#2f6feb' }],
     ['meta', { property: 'og:title', content: 'oauthlint' }],
     [
       'meta',
