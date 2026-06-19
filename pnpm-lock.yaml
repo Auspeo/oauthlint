@@ -14,6 +14,9 @@ importers:
       '@fontsource-variable/martian-mono':
         specifier: 5.2.7
         version: 5.2.7
+      '@fontsource-variable/sora':
+        specifier: 5.2.8
+        version: 5.2.8
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -757,6 +760,9 @@ packages:
 
   '@fontsource-variable/martian-mono@5.2.7':
     resolution: {integrity: sha512-tchlJXmyjMLQLbhYh5kCwZIVXsTxfvfTAZ32nIrszWCJnEIqTpRloMvJPOpQA9BBCaOvvV5k0nI633dlqJsPRw==}
+
+  '@fontsource-variable/sora@5.2.8':
+    resolution: {integrity: sha512-sP+ILTfi5r3cqmMBntI4ooQNxFI+LyHyD5hcPbWwwL4uh4kKFAkOz0w2veCXjz18fKRdva6OG0dY+5yQ02f30w==}
 
   '@iconify-json/simple-icons@1.2.86':
     resolution: {integrity: sha512-t3jck5qPQuK1qy+bRn9eCoDQhIB7XSazKz1Fjp8hcan3XOAsTI5Mq/s3F0ekOKSvMQqkVORYK6ns6o6T9f5EMA==}
@@ -2884,6 +2890,8 @@ snapshots:
   '@fontsource-variable/hanken-grotesk@5.2.8': {}
 
   '@fontsource-variable/martian-mono@5.2.7': {}
+
+  '@fontsource-variable/sora@5.2.8': {}
 
   '@iconify-json/simple-icons@1.2.86':
     dependencies:
