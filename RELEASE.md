@@ -25,9 +25,9 @@ The repo publishes two npm packages plus two marketplace artifacts:
 1. **Deploy the docs site first.** Every finding prints `https://oauthlint.dev/rules/<id>`;
    those pages must exist before anyone installs.
    ```bash
-   pnpm docs:rules      # refresh docs/rules/*.md from the live rules
-   pnpm docs:site       # build static site → site/
-   # deploy site/ to oauthlint.dev (Cloudflare Pages / GitHub Pages / Netlify)
+   pnpm docs:build      # regenerates docs/rules/*.md + builds the VitePress site
+   # auto-deploys to oauthlint.dev via .github/workflows/pages.yml on push to main
+   # (custom domain via docs/public/CNAME; local preview: pnpm docs:dev)
    ```
 
 2. **Cut versions with Changesets.** *(Skip for the very first 0.1.0 publish —

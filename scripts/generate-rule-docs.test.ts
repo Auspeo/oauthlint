@@ -9,9 +9,9 @@ describe('generated rule documentation', () => {
   it('has one .md per shipped rule + an index', async () => {
     const rules = await loadAllRules();
     const files = (await readdir(DOCS_DIR)).filter((f) => f.endsWith('.md')).sort();
-    // +1 for README.md (the index)
+    // +1 for index.md (the catalogue)
     expect(files.length).toBe(rules.length + 1);
-    expect(files).toContain('README.md');
+    expect(files).toContain('index.md');
   });
 
   it('every page references its canonical rule id and includes both fixtures', async () => {
@@ -28,7 +28,7 @@ describe('generated rule documentation', () => {
 
   it('index lists every rule with a working internal link', async () => {
     const rules = await loadAllRules();
-    const index = await readFile(join(DOCS_DIR, 'README.md'), 'utf8');
+    const index = await readFile(join(DOCS_DIR, 'index.md'), 'utf8');
     for (const { rule } of rules) {
       const slug = rule.id.replace(/^auth\./, '').replace(/\./g, '-');
       expect(index, `index missing link to ${slug}.md`).toContain(`(./${slug}.md)`);

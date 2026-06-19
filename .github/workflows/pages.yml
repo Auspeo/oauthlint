@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/rules/**'
-      - 'scripts/build-docs-site.ts'
+      - 'docs/**'
+      - 'rules/rules/**'
+      - 'scripts/generate-rule-docs.ts'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -35,14 +36,12 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build docs site
-        run: pnpm docs:site
-      - name: Add CNAME (custom domain)
-        run: echo 'oauthlint.dev' > site/CNAME
+      - name: Build docs site (VitePress)
+        run: pnpm docs:build
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: docs/.vitepress/dist
 
   deploy:
     name: Deploy to GitHub Pages
