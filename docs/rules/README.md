@@ -1,6 +1,8 @@
 # OAuthLint rule catalogue
 
-30 rules grouped by category. Each page is generated from `packages/oauthlint-rules/rules/` and the matching fixtures — keep the YAML/fixtures authoritative.
+30 rules grouped by category.
+
+<!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
 ## COOKIE
 

@@ -76,6 +76,4 @@ Disable directives are line-scoped by design — wholesale silencing of a rule a
 
 - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.6
 
----
-
-*This page is generated from `packages/oauthlint-rules/rules/` and the fixture pair. Edit those files, not this one — re-run `pnpm docs:rules` to refresh.*
+<!-- Generated from rules/rules/ + the fixture pair. Edit those, not this file — re-run `pnpm docs:rules` to refresh. -->
