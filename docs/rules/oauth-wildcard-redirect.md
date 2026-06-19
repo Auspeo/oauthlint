@@ -41,6 +41,12 @@ export const oauthConfigBad3 = {
   client_id: 'abc',
   redirect_uri: 'https://app.example.com/*',
 };
+
+// ruleid: auth.oauth.wildcard-redirect -- scalar http:// redirect_uri
+export const oauthConfigBad4 = {
+  client_id: 'abc',
+  redirect_uri: 'http://app.example.com/callback',
+};
 ```
 
 ## ✅ Safe
@@ -56,6 +62,12 @@ export const oauthConfigGood = {
 export const oauthConfigGoodDev = {
   client_id: 'dev',
   redirect_uris: ['http://localhost:3000/callback'],
+};
+
+// ok: auth.oauth.wildcard-redirect -- loopback IP dev URL (RFC 8252)
+export const oauthConfigGoodLoopback = {
+  client_id: 'dev',
+  redirect_uri: 'http://127.0.0.1:8080/callback',
 };
 ```
 

@@ -26,6 +26,14 @@ rules:
               patterns:
                 - pattern-not: '{..., audience: ..., ...}'
                 - pattern: '{...}'
+      # Callback form: jwt.verify(token, secret, options, cb) without audience.
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $SECRET, $OPTS, $CB)'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., audience: ..., ...}'
+                - pattern: '{...}'
       - patterns:
           - pattern: 'jwt.verify($TOKEN, $SECRET)'
     metadata:

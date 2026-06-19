@@ -22,7 +22,9 @@ rules:
       - pattern-regex: |-
               response_type\s*[:=]\s*['"]token\s+id_token['"]
       - pattern-regex: |-
-              [?&]response_type=token(?:&|['"])
+              [?&]response_type=token(?:&|['"]|#|$)
+      - pattern-regex: |-
+              [?&]response_type=(?:id_token(?:%20|\+)token|token(?:%20|\+)id_token)(?:&|['"]|#|$)
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-005
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-implicit-flow

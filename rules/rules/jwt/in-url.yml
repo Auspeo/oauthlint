@@ -16,8 +16,12 @@ rules:
 
       OWASP ASVS V3.2.3 explicitly forbids credentials in URL parameters.
     pattern-either:
+      # JWT in a query parameter or fragment.
       - pattern-regex: '[?&][^=]+=eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
       - pattern-regex: "#[^=]+=eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+      # JWT embedded in a URL path segment (e.g. /verify/eyJ...). The eyJ.x.y
+      # shape is JWT-specific, so this stays low-FP.
+      - pattern-regex: '/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
     metadata:
       oauthlint-rule-id: AUTH-JWT-008
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-in-url

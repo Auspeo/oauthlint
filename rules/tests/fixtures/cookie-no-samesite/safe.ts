@@ -17,3 +17,12 @@ export function setOauthCookie(res: Response, state: string) {
     sameSite: 'lax',
   });
 }
+
+// ok: auth.cookie.no-samesite -- SameSite=None is valid WITH Secure (legit cross-site)
+export function setCrossSiteCookie(res: Response, token: string) {
+  res.cookie('session', token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
+}

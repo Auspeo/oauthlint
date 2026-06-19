@@ -13,17 +13,26 @@ rules:
       Pin redirect URIs to exact, HTTPS URLs of subdomains you control. RFC 6749
       §10.6 explicitly requires "exact match" or restricted matching.
     pattern-either:
+      # Array allow-list containing a wildcard.
       - patterns:
           - pattern-regex: |-
               redirect_uris?\s*[:=]\s*\[[^\]]*['"][^'"]*\*[^'"]*['"]
+      # Array allow-list containing an http:// URL (loopback dev URLs allowed).
       - patterns:
           - pattern-regex: |-
               redirect_uris?\s*[:=]\s*\[[^\]]*['"]http://[^'"]*['"]
           - pattern-not-regex: |-
-              http://localhost
+              http://(?:localhost|127\.0\.0\.1|\[::1\])
+      # Scalar redirect_uri with a wildcard.
       - patterns:
           - pattern-regex: |-
               redirect_uri\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
+      # Scalar redirect_uri with an http:// URL (loopback dev URLs allowed).
+      - patterns:
+          - pattern-regex: |-
+              redirect_uri\s*[:=]\s*['"]http://[^'"]*['"]
+          - pattern-not-regex: |-
+              http://(?:localhost|127\.0\.0\.1|\[::1\])
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-002
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-wildcard-redirect
