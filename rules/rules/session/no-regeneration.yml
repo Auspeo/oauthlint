@@ -1,0 +1,41 @@
+rules:
+  - id: auth.session.no-regeneration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      The user is being marked as logged in (`req.session.user = ...`,
+      `req.session.userId = ...`, etc.) WITHOUT first regenerating the
+      session id. This opens the door to session-fixation attacks: an
+      attacker who plants a known session id in the victim's browser
+      before login retains access after authentication succeeds.
+
+      Call `req.session.regenerate(cb)` (or your framework's equivalent)
+      between authenticating the credentials and writing the user
+      identity onto the session.
+
+      OWASP ASVS V3.2.1: "The session id must be regenerated on
+      authentication".
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: '$REQ.session.user = $X'
+              - pattern: '$REQ.session.userId = $X'
+              - pattern: '$REQ.session.user_id = $X'
+              - pattern: '$REQ.session.uid = $X'
+              - pattern: '$REQ.session.authenticated = true'
+              - pattern: '$REQ.session.isAuthenticated = true'
+          - pattern-not-inside: |
+              $REQ.session.regenerate(...)
+    metadata:
+      oauthlint-rule-id: AUTH-SESSION-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/session-no-regeneration
+      category: security
+      cwe: CWE-384
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#renew-the-session-id-after-any-privilege-level-change

@@ -1,0 +1,47 @@
+rules:
+  - id: auth.oauth.no-state
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth 2.0 authorization request is being built WITHOUT a `state`
+      parameter. This opens you to CSRF attacks during the OAuth dance —
+      an attacker can trick the victim into logging in as the attacker.
+
+      Always generate a cryptographically random `state`, store it in a
+      session/cookie, and validate it on the callback. PKCE alone is not a
+      substitute for `state` when handling browser sessions.
+    pattern-either:
+      # Inline authorize URL — must look like a real request, i.e. carry
+      # both `client_id=` AND `response_type=`. Partial template URLs
+      # (provider config blobs that the framework fills in at runtime)
+      # don't carry those together, so they no longer fire.
+      - patterns:
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+/authorize\?[^'"]*client_id=[^'"]*['"]
+          - pattern-regex: |-
+              response_type=
+          - pattern-not-regex: |-
+              state=
+      # Programmatic URLSearchParams build — must include client_id +
+      # response_type to count as "an authorize call".
+      - patterns:
+          - pattern-regex: |-
+              new URLSearchParams\([\s\S]{0,300}client_id[\s\S]{0,300}response_type[\s\S]{0,300}\)
+          - pattern-not-regex: |-
+              state
+      - patterns:
+          - pattern-regex: |-
+              new URLSearchParams\([\s\S]{0,300}response_type[\s\S]{0,300}client_id[\s\S]{0,300}\)
+          - pattern-not-regex: |-
+              state
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state
+      category: security
+      cwe: CWE-352
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12

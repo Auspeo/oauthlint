@@ -1,0 +1,41 @@
+rules:
+  - id: auth.jwt.no-audience
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      JWT is being verified without checking the `aud` (audience) claim.
+      A token issued for one of your services (e.g. an internal worker)
+      can then be replayed against another service that trusts the same
+      key, leading to confused-deputy attacks.
+
+      Pass `{ audience: 'your-api' }` to `jwt.verify` (or validate the
+      `aud` claim manually) on every verification path.
+
+      RFC 7519 §4.1.3 defines the `aud` claim explicitly for this use case.
+    # Scoped to the `jsonwebtoken` library by matching the common alias
+    # `jwt` (the literal identifier 99% of users pick). Generic `X.verify(...)`
+    # calls on unrelated libs (jose internals, custom signers) no longer
+    # fire — this was the dominant FP class in real-world validation.
+    pattern-either:
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $SECRET, $OPTS)'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., audience: ..., ...}'
+                - pattern: '{...}'
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $SECRET)'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-audience
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3

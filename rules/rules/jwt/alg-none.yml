@@ -1,0 +1,36 @@
+rules:
+  - id: auth.jwt.alg-none
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      JWTs are being verified with the `none` algorithm in the allowed list.
+      An attacker can forge any token by simply setting `alg: none` in the header
+      and supplying no signature, because the verification routine will accept it.
+
+      Restrict `algorithms` to the ones you actually use, e.g. ["RS256"] or ["ES256"].
+      Never include "none" or "None" in production code paths.
+
+      RFC 7518 §3.6 explicitly warns: "Implementations SHOULD NOT support the
+      'none' algorithm in deployed systems."
+    # Scoped to `jsonwebtoken` (alias `jwt`) — generic $X.verify
+    # produced FPs on jose internals and re-exported test helpers.
+    pattern-either:
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "none", ...], ... })'
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "None", ...], ... })'
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "NONE", ...], ... })'
+      - pattern: 'jwt.decode($TOKEN, { complete: true, algorithms: [..., "none", ...] })'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-alg-none
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - jsonwebtoken
+        - jose
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.6
+        - https://owasp.org/www-project-api-security/

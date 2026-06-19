@@ -1,0 +1,48 @@
+rules:
+  - id: auth.jwt.algorithm-confusion
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A JWT is being verified with HS256 (a symmetric algorithm) but the
+      key looks like an RSA / EC public key in PEM format. This is the
+      "algorithm confusion" attack: an attacker can sign forged tokens
+      with the public key and your code will happily verify them with
+      HMAC-SHA256 treating the PEM string as the shared secret.
+
+      Always pin the algorithm to the asymmetric one you actually use
+      (e.g. `algorithms: ['RS256']`) and pass the public key only when
+      verifying asymmetric tokens.
+
+      RFC 7518 §3.1 — the "alg" header must be matched to the key type.
+    pattern-either:
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $KEY, $OPTS)'
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: '-----BEGIN [A-Z ]*PUBLIC KEY-----'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: '{..., algorithms: ["HS256", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS384", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS512", ...], ...}'
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $KEY)'
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: '-----BEGIN [A-Z ]*PUBLIC KEY-----'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/

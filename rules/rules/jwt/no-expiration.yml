@@ -1,0 +1,42 @@
+rules:
+  - id: auth.jwt.no-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      JWT is signed without any `expiresIn` / `exp` claim, OR a token is
+      verified without an `maxAge` check. A stolen token therefore remains
+      valid forever.
+
+      Always set a reasonable expiration on access tokens (5-60 minutes is
+      typical) and verify it with `{ maxAge: '15m' }` or by validating the
+      `exp` claim explicitly.
+    # Scoped to the `jsonwebtoken` library by matching the common alias
+    # `jwt`. Generic `X.sign(...)` calls on unrelated libs (jose
+    # internals, custom signers, ECDSA primitives) no longer fire —
+    # this was the dominant FP class in real-world validation.
+    pattern-either:
+      - patterns:
+          - pattern: 'jwt.sign($PAYLOAD, $SECRET)'
+          - pattern-not: 'jwt.sign({..., exp: ..., ...}, $SECRET)'
+          - pattern-not: 'jwt.sign({..., expiresIn: ..., ...}, $SECRET)'
+      - patterns:
+          - pattern: 'jwt.sign($PAYLOAD, $SECRET, $OPTS)'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., expiresIn: ..., ...}'
+                - pattern-not: '{..., exp: ..., ...}'
+                - pattern: '{...}'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - jsonwebtoken
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4

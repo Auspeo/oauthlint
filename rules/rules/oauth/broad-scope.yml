@@ -1,0 +1,32 @@
+rules:
+  - id: auth.oauth.broad-scope
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      OAuth scope request includes an over-broad scope such as `admin`,
+      `full_access`, `*`, or `repo` (entire GitHub access). LLMs default
+      to the widest scope that "works", but every extra scope expands
+      the blast radius if the access token is leaked or replayed.
+
+      Request the narrowest scope that satisfies your feature. Examples:
+      use `repo:status` instead of `repo`, `gmail.send` instead of
+      `https://mail.google.com/`, and scope down to `read:user` when you
+      only need a profile.
+    pattern-either:
+      - pattern-regex: |-
+              scope\s*[:=]\s*['"][^'"]*\b(?:admin|full_access|all|root|superuser)\b[^'"]*['"]
+      - pattern-regex: |-
+              scope\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
+      - pattern-regex: |-
+              scopes?\s*[:=]\s*\[[^\]]*['"][^'"]*\b(?:admin|full_access|all|root|superuser)\b[^'"]*['"]
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-broad-scope
+      category: security
+      cwe: CWE-272
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.3

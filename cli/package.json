@@ -1,0 +1,65 @@
+{
+  "name": "oauthlint",
+  "version": "0.1.0",
+  "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce. CLI wrapper around the oauthlint-rules Semgrep rule pack.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "oauthlint": "./bin/oauthlint.js"
+  },
+  "files": ["dist", "bin", "README.md"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "start": "node bin/oauthlint.js"
+  },
+  "keywords": [
+    "oauthlint",
+    "oauthlint",
+    "semgrep",
+    "oauth",
+    "oidc",
+    "jwt",
+    "security",
+    "sast",
+    "cli",
+    "ai-code",
+    "vibe-coding"
+  ],
+  "dependencies": {
+    "oauthlint-rules": "workspace:*",
+    "commander": "12.1.0",
+    "cosmiconfig": "9.0.0",
+    "execa": "9.6.0",
+    "picocolors": "1.1.1",
+    "yaml": "2.6.1",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "typescript": "5.7.3",
+    "vitest": "2.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Auspeo/oauthlint.git",
+    "directory": "products/oauthlint/cli"
+  },
+  "license": "MIT",
+  "author": "Maurice Anney <webofboss@gmail.com>",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

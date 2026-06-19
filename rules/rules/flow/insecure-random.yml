@@ -1,0 +1,45 @@
+rules:
+  - id: auth.flow.insecure-random
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `Math.random()` is being assigned to (or used to compute) a value
+      whose name indicates it is security-sensitive — a token, a CSRF
+      value, an OAuth `state`, a session id, a nonce, or a verification
+      code. `Math.random()` is NOT cryptographically secure and is
+      predictable enough for an attacker with enough samples to recover
+      the seed.
+
+      Use `crypto.randomBytes(N)` (Node) or `crypto.getRandomValues()`
+      (browser) and base64url-encode the result.
+
+      OWASP ASVS V2.5: all security-sensitive random values must come
+      from a CSPRNG.
+    pattern-either:
+      - patterns:
+          - pattern: 'const $NAME = Math.random()'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+      - patterns:
+          - pattern: 'let $NAME = Math.random()'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+      - patterns:
+          - pattern: 'const $NAME = Math.random().toString($X)'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-insecure-random
+      category: security
+      cwe: CWE-338
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/338.html

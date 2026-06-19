@@ -1,0 +1,42 @@
+rules:
+  - id: auth.flow.no-rate-limit
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      A `/login`, `/signin`, `/auth`, or `/reset-password` POST handler is
+      registered without any rate-limit middleware in scope. Without a
+      rate limit, credential-stuffing and brute-force attacks are
+      essentially free for the attacker.
+
+      Add `express-rate-limit`, `@fastify/rate-limit`, or a gateway-level
+      WAF rule. Per-IP + per-account is the typical pairing.
+    # Fires only when the registration is the 2-argument form (path,
+    # handler). The intent: "route declared without any middleware in
+    # the chain at all". When devs add rate-limit middleware, they
+    # almost always go through the 3+ argument form, e.g.
+    # `app.post('/login', loginLimiter, loginHandler)`.
+    pattern-either:
+      - pattern: 'app.post("/login", $HANDLER)'
+      - pattern: 'app.post("/signin", $HANDLER)'
+      - pattern: 'app.post("/auth", $HANDLER)'
+      - pattern: 'app.post("/reset-password", $HANDLER)'
+      - pattern: 'app.post("/forgot-password", $HANDLER)'
+      - pattern: 'router.post("/login", $HANDLER)'
+      - pattern: 'router.post("/signin", $HANDLER)'
+      - pattern: "app.post('/login', $HANDLER)"
+      - pattern: "app.post('/signin', $HANDLER)"
+      - pattern: "router.post('/login', $HANDLER)"
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-no-rate-limit
+      category: security
+      cwe: CWE-307
+      owasp: API4:2023
+      llm-prevalence: HIGH
+      technology:
+        - express
+        - fastify
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html

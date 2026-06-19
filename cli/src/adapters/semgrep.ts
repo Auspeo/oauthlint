@@ -1,0 +1,200 @@
+import { ExecaError, execa } from 'execa';
+import { type Finding, SEMGREP_SEVERITY_MAP, type ScanResult } from '../types.js';
+
+/**
+ * Shape of `semgrep --json` output. We only declare the fields we read.
+ */
+interface SemgrepJson {
+  version?: string;
+  results?: SemgrepResult[];
+  errors?: { message?: string; long_msg?: string }[];
+  paths?: { scanned?: string[] };
+}
+
+interface SemgrepResult {
+  check_id: string;
+  path: string;
+  start: { line: number };
+  end: { line: number };
+  extra: {
+    severity?: string;
+    message?: string;
+    metadata?: Record<string, unknown> & {
+      'oauthlint-rule-id'?: string;
+      'oauthlint-doc-url'?: string;
+      cwe?: string;
+      'llm-prevalence'?: 'HIGH' | 'MEDIUM' | 'LOW';
+    };
+  };
+}
+
+export class SemgrepNotInstalledError extends Error {
+  constructor() {
+    super(
+      'Semgrep is not installed.\n' +
+        'Install it with: pipx install semgrep   (or)   brew install semgrep\n' +
+        'See https://semgrep.dev/docs/getting-started/ for more options.',
+    );
+    this.name = 'SemgrepNotInstalledError';
+  }
+}
+
+export interface SemgrepAdapterOptions {
+  /** Override path to the semgrep binary (defaults to `semgrep` on PATH). */
+  binary?: string;
+  /** Override the rule config — usually a directory of YAML rules. */
+  configPath: string;
+  /** Working directory to run semgrep from (the target to scan). */
+  cwd?: string;
+}
+
+export class SemgrepAdapter {
+  private readonly binary: string;
+  private readonly configPath: string;
+  private readonly cwd?: string;
+
+  constructor(opts: SemgrepAdapterOptions) {
+    this.binary = opts.binary ?? 'semgrep';
+    this.configPath = opts.configPath;
+    this.cwd = opts.cwd;
+  }
+
+  /**
+   * Run semgrep against `targetPath`, returning a normalised scan result.
+   * When `applyFixes` is true, Semgrep rewrites the source files in place
+   * using each rule's `fix:` template. The returned report reflects what
+   * was matched BEFORE the rewrite — callers should re-scan if they want
+   * a clean post-fix report.
+   *
+   * @throws SemgrepNotInstalledError if the binary cannot be found.
+   */
+  async scan(targetPath: string, options: { applyFixes?: boolean } = {}): Promise<ScanResult> {
+    const start = Date.now();
+    const args = [
+      'scan',
+      '--config',
+      this.configPath,
+      '--json',
+      '--quiet',
+      '--no-git-ignore',
+      '--metrics=off',
+    ];
+    if (options.applyFixes) args.push('--autofix');
+    args.push(targetPath);
+
+    let result: Awaited<ReturnType<typeof execa>>;
+    try {
+      result = await execa(this.binary, args, {
+        cwd: this.cwd,
+        reject: false,
+        // Semgrep exits non-zero when findings are present; we don't want that to throw.
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+    } catch (err) {
+      if (isSpawnFailure(err)) {
+        throw new SemgrepNotInstalledError();
+      }
+      throw err;
+    }
+
+    // Even with reject:false, execa surfaces spawn failures via the result object.
+    if (isSpawnFailure(result)) {
+      throw new SemgrepNotInstalledError();
+    }
+
+    let parsed: SemgrepJson;
+    try {
+      const stdout = typeof result.stdout === 'string' ? result.stdout : '';
+      parsed = JSON.parse(stdout || '{}') as SemgrepJson;
+    } catch {
+      return {
+        findings: [],
+        scannedFiles: 0,
+        durationMs: Date.now() - start,
+        semgrepVersion: null,
+        errors: ['semgrep output was not valid JSON'],
+      };
+    }
+
+    const findings = (parsed.results ?? []).map(toFinding);
+    return {
+      findings,
+      scannedFiles: parsed.paths?.scanned?.length ?? 0,
+      durationMs: Date.now() - start,
+      semgrepVersion: parsed.version ?? null,
+      errors: (parsed.errors ?? []).map((e) => e.long_msg ?? e.message ?? 'unknown semgrep error'),
+    };
+  }
+
+  /**
+   * Check whether Semgrep is callable at all. Used by `oauthlint doctor`.
+   */
+  async getVersion(): Promise<string | null> {
+    try {
+      const { stdout } = await execa(this.binary, ['--version'], { reject: false });
+      return stdout.trim() || null;
+    } catch (err) {
+      if (isSpawnFailure(err)) return null;
+      throw err;
+    }
+  }
+}
+
+function toFinding(r: SemgrepResult): Finding {
+  const rawSeverity = (r.extra.severity ?? 'INFO').toUpperCase();
+  const severity = SEMGREP_SEVERITY_MAP[rawSeverity] ?? 'MEDIUM';
+
+  return {
+    ruleId: normaliseRuleId(r.check_id),
+    oauthlintRuleId: r.extra.metadata?.['oauthlint-rule-id'],
+    severity,
+    filePath: r.path,
+    startLine: r.start.line,
+    endLine: r.end.line,
+    message: (r.extra.message ?? '').trim(),
+    docUrl: r.extra.metadata?.['oauthlint-doc-url'],
+    cwe: r.extra.metadata?.cwe,
+    llmPrevalence: r.extra.metadata?.['llm-prevalence'],
+  };
+}
+
+/**
+ * Strip the file-path prefix Semgrep adds when loading rules from a
+ * directory. Semgrep encodes the relative path into `check_id`, so a
+ * rule defined as `auth.jwt.alg-none` in
+ * `packages/oauthlint-rules/rules/jwt/alg-none.yml` is reported as
+ * `packages.oauthlint-rules.rules.jwt.auth.jwt.alg-none`.
+ *
+ * OAuthLint rule ids always have the shape `auth.<category>.<name>`, so we
+ * pull out the trailing match. The regex is deliberately strict: it has to
+ * land at the END of the string so we don't accidentally truncate
+ * `auth.oauth.hardcoded-secret` into `auth.hardcoded-secret` when the
+ * path itself contains the substring `auth.` more than once (e.g.
+ * `rules.oauth.auth.oauth.hardcoded-secret`, where `oauth` ends with
+ * "auth" before the dot).
+ *
+ * Custom (non-OAuthLint) rule ids that don't fit the shape are returned
+ * unchanged.
+ */
+const OAUTHLINT_ID_RE = /auth\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
+
+export function normaliseRuleId(rawId: string): string {
+  const match = rawId.match(OAUTHLINT_ID_RE);
+  return match ? match[0] : rawId;
+}
+
+function isSpawnFailure(err: unknown): boolean {
+  // Direct throw path (when execa is configured to reject).
+  if (err instanceof ExecaError) {
+    return (err as { code?: string }).code === 'ENOENT';
+  }
+  // reject:false path — execa returns a result object that exposes `failed`
+  // plus `code` / `cause` indicating ENOENT when the binary is missing.
+  if (typeof err === 'object' && err !== null) {
+    const r = err as { code?: string; failed?: boolean; cause?: { code?: string } };
+    if (r.code === 'ENOENT') return true;
+    if (r.cause?.code === 'ENOENT') return true;
+  }
+  return false;
+}

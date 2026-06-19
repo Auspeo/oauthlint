@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Caches
+.cache/
+.turbo/
+.next/
+.parcel-cache/
+
+# Output binaries
+*.tgz
+*.tar.gz
+
+# Misc
+.changeset/.cache
+
+# Claude Code local settings (per-user)
+.claude/settings.local.json
+
+# Validation harness (clones + generated reports)
+.validation/
+validation-report.json
+validation-report.md
