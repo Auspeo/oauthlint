@@ -36,6 +36,11 @@ export function loginBad2(res: Response, jwt: string) {
   // ruleid: auth.cookie.no-secure
   res.cookie('auth_token', jwt);
 }
+
+export function loginBad3(res: Response, token: string) {
+  // ruleid: auth.cookie.no-secure -- secure explicitly disabled
+  res.cookie('session', token, { httpOnly: true, secure: false });
+}
 ```
 
 ## ✅ Safe
@@ -48,6 +53,15 @@ export function loginGood(res: Response, token: string) {
   res.cookie('session', token, {
     httpOnly: true,
     secure: true,
+    sameSite: 'strict',
+  });
+}
+
+// ok: auth.cookie.no-secure -- conditional secure (the recommended dev gate) must not be flagged
+export function loginConditional(res: Response, token: string) {
+  res.cookie('session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
   });
 }

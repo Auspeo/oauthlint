@@ -17,17 +17,29 @@ rules:
 
       OWASP ASVS V3.2.1: "The session id must be regenerated on
       authentication".
-    pattern-either:
-      - patterns:
-          - pattern-either:
-              - pattern: '$REQ.session.user = $X'
-              - pattern: '$REQ.session.userId = $X'
-              - pattern: '$REQ.session.user_id = $X'
-              - pattern: '$REQ.session.uid = $X'
-              - pattern: '$REQ.session.authenticated = true'
-              - pattern: '$REQ.session.isAuthenticated = true'
-          - pattern-not-inside: |
-              $REQ.session.regenerate(...)
+    patterns:
+      - pattern-either:
+          - pattern: '$REQ.session.user = $X'
+          - pattern: '$REQ.session.userId = $X'
+          - pattern: '$REQ.session.user_id = $X'
+          - pattern: '$REQ.session.uid = $X'
+          - pattern: '$REQ.session.authenticated = true'
+          - pattern: '$REQ.session.isAuthenticated = true'
+      # Callback form: assignment inside regenerate's callback.
+      - pattern-not-inside: |
+          $REQ.session.regenerate(...)
+      # Promisified async form: `await new Promise(r => req.session.regenerate(...))`
+      # immediately before the assignment. Scoped to regenerate so it does NOT
+      # suppress assignments that merely follow some unrelated await.
+      - pattern-not-inside: |
+          await new Promise(($R) => $REQ.session.regenerate(...));
+          ...
+      - pattern-not-inside: |
+          await new Promise(($R, $J) => $REQ.session.regenerate(...));
+          ...
+      - pattern-not-inside: |
+          await promisify($REQ.session.regenerate)(...);
+          ...
     metadata:
       oauthlint-rule-id: AUTH-SESSION-002
       oauthlint-doc-url: https://oauthlint.dev/rules/session-no-regeneration

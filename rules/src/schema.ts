@@ -56,6 +56,12 @@ export const RuleSchema = z
     'pattern-either-regex': z.array(z.string()).optional(),
     patterns: z.array(PatternEntrySchema).optional(),
     fix: z.string().optional(),
+    // Taint-mode rules (Semgrep dataflow).
+    mode: z.enum(['search', 'taint']).optional(),
+    'pattern-sources': z.array(PatternEntrySchema).optional(),
+    'pattern-sinks': z.array(PatternEntrySchema).optional(),
+    'pattern-sanitizers': z.array(PatternEntrySchema).optional(),
+    'pattern-propagators': z.array(PatternEntrySchema).optional(),
   })
   .refine(
     (rule) =>
@@ -63,9 +69,14 @@ export const RuleSchema = z
       rule['pattern-either'] !== undefined ||
       rule.patterns !== undefined ||
       rule['pattern-regex'] !== undefined ||
-      rule['pattern-either-regex'] !== undefined,
+      rule['pattern-either-regex'] !== undefined ||
+      // Taint mode defines sources + sinks instead of a top-level pattern.
+      (rule.mode === 'taint' &&
+        rule['pattern-sources'] !== undefined &&
+        rule['pattern-sinks'] !== undefined),
     {
-      message: 'Rule must define at least one of: pattern, pattern-either, patterns, pattern-regex',
+      message:
+        'Rule must define at least one of: pattern, pattern-either, patterns, pattern-regex, or be a taint rule with pattern-sources + pattern-sinks',
     },
   );
 
