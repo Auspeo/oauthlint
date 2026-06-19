@@ -29,40 +29,68 @@ rules:
           - pattern-either:
               - pattern: '$A === $B'
               - pattern: '$A !== $B'
+              - pattern: '$A == $B'
+              - pattern: '$A != $B'
           - metavariable-regex:
               metavariable: $A
-              regex: ^.*(?:password|secret|token|apiKey|api_key|csrf|hmac|signature|hash)$
+              regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
           - pattern-not: 'typeof $X === $Y'
           - pattern-not: 'typeof $X !== $Y'
+          - pattern-not: 'typeof $X == $Y'
+          - pattern-not: 'typeof $X != $Y'
           - pattern-not: '$X === ""'
           - pattern-not: "$X === ''"
           - pattern-not: '$X !== ""'
           - pattern-not: "$X !== ''"
+          - pattern-not: '$X == ""'
+          - pattern-not: "$X == ''"
+          - pattern-not: '$X != ""'
+          - pattern-not: "$X != ''"
           - pattern-not: '$X.length === $N'
           - pattern-not: '$X.length !== $N'
+          - pattern-not: '$X.length == $N'
+          - pattern-not: '$X.length != $N'
           - pattern-not: '$X === null'
           - pattern-not: '$X !== null'
+          - pattern-not: '$X == null'
+          - pattern-not: '$X != null'
           - pattern-not: '$X === undefined'
           - pattern-not: '$X !== undefined'
+          - pattern-not: '$X == undefined'
+          - pattern-not: '$X != undefined'
       - patterns:
           - pattern-either:
               - pattern: '$A === $B'
               - pattern: '$A !== $B'
+              - pattern: '$A == $B'
+              - pattern: '$A != $B'
           - metavariable-regex:
               metavariable: $B
-              regex: ^.*(?:password|secret|token|apiKey|api_key|csrf|hmac|signature|hash)$
+              regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
           - pattern-not: 'typeof $X === $Y'
           - pattern-not: 'typeof $X !== $Y'
+          - pattern-not: 'typeof $X == $Y'
+          - pattern-not: 'typeof $X != $Y'
           - pattern-not: '$X === ""'
           - pattern-not: "$X === ''"
           - pattern-not: '$X !== ""'
           - pattern-not: "$X !== ''"
+          - pattern-not: '$X == ""'
+          - pattern-not: "$X == ''"
+          - pattern-not: '$X != ""'
+          - pattern-not: "$X != ''"
           - pattern-not: '$X.length === $N'
           - pattern-not: '$X.length !== $N'
+          - pattern-not: '$X.length == $N'
+          - pattern-not: '$X.length != $N'
           - pattern-not: '$X === null'
           - pattern-not: '$X !== null'
+          - pattern-not: '$X == null'
+          - pattern-not: '$X != null'
           - pattern-not: '$X === undefined'
           - pattern-not: '$X !== undefined'
+          - pattern-not: '$X == undefined'
+          - pattern-not: '$X != undefined'
     metadata:
       oauthlint-rule-id: AUTH-FLOW-004
       oauthlint-doc-url: https://oauthlint.dev/rules/flow-timing-unsafe-compare

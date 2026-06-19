@@ -13,3 +13,9 @@ export const sample = {
 export const docsExample = {
   clientSecret: 'your-secret-here',
 };
+
+// ok: auth.oauth.hardcoded-secret -- obvious test stubs, not a real leak
+export const testStub = {
+  clientSecret: 'test1234secret',
+  client_secret: 'dummy-secret-for-tests',
+};
