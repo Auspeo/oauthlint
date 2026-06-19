@@ -17,22 +17,33 @@ rules:
 
       OWASP ASVS V2.5: all security-sensitive random values must come
       from a CSPRNG.
+    # `<... Math.random() ...>` deep-matches Math.random() anywhere in the
+    # initializer, covering the common token idioms:
+    #   Math.random().toString(36).slice(2) / .substring(2) / Math.floor(Math.random()*1e9)
+    # The name regex is case-insensitive (catches resetToken, csrfToken, …) and
+    # uses specific security words only — bare `code`/`sid` were removed because
+    # they matched barcode/zipcode/aside and produced false positives.
     pattern-either:
       - patterns:
-          - pattern: 'const $NAME = Math.random()'
+          - pattern: 'const $NAME = <... Math.random() ...>'
           - metavariable-regex:
               metavariable: $NAME
-              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
       - patterns:
-          - pattern: 'let $NAME = Math.random()'
+          - pattern: 'let $NAME = <... Math.random() ...>'
           - metavariable-regex:
               metavariable: $NAME
-              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
       - patterns:
-          - pattern: 'const $NAME = Math.random().toString($X)'
+          - pattern: 'var $NAME = <... Math.random() ...>'
           - metavariable-regex:
               metavariable: $NAME
-              regex: ^(?:[a-z][a-zA-Z0-9_]*)?(?:token|secret|csrf|nonce|state|sessionId|sid|otp|verificationCode|verifyCode|resetCode|code)[a-zA-Z0-9_]*$
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
+      - patterns:
+          - pattern: '$OBJ.$NAME = <... Math.random() ...>'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
     metadata:
       oauthlint-rule-id: AUTH-FLOW-003
       oauthlint-doc-url: https://oauthlint.dev/rules/flow-insecure-random

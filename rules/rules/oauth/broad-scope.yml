@@ -14,13 +14,20 @@ rules:
       use `repo:status` instead of `repo`, `gmail.send` instead of
       `https://mail.google.com/`, and scope down to `read:user` when you
       only need a profile.
+    # An over-broad scope must be a STANDALONE token (bounded by the quote, a
+    # space, or a comma — OAuth scopes are space-delimited). Structured
+    # sub-scopes such as `admin:read`, `repo:status`, `public_repo`,
+    # `channels:admin`, `calendar.all` are narrower and intentionally NOT
+    # flagged (they previously matched via `\b` and produced false positives).
     pattern-either:
       - pattern-regex: |-
-              scope\s*[:=]\s*['"][^'"]*\b(?:admin|full_access|all|root|superuser)\b[^'"]*['"]
+              scope\s*[:=]\s*(['"])(?:[^'"]*[ ,])?(?:admin|full_access|all|root|superuser|repo)(?:[ ,][^'"]*)?\1
       - pattern-regex: |-
               scope\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
       - pattern-regex: |-
-              scopes?\s*[:=]\s*\[[^\]]*['"][^'"]*\b(?:admin|full_access|all|root|superuser)\b[^'"]*['"]
+              scope\s*[:=]\s*['"][^'"]*https://mail\.google\.com/[^'"]*['"]
+      - pattern-regex: |-
+              scopes?\s*[:=]\s*\[[^\]]*(['"])(?:[^'"]*[ ,])?(?:admin|full_access|all|root|superuser|repo)(?:[ ,][^'"]*)?\1[^\]]*\]
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-006
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-broad-scope

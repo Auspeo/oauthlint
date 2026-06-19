@@ -24,6 +24,21 @@ rules:
                 - pattern-not: '{..., httpOnly: true, ...}'
                 - pattern-not: '{..., httpOnly: $X, ...}'
                 - pattern: '{...}'
+      # HttpOnly explicitly disabled — the exact bug, must fire.
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., httpOnly: false, ...}'
+      # 2-arg form has no options at all → no HttpOnly (parity with no-secure).
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
     fix: '$RES.cookie($NAME, $VAL, { ...$OPTS, httpOnly: true })'
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-002
