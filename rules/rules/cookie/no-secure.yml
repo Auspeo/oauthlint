@@ -24,6 +24,16 @@ rules:
                 - pattern-not: '{..., secure: true, ...}'
                 - pattern-not: '{..., secure: $X, ...}'
                 - pattern: '{...}'
+      # Secure explicitly disabled — the exact bug, must fire (the `secure: $X`
+      # suppression above would otherwise treat `secure: false` as compliant).
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., secure: false, ...}'
       - patterns:
           - pattern: $RES.cookie($NAME, $VAL)
           - metavariable-regex:

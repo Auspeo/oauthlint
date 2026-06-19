@@ -16,13 +16,18 @@ rules:
 
       OWASP ASVS V3.4: tokens must not be stored where untrusted scripts
       can read them.
+    # The key must contain a strong token word (`token` catches accessToken,
+    # refresh_token, authToken, idToken, sessionToken, …). We deliberately do
+    # NOT match the bare words `auth`/`access`/`refresh`/`session` because they
+    # appear as substrings of innocuous keys (author_filter, auto_refresh,
+    # access_count, sidebar_session) and produced false positives.
     pattern-either:
       - patterns:
           - pattern-regex: |-
-              localStorage\.setItem\(\s*['"][^'"\s]*(?:token|jwt|auth|access|refresh|session|id_token|bearer)[^'"]*['"]
+              (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\.setItem\(\s*['"][^'"]*(?i:token|jwt|bearer|credential|api[_-]?key)[^'"]*['"]
       - patterns:
           - pattern-regex: |-
-              localStorage\[\s*['"][^'"\s]*(?:token|jwt|auth|access|refresh|session|id_token|bearer)[^'"]*['"]\s*\]\s*=
+              (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\[\s*['"][^'"]*(?i:token|jwt|bearer|credential|api[_-]?key)[^'"]*['"]\s*\]\s*=
     metadata:
       oauthlint-rule-id: AUTH-JWT-005
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-localstorage
