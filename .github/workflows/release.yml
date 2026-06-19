@@ -21,6 +21,10 @@ jobs:
   release:
     name: Version / publish (Changesets)
     runs-on: ubuntu-latest
+    # Disabled until publishing is set up. Enable by adding the repo VARIABLE
+    # NPM_PUBLISH=enabled and the SECRET NPM_TOKEN. Until then the job is
+    # skipped (the run stays green) instead of failing on an auth-less publish.
+    if: ${{ vars.NPM_PUBLISH == 'enabled' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
