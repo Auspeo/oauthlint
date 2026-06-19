@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "rules", "README.md"],
+  "files": ["dist", "rules", "README.md", "LICENSE"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,7 +21,6 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "oauthlint",
     "oauthlint",
     "semgrep",
     "oauth",
@@ -48,8 +47,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Auspeo/oauthlint.git",
-    "directory": "products/oauthlint/rules"
+    "directory": "rules"
   },
+  "homepage": "https://oauthlint.dev",
+  "bugs": "https://github.com/Auspeo/oauthlint/issues",
   "license": "MIT",
   "author": "Maurice Anney <webofboss@gmail.com>"
 }
