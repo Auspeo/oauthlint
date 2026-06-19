@@ -24,6 +24,9 @@ rules:
               patterns:
                 - pattern-not: '{..., issuer: ..., ...}'
                 - pattern: '{...}'
+      # 2-arg verify has no options at all → no issuer check (parity with
+      # auth.jwt.no-audience).
+      - pattern: 'jwt.verify($TOKEN, $SECRET)'
     metadata:
       oauthlint-rule-id: AUTH-JWT-006
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-issuer

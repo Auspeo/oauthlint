@@ -17,3 +17,8 @@ export function verifyHmac(actualHmac: string) {
   // ruleid: auth.flow.timing-unsafe-compare
   return expectedHmac !== actualHmac;
 }
+
+export function loginLoose(input: string) {
+  // ruleid: auth.flow.timing-unsafe-compare -- loose equality is just as unsafe
+  return input == hashedPassword;
+}

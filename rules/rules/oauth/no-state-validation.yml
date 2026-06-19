@@ -13,6 +13,12 @@ rules:
       Compare the received `state` to the value you stored before
       redirecting (session, signed cookie, or Redis). Reject the callback
       if it's missing or doesn't match.
+    # Suppress when the received `state` is referenced inside ANY `if`
+    # condition — that's the validation. The deep-expression operator
+    # `<... state ...>` makes this order-agnostic and helper-aware, so
+    # `if (req.query.state !== stored)`, `if (stored === req.query.state)`, and
+    # `if (!verifyState(req.query.state))` are all treated as safe (the previous
+    # exact-shape patterns only matched one operand order → false positives).
     pattern-either:
       - patterns:
           - pattern-either:
@@ -20,11 +26,11 @@ rules:
               - pattern: '$REQ.body.state'
               - pattern: '$URL.searchParams.get("state")'
           - pattern-not-inside: |
-              if ($X === $REQ.query.state) { ... }
+              if (<... $REQ.query.state ...>) { ... }
           - pattern-not-inside: |
-              if ($X !== $REQ.query.state) { ... }
+              if (<... $REQ.body.state ...>) { ... }
           - pattern-not-inside: |
-              if ($X === $URL.searchParams.get("state")) { ... }
+              if (<... $URL.searchParams.get("state") ...>) { ... }
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-007
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state-validation

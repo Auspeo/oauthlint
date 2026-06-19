@@ -7,3 +7,8 @@ export function verifyBad(token: string) {
     audience: 'example-api',
   });
 }
+
+// ruleid: auth.jwt.no-issuer -- 2-arg verify has no options, so no issuer check
+export function verifyBad2(token: string) {
+  return jwt.verify(token, process.env.JWT_SECRET!);
+}
