@@ -55,3 +55,6 @@ Thumbs.db
 .validation/
 validation-report.json
 validation-report.md
+
+# Generated docs site (oauthlint.dev)
+site/

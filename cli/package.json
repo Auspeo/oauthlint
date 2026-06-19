@@ -8,7 +8,7 @@
   "bin": {
     "oauthlint": "./bin/oauthlint.js"
   },
-  "files": ["dist", "bin", "README.md"],
+  "files": ["dist", "bin", "README.md", "LICENSE"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,7 +23,6 @@
     "start": "node bin/oauthlint.js"
   },
   "keywords": [
-    "oauthlint",
     "oauthlint",
     "semgrep",
     "oauth",
@@ -55,8 +54,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Auspeo/oauthlint.git",
-    "directory": "products/oauthlint/cli"
+    "directory": "cli"
   },
+  "homepage": "https://oauthlint.dev",
+  "bugs": "https://github.com/Auspeo/oauthlint/issues",
   "license": "MIT",
   "author": "Maurice Anney <webofboss@gmail.com>",
   "engines": {
