@@ -1,18 +1,22 @@
-/* oauthlint brand — purple accent, light & pro */
+/* oauthlint brand — grounded in the subject: security linting in a terminal.
+   Restrained violet accent + the product's own severity colors; mono wordmark. */
 :root {
   --vp-c-brand-1: #5b3df5;
   --vp-c-brand-2: #6f54f6;
   --vp-c-brand-3: #4d2fe0;
   --vp-c-brand-soft: rgba(91, 61, 245, 0.14);
 
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #5b3df5 30%, #9d8cff);
-  --vp-home-hero-image-background-image: linear-gradient(
-    120deg,
-    rgba(91, 61, 245, 0.3),
-    rgba(157, 140, 255, 0.3)
+  /* Mono wordmark, solid (not the templated gradient-text look) */
+  --vp-home-hero-name-color: var(--vp-c-brand-1);
+  --vp-home-hero-name-background: none;
+
+  /* Subtle violet glow behind the terminal signature, not a blurry blob */
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 60% 40%,
+    rgba(91, 61, 245, 0.28),
+    transparent 70%
   );
-  --vp-home-hero-image-filter: blur(56px);
+  --vp-home-hero-image-filter: blur(44px);
 }
 
 .dark {
@@ -20,10 +24,47 @@
   --vp-c-brand-2: #9d8cff;
   --vp-c-brand-3: #8a76ff;
   --vp-c-brand-soft: rgba(157, 140, 255, 0.16);
-  --vp-home-hero-name-background: linear-gradient(120deg, #9d8cff 30%, #c4b8ff);
+  --vp-home-hero-name-color: #c4b8ff;
 }
 
-/* Slightly tighter, more product-like hero */
+/* Wordmark: monospace, the vernacular of the subject */
 .VPHero .name {
-  letter-spacing: -0.02em;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", monospace;
+  font-size: clamp(2.6rem, 7vw, 4rem);
+  letter-spacing: -0.04em;
+}
+.VPHero .name .clip {
+  /* override VitePress gradient-clip so the mono wordmark reads as solid */
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--vp-home-hero-name-color);
+}
+
+/* Eyebrow-style mono for the tagline-adjacent feel — keep body sans */
+.VPHero .text {
+  letter-spacing: -0.01em;
+}
+
+/* Feature icons: give the SVGs room and the brand hue */
+.VPFeature .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.VPFeature .icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--vp-c-brand-1);
+}
+
+/* Quality floor: honor reduced-motion globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
