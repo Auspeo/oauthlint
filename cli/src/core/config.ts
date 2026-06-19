@@ -1,6 +1,6 @@
 import { cosmiconfig } from 'cosmiconfig';
 import { z } from 'zod';
-import { type AuthwatchConfig, SEVERITIES } from '../types.js';
+import { type OAuthLintConfig, SEVERITIES } from '../types.js';
 
 const SeverityValue = z.enum(SEVERITIES);
 
@@ -13,11 +13,11 @@ const ConfigSchema = z.object({
   failOn: z.union([SeverityValue, z.literal('off')]).default('HIGH'),
 });
 
-export const DEFAULT_CONFIG: AuthwatchConfig = {
+export const DEFAULT_CONFIG: OAuthLintConfig = {
   failOn: 'HIGH',
 };
 
-export async function loadConfig(cwd: string): Promise<AuthwatchConfig> {
+export async function loadConfig(cwd: string): Promise<OAuthLintConfig> {
   const explorer = cosmiconfig('oauthlint', {
     searchPlaces: [
       '.oauthlintrc',

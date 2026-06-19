@@ -19,7 +19,7 @@ export {
   severityRank,
 } from './core/severity.js';
 export type {
-  AuthwatchConfig,
+  OAuthLintConfig,
   Finding,
   ScanResult,
   SeverityName,
