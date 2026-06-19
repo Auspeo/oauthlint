@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
  * Kept intentionally small + decoupled so we can unit-test the runner
  * without pulling the VS Code module into the test environment.
  */
-export interface AuthwatchFinding {
+export interface OAuthLintFinding {
   ruleId: string;
   oauthlintRuleId?: string;
   severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -18,13 +18,13 @@ export interface AuthwatchFinding {
   llmPrevalence?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
-export interface AuthwatchReport {
+export interface OAuthLintReport {
   schemaVersion: 'oauthlint-v1';
   scannedFiles: number;
   durationMs: number;
   semgrepVersion: string | null;
   errors: string[];
-  findings: AuthwatchFinding[];
+  findings: OAuthLintFinding[];
 }
 
 export interface RunOptions {
@@ -41,7 +41,7 @@ export interface RunOptions {
 }
 
 export interface RunResult {
-  report: AuthwatchReport | null;
+  report: OAuthLintReport | null;
   /** Non-zero CLI exit code (or null if the process was killed). */
   exitCode: number | null;
   /** Stderr captured from the CLI — surfaced in the VS Code output channel. */
@@ -50,7 +50,7 @@ export interface RunResult {
   timedOut: boolean;
 }
 
-const EMPTY_REPORT: AuthwatchReport = {
+const EMPTY_REPORT: OAuthLintReport = {
   schemaVersion: 'oauthlint-v1',
   scannedFiles: 0,
   durationMs: 0,
@@ -65,7 +65,7 @@ const EMPTY_REPORT: AuthwatchReport = {
  * Designed to be cancellation-friendly (timeout) and to never throw — the
  * VS Code extension layer wants a result object it can render either way.
  */
-export function runAuthwatch(opts: RunOptions): Promise<RunResult> {
+export function runOAuthLint(opts: RunOptions): Promise<RunResult> {
   return new Promise((resolveResult) => {
     const cli = opts.cliPath ?? 'oauthlint';
     const args = ['scan', opts.target, '--json', '--fail-on', 'off'];
@@ -116,11 +116,11 @@ export function runAuthwatch(opts: RunOptions): Promise<RunResult> {
   });
 }
 
-function parseReport(stdout: string): AuthwatchReport | null {
+function parseReport(stdout: string): OAuthLintReport | null {
   const trimmed = stdout.trim();
   if (!trimmed) return null;
   try {
-    const parsed = JSON.parse(trimmed) as Partial<AuthwatchReport>;
+    const parsed = JSON.parse(trimmed) as Partial<OAuthLintReport>;
     if (parsed.schemaVersion !== 'oauthlint-v1') return null;
     return { ...EMPTY_REPORT, ...parsed, findings: parsed.findings ?? [] };
   } catch {
@@ -133,7 +133,7 @@ function parseReport(stdout: string): AuthwatchReport | null {
  * separately so the VS Code layer can re-filter on settings changes
  * without re-running the CLI.
  */
-const SEVERITY_ORDER: Record<AuthwatchFinding['severity'], number> = {
+const SEVERITY_ORDER: Record<OAuthLintFinding['severity'], number> = {
   INFO: 0,
   LOW: 1,
   MEDIUM: 2,
@@ -142,9 +142,9 @@ const SEVERITY_ORDER: Record<AuthwatchFinding['severity'], number> = {
 };
 
 export function filterBySeverity(
-  findings: AuthwatchFinding[],
-  min: AuthwatchFinding['severity'],
-): AuthwatchFinding[] {
+  findings: OAuthLintFinding[],
+  min: OAuthLintFinding['severity'],
+): OAuthLintFinding[] {
   const threshold = SEVERITY_ORDER[min];
   return findings.filter((f) => SEVERITY_ORDER[f.severity] >= threshold);
 }

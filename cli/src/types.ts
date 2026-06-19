@@ -40,7 +40,7 @@ export interface ScanResult {
   errors: string[];
 }
 
-export interface AuthwatchConfig {
+export interface OAuthLintConfig {
   include?: string[];
   exclude?: string[];
   rules?: Record<string, 'off' | 'warn' | SeverityName>;

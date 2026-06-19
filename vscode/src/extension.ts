@@ -1,12 +1,12 @@
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
-import { type AuthwatchFinding, filterBySeverity, runAuthwatch } from './runner.js';
+import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
 import { buildDisableNextLineDirective, leadingIndent } from './suppressions.js';
 
 const DIAG_SOURCE = 'oauthlint';
 const SCAN_DEBOUNCE_MS = 600;
 
-const SEVERITY_TO_VSCODE: Record<AuthwatchFinding['severity'], vscode.DiagnosticSeverity> = {
+const SEVERITY_TO_VSCODE: Record<OAuthLintFinding['severity'], vscode.DiagnosticSeverity> = {
   INFO: vscode.DiagnosticSeverity.Information,
   LOW: vscode.DiagnosticSeverity.Information,
   MEDIUM: vscode.DiagnosticSeverity.Warning,
@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext): void {
         { language: 'typescript', scheme: 'file' },
         { language: 'typescriptreact', scheme: 'file' },
       ],
-      new AuthwatchCodeActionProvider(),
+      new OAuthLintCodeActionProvider(),
       { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
     ),
   );
@@ -95,13 +95,13 @@ async function scanUri(
   const cfg = vscode.workspace.getConfiguration('oauthlint');
   const cliPath = cfg.get<string>('cliPath', '') || undefined;
   const rulesDir = cfg.get<string>('rulesDir', '') || undefined;
-  const minSeverity = cfg.get<AuthwatchFinding['severity']>('minSeverity', 'MEDIUM');
+  const minSeverity = cfg.get<OAuthLintFinding['severity']>('minSeverity', 'MEDIUM');
 
   const target = uri.fsPath;
   const cwd = vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath ?? dirname(resolve(target));
 
   output.appendLine(`[oauthlint] scanning ${target}`);
-  const result = await runAuthwatch({
+  const result = await runOAuthLint({
     target,
     cliPath,
     rulesDir,
@@ -163,7 +163,7 @@ async function scanUri(
   );
 }
 
-class AuthwatchCodeActionProvider implements vscode.CodeActionProvider {
+class OAuthLintCodeActionProvider implements vscode.CodeActionProvider {
   provideCodeActions(
     document: vscode.TextDocument,
     _range: vscode.Range | vscode.Selection,

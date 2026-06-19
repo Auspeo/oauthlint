@@ -2,7 +2,7 @@ import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type AuthwatchFinding, filterBySeverity, runAuthwatch } from '../src/runner.js';
+import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from '../src/runner.js';
 
 /**
  * The runner is wired around `spawn(...)`. We exercise it end-to-end by
@@ -26,7 +26,7 @@ async function fakeCli(body: string): Promise<string> {
   return file;
 }
 
-const finding = (overrides: Partial<AuthwatchFinding> = {}): AuthwatchFinding => ({
+const finding = (overrides: Partial<OAuthLintFinding> = {}): OAuthLintFinding => ({
   ruleId: 'auth.jwt.alg-none',
   severity: 'HIGH',
   filePath: 'src/jwt.ts',
@@ -36,7 +36,7 @@ const finding = (overrides: Partial<AuthwatchFinding> = {}): AuthwatchFinding =>
   ...overrides,
 });
 
-describe('runAuthwatch', () => {
+describe('runOAuthLint', () => {
   it('parses a valid oauthlint JSON report', async () => {
     const report = {
       schemaVersion: 'oauthlint-v1',
@@ -47,7 +47,7 @@ describe('runAuthwatch', () => {
       findings: [finding()],
     };
     const cli = await fakeCli(`echo '${JSON.stringify(report)}'; exit 0`);
-    const result = await runAuthwatch({ target: tmp, cliPath: cli });
+    const result = await runOAuthLint({ target: tmp, cliPath: cli });
     expect(result.exitCode).toBe(0);
     expect(result.report?.scannedFiles).toBe(5);
     expect(result.report?.findings).toHaveLength(1);
@@ -55,27 +55,27 @@ describe('runAuthwatch', () => {
 
   it('returns a null report when stdout is empty', async () => {
     const cli = await fakeCli('exit 0');
-    const result = await runAuthwatch({ target: tmp, cliPath: cli });
+    const result = await runOAuthLint({ target: tmp, cliPath: cli });
     expect(result.report).toBeNull();
     expect(result.exitCode).toBe(0);
   });
 
   it('returns null report when the schemaVersion does not match', async () => {
     const cli = await fakeCli(`echo '{"schemaVersion": "v-other", "findings": []}'`);
-    const result = await runAuthwatch({ target: tmp, cliPath: cli });
+    const result = await runOAuthLint({ target: tmp, cliPath: cli });
     expect(result.report).toBeNull();
   });
 
   it('captures stderr and resolves even when the CLI fails', async () => {
     const cli = await fakeCli(`echo "boom" 1>&2; exit 7`);
-    const result = await runAuthwatch({ target: tmp, cliPath: cli });
+    const result = await runOAuthLint({ target: tmp, cliPath: cli });
     expect(result.exitCode).toBe(7);
     expect(result.stderr).toContain('boom');
     expect(result.report).toBeNull();
   });
 
   it('handles a missing binary gracefully (no throw)', async () => {
-    const result = await runAuthwatch({
+    const result = await runOAuthLint({
       target: tmp,
       cliPath: '/definitely/not/a/real/binary/oauthlint-xyz',
     });
@@ -85,7 +85,7 @@ describe('runAuthwatch', () => {
 
   it('aborts after the timeout and reports `timedOut: true`', async () => {
     const cli = await fakeCli('sleep 5; echo "{}"');
-    const result = await runAuthwatch({
+    const result = await runOAuthLint({
       target: tmp,
       cliPath: cli,
       timeoutMs: 200,
