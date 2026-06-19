@@ -16,6 +16,11 @@ rules:
       verifying asymmetric tokens.
 
       RFC 7518 §3.1 — the "alg" header must be matched to the key type.
+    # Algorithm confusion = verifying with an HMAC algorithm (HS*) while the key
+    # is an asymmetric PUBLIC key — the attacker signs with HS* using the public
+    # key as the shared secret. We match either an inline PEM literal OR a key
+    # bound to a public-key-named variable (the common real-world shape), in
+    # both cases combined with an HS* algorithm.
     pattern-either:
       - patterns:
           - pattern: 'jwt.verify($TOKEN, $KEY, $OPTS)'
@@ -34,6 +39,20 @@ rules:
           - metavariable-regex:
               metavariable: $KEY
               regex: '-----BEGIN [A-Z ]*PUBLIC KEY-----'
+      # Key is a public-key-named variable (RSA_PUBLIC, publicKey, pubKey, …)
+      # verified with an HS* algorithm.
+      - patterns:
+          - pattern: 'jwt.verify($TOKEN, $KEY, $OPTS)'
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: '(?i).*pub(lic)?'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: '{..., algorithms: ["HS256", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS384", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS512", ...], ...}'
     metadata:
       oauthlint-rule-id: AUTH-JWT-007
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-algorithm-confusion

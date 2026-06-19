@@ -10,8 +10,8 @@ interface Req {
 
 // ok: auth.flow.password-plaintext
 export async function signupGood(req: Req) {
-  const password = await argon2.hash(req.body.password);
-  await db.users.create({ email: req.body.email, password });
+  const hashedPassword = await argon2.hash(req.body.password);
+  await db.users.create({ email: req.body.email, password: hashedPassword });
 }
 
 // ok: auth.flow.password-plaintext
