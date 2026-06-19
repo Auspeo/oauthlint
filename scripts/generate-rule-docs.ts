@@ -176,7 +176,7 @@ async function writeIndex(rules: LoadedRule[]): Promise<void> {
     }
     lines.push('');
   }
-  await writeFile(join(DOCS_DIR, 'README.md'), lines.join('\n'), 'utf8');
+  await writeFile(join(DOCS_DIR, 'index.md'), lines.join('\n'), 'utf8');
 }
 
 async function main(): Promise<void> {

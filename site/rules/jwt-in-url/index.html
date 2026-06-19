@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jwt-in-url · oauthlint rules</title>
+<meta name="description" content="oauthlint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce.">
+<style>
+:root { color-scheme: light dark; --fg:#1a1a2e; --muted:#5a5a72; --bg:#fff; --code:#f4f4f8; --border:#e6e6ef; --accent:#5b3df5; }
+@media (prefers-color-scheme: dark) { :root { --fg:#e8e8f0; --muted:#9a9ab0; --bg:#0f0f1a; --code:#1a1a2e; --border:#2a2a3e; --accent:#9d8cff; } }
+* { box-sizing: border-box; }
+body { font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+header.site { border-bottom: 1px solid var(--border); }
+header.site .wrap { padding: 1rem 1.25rem; display: flex; gap: 1.25rem; align-items: baseline; }
+header.site a { color: var(--fg); text-decoration: none; font-weight: 600; }
+header.site nav a { color: var(--muted); font-weight: 500; margin-left: 1rem; }
+a { color: var(--accent); }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0.5rem 0 1rem; }
+h2 { margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid var(--accent); color: var(--muted); }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.94rem; }
+th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; }
+th { background: var(--code); }
+code { background: var(--code); padding: 0.12em 0.4em; border-radius: 4px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: 0.85rem; }
+footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+.tagline { color: var(--muted); font-size: 1.15rem; }
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a href="../../">oauthlint</a>
+  <nav><a href="../../rules/">Rules</a><a href="https://github.com/Auspeo/oauthlint">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+<h1><code>auth.jwt.in-url</code></h1>
+<blockquote>
+<p>A JWT-looking value (header <code>eyJ…</code>) appears in a URL query string</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>OAuthLint id</strong></td>
+<td><code>AUTH-JWT-008</code></td>
+</tr>
+<tr>
+<td><strong>Severity</strong></td>
+<td>ERROR</td>
+</tr>
+<tr>
+<td><strong>LLM prevalence</strong></td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td><strong>CWE</strong></td>
+<td><a href="https://cwe.mitre.org/data/definitions/598.html">CWE-598</a></td>
+</tr>
+<tr>
+<td><strong>OWASP</strong></td>
+<td>API1:2023</td>
+</tr>
+<tr>
+<td><strong>Languages</strong></td>
+<td>javascript, typescript</td>
+</tr>
+</tbody></table>
+<h2>Why this matters</h2>
+<p>A JWT-looking value (header <code>eyJ…</code>) appears in a URL query string
+or fragment. URLs leak into server logs, browser history, the
+<code>Referer</code> header (sent to every third-party CDN, ad pixel, and
+analytics script on the destination page), and even copy-paste
+operations. A JWT in a URL is a leaked JWT.</p>
+<p>Send JWTs in the <code>Authorization: Bearer …</code> header, or in a
+<code>Secure; HttpOnly; SameSite</code> cookie. Never in the URL.</p>
+<p>OWASP ASVS V3.2.3 explicitly forbids credentials in URL parameters.</p>
+<h2>❌ Vulnerable</h2>
+<pre><code class="language-ts">// ruleid: auth.jwt.in-url
+export const downloadLink =
+  &#39;https://api.example.com/files/123?token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc&#39;;
+
+// ruleid: auth.jwt.in-url
+export const magicLink =
+  &#39;https://app.example.com/auth/magic?jwt=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiZm9vIn0.xyz&#39;;
+
+// ruleid: auth.jwt.in-url
+export const fragmentLink =
+  &#39;https://app.example.com/dashboard#access_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.zzz&#39;;
+
+// ruleid: auth.jwt.in-url -- JWT in a path segment
+export const pathLink =
+  &#39;https://app.example.com/verify/eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiZm9vIn0.qqq&#39;;
+</code></pre>
+<h2>✅ Safe</h2>
+<pre><code class="language-ts">// ok: auth.jwt.in-url
+export const goodLink = &#39;https://app.example.com/dashboard&#39;;
+
+// ok: auth.jwt.in-url -- a non-JWT base64 redirect param, not a token
+export const redirectLink = &#39;https://app.example.com/login?next=aHR0cHM6Ly9hcHAvaG9tZQ&#39;;
+
+// ok: auth.jwt.in-url -- token in Authorization header, not URL
+export function fetchWithToken(token: string) {
+  return fetch(&#39;https://api.example.com/files/123&#39;, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+</code></pre>
+<h2>Suppressing this rule (when you really must)</h2>
+<pre><code class="language-ts">// oauthlint-disable-next-line auth.jwt.in-url -- &lt;reason&gt;
+thisLineWouldOtherwiseTriggerTheRule();
+</code></pre>
+<p>Disable directives are line-scoped by design — wholesale silencing of a rule across the codebase is intentionally not supported, because the next reviewer needs to see exactly which lines opted out.</p>
+<h2>References</h2>
+<ul>
+<li><a href="https://owasp.org/www-project-application-security-verification-standard/">https://owasp.org/www-project-application-security-verification-standard/</a></li>
+</ul>
+<hr>
+<p><em>This page is generated from <code>packages/oauthlint-rules/rules/</code> and the fixture pair. Edit those files, not this one — re-run <code>pnpm docs:rules</code> to refresh.</em></p>
+
+<footer>oauthlint — an <a href="https://github.com/Auspeo">Auspeo</a> project · MIT licensed · <a href="https://github.com/Auspeo/oauthlint">source</a></footer>
+</main>
+</body>
+</html>

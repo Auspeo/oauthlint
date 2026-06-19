@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jwt-localstorage · oauthlint rules</title>
+<meta name="description" content="oauthlint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce.">
+<style>
+:root { color-scheme: light dark; --fg:#1a1a2e; --muted:#5a5a72; --bg:#fff; --code:#f4f4f8; --border:#e6e6ef; --accent:#5b3df5; }
+@media (prefers-color-scheme: dark) { :root { --fg:#e8e8f0; --muted:#9a9ab0; --bg:#0f0f1a; --code:#1a1a2e; --border:#2a2a3e; --accent:#9d8cff; } }
+* { box-sizing: border-box; }
+body { font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+header.site { border-bottom: 1px solid var(--border); }
+header.site .wrap { padding: 1rem 1.25rem; display: flex; gap: 1.25rem; align-items: baseline; }
+header.site a { color: var(--fg); text-decoration: none; font-weight: 600; }
+header.site nav a { color: var(--muted); font-weight: 500; margin-left: 1rem; }
+a { color: var(--accent); }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0.5rem 0 1rem; }
+h2 { margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid var(--accent); color: var(--muted); }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.94rem; }
+th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; }
+th { background: var(--code); }
+code { background: var(--code); padding: 0.12em 0.4em; border-radius: 4px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: 0.85rem; }
+footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+.tagline { color: var(--muted); font-size: 1.15rem; }
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a href="../../">oauthlint</a>
+  <nav><a href="../../rules/">Rules</a><a href="https://github.com/Auspeo/oauthlint">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+<h1><code>auth.jwt.localstorage</code></h1>
+<blockquote>
+<p>A JWT (or other auth token) is being written to <code>localStorage</code>. Any</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>OAuthLint id</strong></td>
+<td><code>AUTH-JWT-005</code></td>
+</tr>
+<tr>
+<td><strong>Severity</strong></td>
+<td>WARNING</td>
+</tr>
+<tr>
+<td><strong>LLM prevalence</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td><strong>CWE</strong></td>
+<td><a href="https://cwe.mitre.org/data/definitions/922.html">CWE-922</a></td>
+</tr>
+<tr>
+<td><strong>OWASP</strong></td>
+<td>API8:2023</td>
+</tr>
+<tr>
+<td><strong>Languages</strong></td>
+<td>javascript, typescript</td>
+</tr>
+</tbody></table>
+<h2>Why this matters</h2>
+<p>A JWT (or other auth token) is being written to <code>localStorage</code>. Any
+XSS that lands on the page can exfiltrate the token via
+<code>localStorage.getItem(...)</code> — and unlike <code>HttpOnly</code> cookies, there
+is no browser-side mitigation.</p>
+<p>Store auth tokens in an <code>HttpOnly; Secure; SameSite=Strict</code> cookie
+set by the server, or in memory only. <code>sessionStorage</code> is no safer
+against XSS — it&#39;s the same attacker capability.</p>
+<p>OWASP ASVS V3.4: tokens must not be stored where untrusted scripts
+can read them.</p>
+<h2>❌ Vulnerable</h2>
+<pre><code class="language-ts">declare const localStorage: Storage;
+declare const sessionStorage: Storage;
+
+export function storeBad(token: string) {
+  // ruleid: auth.jwt.localstorage
+  localStorage.setItem(&#39;access_token&#39;, token);
+}
+
+export function storeBad2(refresh: string) {
+  // ruleid: auth.jwt.localstorage
+  localStorage.setItem(&#39;refresh_token&#39;, refresh);
+}
+
+export function storeBad3(jwtVal: string) {
+  // ruleid: auth.jwt.localstorage
+  localStorage[&#39;authToken&#39;] = jwtVal;
+}
+
+export function storeBad4(token: string) {
+  // ruleid: auth.jwt.localstorage
+  window.localStorage.setItem(&#39;jwt&#39;, token);
+}
+
+export function storeBad5(token: string) {
+  // ruleid: auth.jwt.localstorage -- sessionStorage is no safer against XSS
+  sessionStorage.setItem(&#39;access_token&#39;, token);
+}
+</code></pre>
+<h2>✅ Safe</h2>
+<pre><code class="language-ts">declare const localStorage: Storage;
+
+// ok: auth.jwt.localstorage -- not auth-related
+export function storeFontPref(font: string) {
+  localStorage.setItem(&#39;font_preference&#39;, font);
+}
+
+// These keys contain auth-word substrings but are NOT token storage —
+// they must not be flagged (regression guards for the substring FP).
+export function storeUiPrefs(name: string, n: number) {
+  // ok: auth.jwt.localstorage -- &quot;author&quot; contains &quot;auth&quot;
+  localStorage.setItem(&#39;author_filter&#39;, name);
+  // ok: auth.jwt.localstorage -- &quot;auto_refresh&quot; contains &quot;refresh&quot;
+  localStorage.setItem(&#39;auto_refresh&#39;, &#39;true&#39;);
+  // ok: auth.jwt.localstorage -- &quot;access_count&quot; contains &quot;access&quot;
+  localStorage.setItem(&#39;access_count&#39;, String(n));
+  // ok: auth.jwt.localstorage -- &quot;session&quot; UI flag, not a token
+  localStorage.setItem(&#39;sidebar_session_collapsed&#39;, &#39;1&#39;);
+}
+
+// ok: auth.jwt.localstorage -- tokens stay in memory, not localStorage
+let inMemoryToken: string | null = null;
+export function setToken(t: string) {
+  inMemoryToken = t;
+}
+export function getToken() {
+  return inMemoryToken;
+}
+</code></pre>
+<h2>Suppressing this rule (when you really must)</h2>
+<pre><code class="language-ts">// oauthlint-disable-next-line auth.jwt.localstorage -- &lt;reason&gt;
+thisLineWouldOtherwiseTriggerTheRule();
+</code></pre>
+<p>Disable directives are line-scoped by design — wholesale silencing of a rule across the codebase is intentionally not supported, because the next reviewer needs to see exactly which lines opted out.</p>
+<h2>References</h2>
+<ul>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html">https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html</a></li>
+</ul>
+<hr>
+<p><em>This page is generated from <code>packages/oauthlint-rules/rules/</code> and the fixture pair. Edit those files, not this one — re-run <code>pnpm docs:rules</code> to refresh.</em></p>
+
+<footer>oauthlint — an <a href="https://github.com/Auspeo">Auspeo</a> project · MIT licensed · <a href="https://github.com/Auspeo/oauthlint">source</a></footer>
+</main>
+</body>
+</html>

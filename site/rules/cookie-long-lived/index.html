@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cookie-long-lived · oauthlint rules</title>
+<meta name="description" content="oauthlint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce.">
+<style>
+:root { color-scheme: light dark; --fg:#1a1a2e; --muted:#5a5a72; --bg:#fff; --code:#f4f4f8; --border:#e6e6ef; --accent:#5b3df5; }
+@media (prefers-color-scheme: dark) { :root { --fg:#e8e8f0; --muted:#9a9ab0; --bg:#0f0f1a; --code:#1a1a2e; --border:#2a2a3e; --accent:#9d8cff; } }
+* { box-sizing: border-box; }
+body { font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); margin: 0; }
+.wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+header.site { border-bottom: 1px solid var(--border); }
+header.site .wrap { padding: 1rem 1.25rem; display: flex; gap: 1.25rem; align-items: baseline; }
+header.site a { color: var(--fg); text-decoration: none; font-weight: 600; }
+header.site nav a { color: var(--muted); font-weight: 500; margin-left: 1rem; }
+a { color: var(--accent); }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0.5rem 0 1rem; }
+h2 { margin-top: 2.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid var(--accent); color: var(--muted); }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.94rem; }
+th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; }
+th { background: var(--code); }
+code { background: var(--code); padding: 0.12em 0.4em; border-radius: 4px; font-size: 0.88em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: 0.85rem; }
+footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+.tagline { color: var(--muted); font-size: 1.15rem; }
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a href="../../">oauthlint</a>
+  <nav><a href="../../rules/">Rules</a><a href="https://github.com/Auspeo/oauthlint">GitHub</a></nav>
+</div></header>
+<main class="wrap">
+<h1><code>auth.cookie.long-lived</code></h1>
+<blockquote>
+<p>An auth-looking cookie is being set with a <code>maxAge</code> greater than</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>OAuthLint id</strong></td>
+<td><code>AUTH-COOKIE-004</code></td>
+</tr>
+<tr>
+<td><strong>Severity</strong></td>
+<td>INFO</td>
+</tr>
+<tr>
+<td><strong>LLM prevalence</strong></td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td><strong>CWE</strong></td>
+<td><a href="https://cwe.mitre.org/data/definitions/613.html">CWE-613</a></td>
+</tr>
+<tr>
+<td><strong>OWASP</strong></td>
+<td>API2:2023</td>
+</tr>
+<tr>
+<td><strong>Languages</strong></td>
+<td>javascript, typescript</td>
+</tr>
+<tr>
+<td><strong>Technologies</strong></td>
+<td>express, fastify</td>
+</tr>
+</tbody></table>
+<h2>Why this matters</h2>
+<p>An auth-looking cookie is being set with a <code>maxAge</code> greater than
+30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+milliseconds). Long-lived session cookies expand the blast radius
+of any single token theft and bypass server-side revocation if
+the application doesn&#39;t validate freshness on every request.</p>
+<p>Prefer short-lived access cookies (15-60 min) paired with a
+separate refresh token rotation flow. If you really need a &quot;remember
+me&quot; cookie, scope it tightly (<code>SameSite=Strict</code>, dedicated path) and
+back it with a server-side allowlist you can revoke.</p>
+<h2>❌ Vulnerable</h2>
+<pre><code class="language-ts">import type { Response } from &#39;express&#39;;
+
+export function loginBad(res: Response, token: string) {
+  // ruleid: auth.cookie.long-lived
+  res.cookie(&#39;session&#39;, token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: &#39;strict&#39;,
+    maxAge: 31_536_000_000, // 1 year
+  });
+}
+
+export function loginBad2(res: Response, jwt: string) {
+  // ruleid: auth.cookie.long-lived
+  res.cookie(&#39;refresh_token&#39;, jwt, {
+    httpOnly: true,
+    secure: true,
+    sameSite: &#39;strict&#39;,
+    maxAge: 7776000000,
+  });
+}
+</code></pre>
+<h2>✅ Safe</h2>
+<pre><code class="language-ts">import type { Response } from &#39;express&#39;;
+
+const FIFTEEN_MIN_MS = 15 * 60 * 1000;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// ok: auth.cookie.long-lived
+export function loginGood(res: Response, token: string) {
+  res.cookie(&#39;session&#39;, token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: &#39;strict&#39;,
+    maxAge: FIFTEEN_MIN_MS,
+  });
+}
+
+// ok: auth.cookie.long-lived -- still under 30 days
+export function rememberMeOk(res: Response, refresh: string) {
+  res.cookie(&#39;refresh_token&#39;, refresh, {
+    httpOnly: true,
+    secure: true,
+    sameSite: &#39;strict&#39;,
+    maxAge: ONE_WEEK_MS,
+  });
+}
+</code></pre>
+<h2>Suppressing this rule (when you really must)</h2>
+<pre><code class="language-ts">// oauthlint-disable-next-line auth.cookie.long-lived -- &lt;reason&gt;
+thisLineWouldOtherwiseTriggerTheRule();
+</code></pre>
+<p>Disable directives are line-scoped by design — wholesale silencing of a rule across the codebase is intentionally not supported, because the next reviewer needs to see exactly which lines opted out.</p>
+<h2>References</h2>
+<ul>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html</a></li>
+</ul>
+<hr>
+<p><em>This page is generated from <code>packages/oauthlint-rules/rules/</code> and the fixture pair. Edit those files, not this one — re-run <code>pnpm docs:rules</code> to refresh.</em></p>
+
+<footer>oauthlint — an <a href="https://github.com/Auspeo">Auspeo</a> project · MIT licensed · <a href="https://github.com/Auspeo/oauthlint">source</a></footer>
+</main>
+</body>
+</html>
