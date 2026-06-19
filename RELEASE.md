@@ -72,8 +72,13 @@ npx oauthlint@latest scan ./some-app --fail-on HIGH
 
 ## Automated path (optional)
 
-`.github/workflows/release.yml` runs the Changesets action on pushes to `main`:
-with `NPM_TOKEN` set as a repo secret it opens a "Version Packages" PR from
-pending changesets and publishes to npm when that PR is merged. It stays dormant
-until both a changeset and `NPM_TOKEN` exist, so it is safe to leave enabled.
-The marketplace artifacts (Action, VS Code) are still published manually.
+`.github/workflows/release.yml` runs the Changesets action on pushes to `main`.
+It is **gated off by default** (the job is skipped) so it never tries an
+auth-less publish. To enable automated npm releases:
+
+1. Add repo **secret** `NPM_TOKEN` (an npm automation token).
+2. Add repo **variable** `NPM_PUBLISH` = `enabled`.
+
+Once enabled it opens/updates a "Version Packages" PR from pending changesets
+and publishes to npm when that PR is merged. The marketplace artifacts (Action,
+VS Code extension) are always published manually.
