@@ -45,6 +45,7 @@ export default defineConfig({
   lang: 'en-US',
   cleanUrls: true,
   lastUpdated: true,
+  sitemap: { hostname: 'https://oauthlint.dev' },
   head: [
     ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
     ['meta', { name: 'theme-color', content: '#2f6feb' }],
