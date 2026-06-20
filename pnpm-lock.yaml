@@ -133,10 +133,6 @@ importers:
         version: 2.1.9(@types/node@22.10.5)
 
   vscode:
-    dependencies:
-      oauthlint:
-        specifier: workspace:*
-        version: link:../cli
     devDependencies:
       '@types/node':
         specifier: 22.10.5

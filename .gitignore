@@ -62,3 +62,6 @@ docs/.vitepress/cache/
 
 # Legacy generator output (removed)
 site/
+
+# VS Code extension build artifact
+*.vsix

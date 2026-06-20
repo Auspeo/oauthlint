@@ -50,12 +50,12 @@
         "oauthlint.cliPath": {
           "type": "string",
           "default": "",
-          "description": "Override path to the oauthlint CLI binary. Empty = use the bundled one."
+          "description": "Path to the oauthlint CLI. Empty = use `oauthlint` from your PATH."
         },
         "oauthlint.rulesDir": {
           "type": "string",
           "default": "",
-          "description": "Override the rules directory passed to the CLI. Empty = bundled rule pack."
+          "description": "Override the rules directory passed to the CLI. Empty = the CLI's built-in rules."
         }
       }
     },
@@ -82,9 +82,6 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "oauthlint": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
