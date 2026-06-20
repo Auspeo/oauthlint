@@ -57,6 +57,12 @@ export default defineConfig({
       },
     ],
     ['meta', { property: 'og:url', content: 'https://oauthlint.dev' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:image', content: 'https://oauthlint.dev/og.png' }],
+    ['meta', { property: 'og:image:width', content: '2560' }],
+    ['meta', { property: 'og:image:height', content: '1280' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: 'https://oauthlint.dev/og.png' }],
   ],
   themeConfig: {
     logo: '/logo.svg',
