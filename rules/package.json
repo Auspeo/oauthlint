@@ -23,11 +23,18 @@
   "keywords": [
     "oauthlint",
     "semgrep",
+    "semgrep-rules",
     "oauth",
+    "oauth2",
     "oidc",
     "jwt",
     "security",
+    "appsec",
     "sast",
+    "static-analysis",
+    "linter",
+    "cwe",
+    "owasp",
     "auth",
     "ai-code"
   ],

@@ -10,8 +10,10 @@
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
+[![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
+[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg)](https://semgrep.dev)
 
 </div>
 
