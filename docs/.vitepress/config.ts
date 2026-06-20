@@ -67,6 +67,7 @@ export default defineConfig({
   themeConfig: {
     logo: '/logo.svg',
     nav: [
+      { text: 'Guide', link: '/getting-started' },
       { text: 'Rules', link: '/rules/' },
       { text: 'npm', link: 'https://www.npmjs.com/package/oauthlint' },
       { text: 'v0.1', link: 'https://github.com/Auspeo/oauthlint/releases' },
