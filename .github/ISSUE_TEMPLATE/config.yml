@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/Auspeo/oauthlint/security/policy
+    about: Do not file public issues for vulnerabilities. Email security@auspeo.com.
+  - name: 💬 Questions & ideas
+    url: https://github.com/Auspeo/oauthlint/discussions
+    about: Ask questions or float ideas in Discussions.
+  - name: 📖 Documentation
+    url: https://oauthlint.dev
+    about: Browse the rules and guides.
