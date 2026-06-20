@@ -1,0 +1,35 @@
+name: 🎯 False positive / missed finding
+description: A rule fired on safe code, or skipped something dangerous.
+labels: [false-positive]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Rule id
+      description: e.g. auth.jwt.alg-none
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Type
+      options:
+        - False positive (fired on safe code)
+        - Missed finding (should have fired)
+    validations:
+      required: true
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Minimal code snippet
+      description: The smallest code that shows the problem.
+      render: typescript
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Why it is safe / dangerous
+      description: A sentence on what the rule should have done here.
+    validations:
+      required: true

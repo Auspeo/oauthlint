@@ -1,0 +1,34 @@
+name: ✨ Rule request
+description: Propose a new OAuth/OIDC/JWT anti-pattern to detect.
+labels: [rule-request]
+body:
+  - type: textarea
+    id: pattern
+    attributes:
+      label: The anti-pattern
+      description: What dangerous code should oauthlint catch, and why is it dangerous?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example of the bad code
+      render: typescript
+    validations:
+      required: true
+  - type: textarea
+    id: safe
+    attributes:
+      label: The safe version
+      description: What the corrected code looks like (so we can write the safe fixture).
+      render: typescript
+  - type: input
+    id: refs
+    attributes:
+      label: References
+      description: CWE, OWASP, RFC, or a write-up backing this up.
+  - type: input
+    id: prevalence
+    attributes:
+      label: Do AI tools write this?
+      description: Have you seen Copilot / Cursor / Claude generate it? Any example helps.

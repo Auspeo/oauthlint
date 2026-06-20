@@ -1,0 +1,36 @@
+name: 🐛 Bug report
+description: Something in the CLI, Action, or extension is broken.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: For a rule firing on safe code, use the “False positive” template instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal command or snippet we can run.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: oauthlint version
+      description: Output of `oauthlint --version`.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, Semgrep version (`semgrep --version`).
+    validations:
+      required: true

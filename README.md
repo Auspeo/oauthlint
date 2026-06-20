@@ -151,6 +151,15 @@ pnpm docs:dev     # preview the docs site locally
 - **Git hooks** (husky): `pre-commit` runs Biome on staged files; `pre-push` runs typecheck + the full test suite.
 - **Releases** use [Changesets](https://github.com/changesets/changesets) — see [RELEASE.md](RELEASE.md).
 
+## Contributing
+
+The most useful contribution is telling us when a rule is wrong: open a
+[false-positive issue](https://github.com/Auspeo/oauthlint/issues/new/choose).
+Want a new anti-pattern caught, or want to write the rule yourself? See
+**[CONTRIBUTING.md](CONTRIBUTING.md)** — a rule is one YAML file plus a
+`vulnerable.ts` / `safe.ts` fixture pair. By participating you agree to the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Built by [Maurice Anney](https://github.com/Mauriceanney), an IAM engineer.
