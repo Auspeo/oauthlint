@@ -6,6 +6,9 @@ import { buildDisableNextLineDirective, leadingIndent } from './suppressions.js'
 const DIAG_SOURCE = 'oauthlint';
 const SCAN_DEBOUNCE_MS = 600;
 
+// Warn once per session if the CLI can't be spawned, instead of silently doing nothing.
+let warnedMissingCli = false;
+
 const SEVERITY_TO_VSCODE: Record<OAuthLintFinding['severity'], vscode.DiagnosticSeverity> = {
   INFO: vscode.DiagnosticSeverity.Information,
   LOW: vscode.DiagnosticSeverity.Information,
@@ -117,6 +120,20 @@ async function scanUri(
     return;
   }
   if (!result.report) {
+    // exitCode === null with no timeout means the CLI process could not be spawned.
+    if (result.exitCode === null && !warnedMissingCli) {
+      warnedMissingCli = true;
+      void vscode.window
+        .showWarningMessage(
+          'oauthlint CLI not found. Install it (npm i -g oauthlint) or set "oauthlint.cliPath".',
+          'Setup guide',
+        )
+        .then((choice) => {
+          if (choice) {
+            vscode.env.openExternal(vscode.Uri.parse('https://oauthlint.dev/getting-started'));
+          }
+        });
+    }
     output.appendLine(`[oauthlint] no report — CLI exited with code ${result.exitCode}`);
     return;
   }

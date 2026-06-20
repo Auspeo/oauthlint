@@ -1,44 +1,46 @@
-# OAuthLint — VS Code extension
+# oauthlint for VS Code
 
-Real-time OAuth / OIDC / JWT linting inside VS Code.
+Catch the OAuth / OIDC / JWT anti-patterns AI coding tools produce, right in your
+editor. oauthlint flags risky auth code as you save, with a one-click fix to
+suppress a line and a link to the explanation for every rule.
 
-The extension shells out to the `oauthlint` CLI (which itself
-runs Semgrep under the hood), parses its JSON report, and surfaces each
-finding as a VS Code diagnostic. Hover shows the message; the Quick Fix
-menu offers a one-click "Suppress this rule on this line" action that
-inserts an `// oauthlint-disable-next-line` directive.
+## What it does
 
-## Prerequisites
+- **Inline diagnostics** on save and on open, for JavaScript and TypeScript.
+- **Quick Fix** to insert an `// oauthlint-disable-next-line` directive when a
+  finding is a deliberate, reviewed choice.
+- **Open rule docs** straight from a finding (each links to oauthlint.dev).
 
-- Node.js ≥ 20
-- The `oauthlint` CLI on PATH (`pnpm install` in the monorepo root will
-  link it into `node_modules/.bin/`)
-- Semgrep installed (`brew install semgrep` or `pipx install semgrep`)
+It runs the `oauthlint` CLI under the hood (which runs [Semgrep](https://semgrep.dev))
+and renders its findings as native VS Code diagnostics.
+
+## Requirements
+
+This extension drives the oauthlint CLI, so you need it available:
+
+```bash
+npm install -g oauthlint        # or set "oauthlint.cliPath" to a local install
+pipx install semgrep            # or: brew install semgrep
+```
+
+If the CLI is not found, the extension shows a one-time notice with setup steps.
 
 ## Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `oauthlint.enabled` | `true` | Run OAuthLint on save / on open |
-| `oauthlint.minSeverity` | `MEDIUM` | Severity floor for surfaced findings |
-| `oauthlint.cliPath` | _empty_ | Override path to the oauthlint binary |
-| `oauthlint.rulesDir` | _empty_ | Override the bundled rule pack |
+| `oauthlint.enabled` | `true` | Scan on save and on open |
+| `oauthlint.minSeverity` | `MEDIUM` | Only surface findings at this severity or above |
+| `oauthlint.cliPath` | _empty_ | Path to the oauthlint CLI (empty = use `oauthlint` on PATH) |
+| `oauthlint.rulesDir` | _empty_ | Override the rules directory (empty = the CLI's built-in rules) |
 
 ## Commands
 
-- `OAuthLint: Scan current file`
-- `OAuthLint: Scan workspace`
-- `OAuthLint: Open rule documentation` (target URL passed as argument)
+- **oauthlint: Scan current file**
+- **oauthlint: Scan workspace**
+- **oauthlint: Open rule documentation**
 
-## Development
+## Learn more
 
-```bash
-pnpm install
-pnpm --filter oauthlint-vscode build
-# then in VS Code:  F5  to launch an Extension Development Host
-```
-
-## Marketplace publishing
-
-Deliberately deferred until the wider project leaves "private mode". The
-manifest is ready; we just don't `vsce publish` yet.
+Full rule catalogue and guides at **[oauthlint.dev](https://oauthlint.dev)** ·
+source on [GitHub](https://github.com/Auspeo/oauthlint).
