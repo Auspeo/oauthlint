@@ -11,50 +11,90 @@ const findings = [
 ];
 
 const typed = ref('');
-const typing = ref(false);
 const scanning = ref(false);
 const spin = ref(0);
 const revealed = ref(0);
 const done = ref(false);
 const root = ref<HTMLElement | null>(null);
 
-const timeouts: ReturnType<typeof setTimeout>[] = [];
+let running = false;
+let gen = 0;
 let spinTimer: ReturnType<typeof setInterval> | null = null;
 let io: IntersectionObserver | null = null;
-const wait = (ms: number) => new Promise<void>((r) => timeouts.push(setTimeout(r, ms)));
+const pending = new Set<ReturnType<typeof setTimeout>>();
+
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => {
+    const t = setTimeout(() => {
+      pending.delete(t);
+      resolve();
+    }, ms);
+    pending.add(t);
+  });
+
+function reset() {
+  typed.value = '';
+  scanning.value = false;
+  revealed.value = 0;
+  done.value = false;
+}
 
 function finalState() {
   typed.value = CMD;
-  typing.value = false;
   scanning.value = false;
   revealed.value = findings.length;
   done.value = true;
 }
 
-async function play() {
-  typing.value = true;
-  await wait(350);
-  for (let i = 1; i <= CMD.length; i++) {
-    typed.value = CMD.slice(0, i);
-    await wait(34);
-  }
-  typing.value = false;
-  await wait(250);
+async function runLoop(myGen: number) {
+  while (running && myGen === gen) {
+    reset();
+    await wait(600);
+    for (let i = 1; i <= CMD.length; i++) {
+      if (myGen !== gen) return;
+      typed.value = CMD.slice(0, i);
+      await wait(34);
+    }
+    await wait(300);
+    if (myGen !== gen) return;
 
-  scanning.value = true;
-  spinTimer = setInterval(() => {
-    spin.value = (spin.value + 1) % SPIN.length;
-  }, 80);
-  await wait(1100);
-  if (spinTimer) clearInterval(spinTimer);
-  scanning.value = false;
+    scanning.value = true;
+    spinTimer = setInterval(() => {
+      spin.value = (spin.value + 1) % SPIN.length;
+    }, 80);
+    await wait(1100);
+    if (spinTimer) clearInterval(spinTimer);
+    spinTimer = null;
+    scanning.value = false;
+    if (myGen !== gen) return;
 
-  for (let i = 0; i < findings.length; i++) {
-    revealed.value = i + 1;
-    await wait(320);
+    for (let i = 0; i < findings.length; i++) {
+      if (myGen !== gen) return;
+      revealed.value = i + 1;
+      await wait(320);
+    }
+    await wait(150);
+    if (myGen !== gen) return;
+    done.value = true;
+
+    await wait(4500); // hold the result before looping
   }
-  await wait(150);
-  done.value = true;
+}
+
+function start() {
+  if (running) return;
+  running = true;
+  gen += 1;
+  runLoop(gen);
+}
+
+function stop() {
+  running = false;
+  gen += 1;
+  if (spinTimer) {
+    clearInterval(spinTimer);
+    spinTimer = null;
+  }
 }
 
 onMounted(() => {
@@ -66,20 +106,19 @@ onMounted(() => {
   io = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
-        if (e.isIntersecting) {
-          io?.disconnect();
-          play();
-        }
+        if (e.isIntersecting) start();
+        else stop();
       }
     },
-    { threshold: 0.4 },
+    { threshold: 0.3 },
   );
   io.observe(root.value);
 });
 
 onBeforeUnmount(() => {
-  for (const t of timeouts) clearTimeout(t);
-  if (spinTimer) clearInterval(spinTimer);
+  stop();
+  for (const t of pending) clearTimeout(t);
+  pending.clear();
   io?.disconnect();
 });
 </script>
