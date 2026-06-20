@@ -45,17 +45,10 @@ oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterpri
 
 ## What it looks like
 
-```text
- MEDIUM  auth.cookie.no-secure (AUTH-COOKIE-001)
-   src/server.ts:37
-   → A session/auth cookie is set without the Secure flag — it will be sent over plain HTTP.
-   📖 https://oauthlint.dev/rules/cookie-no-secure
+![oauthlint scanning a project and flagging JWT auth issues](docs/public/demo.gif)
 
- HIGH    auth.oauth.no-pkce (AUTH-OAUTH-003)
-   src/auth.ts:21
-   → Public-client OAuth authorization request without PKCE.
-   📖 https://oauthlint.dev/rules/oauth-no-pkce
-```
+Every finding names the rule, the exact file and line, why it is dangerous, and
+a link to the fix.
 
 ## Quick start
 
