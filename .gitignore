@@ -59,3 +59,6 @@ validation-report.md
 # Generated docs site (oauthlint.dev) — VitePress
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+
+# Legacy generator output (removed)
+site/
