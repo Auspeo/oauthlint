@@ -1,8 +1,9 @@
 {
   "name": "oauthlint-vscode",
-  "displayName": "OAuthLint",
-  "description": "Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce — right inside VS Code.",
+  "displayName": "oauthlint",
+  "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce — right inside VS Code.",
   "version": "0.1.1",
+  "icon": "icon.png",
   "publisher": "auspeo",
   "private": true,
   "type": "commonjs",
@@ -14,13 +15,15 @@
   "categories": ["Linters", "Other"],
   "keywords": [
     "oauthlint",
-    "oauthlint",
     "oauth",
     "oidc",
     "jwt",
     "security",
+    "appsec",
     "sast",
-    "ai",
+    "linter",
+    "semgrep",
+    "ai-code",
     "vibe-coding"
   ],
   "activationEvents": [
@@ -94,6 +97,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Auspeo/oauthlint.git",
-    "directory": "products/oauthlint/vscode"
-  }
+    "directory": "vscode"
+  },
+  "homepage": "https://oauthlint.dev",
+  "bugs": "https://github.com/Auspeo/oauthlint/issues"
 }
