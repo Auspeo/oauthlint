@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-66 rules grouped by category.
+72 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -149,6 +149,37 @@
 |------|----------|-----|-----|-------|
 | [`auth.py.secret.django-hardcoded-key`](./py-secret-django-hardcoded-key.md) | ERROR | HIGH | CWE-798 | A07:2021 |
 | [`auth.py.secret.flask-hardcoded-key`](./py-secret-flask-hardcoded-key.md) | ERROR | HIGH | CWE-798 | A07:2021 |
+
+## RUST-COOKIE
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.cookie.insecure`](./rust-cookie-insecure.md) | ERROR | HIGH | CWE-614 | A05:2021 |
+
+## RUST-CORS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.cors.permissive`](./rust-cors-permissive.md) | ERROR | MEDIUM | CWE-942 | A05:2021 |
+
+## RUST-CRYPTO
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.crypto.weak-password-hash`](./rust-crypto-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
+## RUST-JWT
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.jwt.disable-signature-validation`](./rust-jwt-disable-signature-validation.md) | ERROR | MEDIUM | CWE-347 | API2:2023 |
+| [`auth.rust.jwt.hardcoded-secret`](./rust-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
+
+## RUST-TLS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.tls.accept-invalid-certs`](./rust-tls-accept-invalid-certs.md) | ERROR | HIGH | CWE-295 | A02:2021 |
 
 ## SECRET
 

@@ -1,0 +1,31 @@
+rules:
+  - id: auth.rust.jwt.disable-signature-validation
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      `Validation::insecure_disable_signature_validation()` turns off JWT
+      signature verification. Once disabled, `decode` accepts any token —
+      including ones forged or tampered with by an attacker — because the
+      cryptographic signature is never checked. For OAuth/OIDC this lets an
+      attacker mint arbitrary access tokens and identities.
+
+      Never disable signature validation. Build the validator with the
+      expected algorithm, e.g. `Validation::new(Algorithm::HS256)` (or the
+      RS/ES algorithm your issuer uses), and verify the token through
+      `decode::<Claims>(token, &key, &validation)`.
+    # Matches the insecure opt-out only. A normal `Validation` and a standard
+    # `decode(...)` are not flagged. `$V` is any validation expression.
+    pattern: $V.insecure_disable_signature_validation()
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-disable-signature-validation
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#method.insecure_disable_signature_validation
+        - https://cwe.mitre.org/data/definitions/347.html

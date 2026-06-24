@@ -27,7 +27,9 @@ describe('loadAllRules', () => {
           ? 'go'
           : rule.languages.includes('java')
             ? 'java'
-            : 'ts';
+            : rule.languages.includes('rust')
+              ? 'rs'
+              : 'ts';
       const vuln = `${fixturesRoot}${fixtureName}/vulnerable.${ext}`;
       const safe = `${fixturesRoot}${fixtureName}/safe.${ext}`;
       expect(existsSync(vuln), `Missing vulnerable fixture for ${rule.id} at ${vuln}`).toBe(true);

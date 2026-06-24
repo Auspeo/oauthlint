@@ -87,6 +87,21 @@ targets:
     notes: Canonical Spring sample app. Java rules should fire zero on its source.
 
   # ─────────────────────────────────────────────────────────────
+  # Mature Rust auth libraries — exercise the Rust rule pack.
+  # (jsonwebtoken itself is not listed: its tests/examples exercise
+  #  insecure_disable_signature_validation & hardcoded keys by design.)
+  # ─────────────────────────────────────────────────────────────
+  - repo: seanmonstar/reqwest
+    ref: master
+    expectedSignal: low
+    notes: Rust HTTP client. Rust rules should fire zero on its source.
+
+  - repo: ramosbugs/oauth2-rs
+    ref: main
+    expectedSignal: low
+    notes: Rust OAuth2 client library. Should fire zero on its source.
+
+  # ─────────────────────────────────────────────────────────────
   # Auth-heavy apps — expect a richer signal.
   # ─────────────────────────────────────────────────────────────
   - repo: directus/directus
