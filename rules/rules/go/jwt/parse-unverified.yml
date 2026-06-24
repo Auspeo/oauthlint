@@ -1,0 +1,33 @@
+rules:
+  - id: auth.go.jwt.parse-unverified
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A JWT is decoded with `ParseUnverified`, which parses the token WITHOUT
+      checking its signature. Any claims read from the result are fully
+      attacker-controlled — an attacker can forge arbitrary subjects, scopes,
+      or expiry and the token will still parse. Trusting these claims for
+      authentication or authorization is a complete auth bypass (CWE-347).
+
+      Verify the signature instead: use `jwt.Parse(tok, keyfunc)` or
+      `jwt.ParseWithClaims(tok, claims, keyfunc)` with a `Keyfunc` that returns
+      the expected signing key, so a token with a bad or missing signature is
+      rejected.
+    # Matches the `ParseUnverified` method on any *jwt.Parser receiver:
+    # `parser.ParseUnverified(...)`, `jwt.NewParser().ParseUnverified(...)`,
+    # `new(jwt.Parser).ParseUnverified(...)`. `jwt.Parse(...)` and
+    # `jwt.ParseWithClaims(...)` verify the signature and are NOT matched.
+    pattern: $P.ParseUnverified($TOK, $CLAIMS)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-parse-unverified
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - golang-jwt
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Parser.ParseUnverified
+        - https://cwe.mitre.org/data/definitions/347.html

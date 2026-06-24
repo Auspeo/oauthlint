@@ -24,7 +24,7 @@ const FIXTURES_DIR = join(ROOT, 'rules', 'tests', 'fixtures');
 
 interface Snippet {
   // Markdown fence language id.
-  language: 'ts' | 'js' | 'python';
+  language: 'ts' | 'js' | 'python' | 'go';
   content: string;
 }
 
@@ -33,6 +33,7 @@ const EXT_FENCE: Record<string, Snippet['language']> = {
   ts: 'ts',
   js: 'js',
   py: 'python',
+  go: 'go',
 };
 
 async function readFixturePair(ruleId: string): Promise<{
@@ -42,7 +43,7 @@ async function readFixturePair(ruleId: string): Promise<{
   const dir = ruleId.replace(/^auth\./, '').replace(/\./g, '-');
   const out: { vulnerable?: Snippet; safe?: Snippet } = {};
   for (const kind of ['vulnerable', 'safe'] as const) {
-    for (const ext of ['ts', 'js', 'py'] as const) {
+    for (const ext of ['ts', 'js', 'py', 'go'] as const) {
       const file = join(FIXTURES_DIR, dir, `${kind}.${ext}`);
       try {
         const content = await readFile(file, 'utf8');

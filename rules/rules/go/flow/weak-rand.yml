@@ -1,0 +1,61 @@
+rules:
+  - id: auth.go.flow.weak-rand
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A security-sensitive value — its name indicates a token, secret, key,
+      password, nonce, OTP, or salt — is being generated with the `math/rand`
+      package. `math/rand` is a deterministic PRNG: its output is predictable
+      and an attacker who observes enough values can recover the seed and
+      forecast every future token. For OAuth/OIDC this means forgeable
+      `state` values, guessable authorization codes, and predictable refresh
+      tokens.
+
+      Use `crypto/rand` instead: allocate a byte slice and fill it with
+      `rand.Read(b)` (from `crypto/rand`), then hex- or base64url-encode it.
+      Never derive a credential from `math/rand`.
+    # We match `rand.$F(...)` where $F is one of the math/rand-EXCLUSIVE
+    # generators (Intn/Int/Int31/Int63/Float64/Perm). These do not exist in
+    # crypto/rand, so a match is unambiguous. We deliberately do NOT match
+    # `rand.Read(...)`, which exists in BOTH packages — the crypto/rand one is
+    # the safe path.
+    #
+    # The result must be assigned (`:=` or `=`) to a secret-shaped identifier;
+    # `i := rand.Intn(10)` for a loop or `delay := rand.Intn(500)` for jitter
+    # are not flagged. The name constraint uses `metavariable-pattern` +
+    # `pattern-regex` (rather than `metavariable-regex`) so that $VAR is
+    # recorded as a distinguishing binding — otherwise Semgrep's Go frontend
+    # leaves the short-var-decl LHS unbound and collapses two genuinely
+    # distinct secrets into a single finding.
+    pattern-either:
+      - patterns:
+          - pattern: '$VAR := rand.$F(...)'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(Intn|Int|Int31|Int63|Float64|Perm)$
+          - metavariable-pattern:
+              metavariable: $VAR
+              patterns:
+                - pattern-regex: (?i)(token|secret|key|password|nonce|otp|salt)
+      - patterns:
+          - pattern: '$VAR = rand.$F(...)'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(Intn|Int|Int31|Int63|Float64|Perm)$
+          - metavariable-pattern:
+              metavariable: $VAR
+              patterns:
+                - pattern-regex: (?i)(token|secret|key|password|nonce|otp|salt)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-weak-rand
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - math/rand
+      references:
+        - https://pkg.go.dev/crypto/rand#Read
+        - https://cwe.mitre.org/data/definitions/330.html

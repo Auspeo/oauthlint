@@ -1,0 +1,35 @@
+rules:
+  - id: auth.go.cookie.insecure
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A session/auth `http.Cookie` is created with a security attribute
+      explicitly disabled (`Secure: false` or `HttpOnly: false`). With
+      `Secure: false` the cookie is sent over plain HTTP, so a network
+      attacker can read the session token. With `HttpOnly: false` the cookie
+      is readable from JavaScript, so any XSS can steal it. For OAuth/OIDC
+      this exposes session and token cookies to theft and hijacking.
+
+      Set `Secure: true` and `HttpOnly: true` on auth cookies, and add an
+      appropriate `SameSite` mode (for example `SameSite: http.SameSiteLaxMode`).
+    # Matches only the literal `false`. `Secure: true`, `HttpOnly: true`, and
+    # the absence of the field are not flagged. Works for `http.Cookie{...}`
+    # and `&http.Cookie{...}` (the composite literal matches inside the
+    # address-of).
+    patterns:
+      - pattern-either:
+          - pattern: 'http.Cookie{..., Secure: false, ...}'
+          - pattern: 'http.Cookie{..., HttpOnly: false, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-GO-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - net/http
+      references:
+        - https://pkg.go.dev/net/http#Cookie
+        - https://cwe.mitre.org/data/definitions/614.html
