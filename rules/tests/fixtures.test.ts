@@ -49,6 +49,7 @@ const fixtureDirs = readdirSync(fixturesDir, { withFileTypes: true })
 const LANG_DIRS: Record<string, { ext: string }> = {
   py: { ext: 'py' },
   go: { ext: 'go' },
+  java: { ext: 'java' },
 };
 
 function langOf(dir: string): { lang: string; ext: string } | null {

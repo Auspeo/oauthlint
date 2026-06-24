@@ -1,0 +1,35 @@
+rules:
+  - id: auth.java.web.csrf-disabled
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security CSRF protection is disabled. With CSRF off, an attacker
+      can forge state-changing requests that a logged-in victim's browser
+      submits with their session cookie (CWE-352). This is one of the most
+      common AI-generated Spring mistakes — `csrf().disable()` is pasted in to
+      "make the API work" and never removed.
+
+      Keep CSRF protection enabled. For a stateless API authenticated with
+      bearer tokens (not cookies), scope it instead — e.g. ignore specific
+      paths or use a `CookieCsrfTokenRepository` — rather than disabling it
+      globally.
+    # Covers the legacy fluent form `http.csrf().disable()`, the Spring
+    # Security 6 lambda DSL `http.csrf(c -> c.disable())`, and the method
+    # reference `http.csrf(AbstractHttpConfigurer::disable)`.
+    pattern-either:
+      - pattern: $H.csrf().disable()
+      - pattern: $H.csrf($C -> $C.disable())
+      - pattern: $H.csrf(AbstractHttpConfigurer::disable)
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-csrf-disabled
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html
+        - https://cwe.mitre.org/data/definitions/352.html

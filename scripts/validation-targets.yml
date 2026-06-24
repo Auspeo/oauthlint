@@ -77,6 +77,16 @@ targets:
     notes: Gorilla session store. Exercises the Go cookie rule against clean code.
 
   # ─────────────────────────────────────────────────────────────
+  # Mature Java apps — exercise the Java rule pack.
+  # (spring-security itself is not listed: its integration tests use
+  #  permitAll() as scaffolding, which is expected, not representative.)
+  # ─────────────────────────────────────────────────────────────
+  - repo: spring-projects/spring-petclinic
+    ref: main
+    expectedSignal: low
+    notes: Canonical Spring sample app. Java rules should fire zero on its source.
+
+  # ─────────────────────────────────────────────────────────────
   # Auth-heavy apps — expect a richer signal.
   # ─────────────────────────────────────────────────────────────
   - repo: directus/directus
