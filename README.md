@@ -6,7 +6,7 @@
 
 **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
 
-84 Semgrep rules (JS/TS · Python · Go · Java · Rust) · CLI + GitHub Action + VS Code extension · free & MIT licensed
+90 Semgrep rules (JS/TS · Python · Go · Java · Rust) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -99,7 +99,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported �
 
 ## Rules
 
-84 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene (42 JavaScript/TypeScript + 12 Python + 12 Go + 12 Java + 6 Rust) — each mapped to CWE & OWASP, each with a documentation page.
+90 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene (42 JavaScript/TypeScript + 12 Python + 12 Go + 12 Java + 12 Rust) — each mapped to CWE & OWASP, each with a documentation page.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -113,7 +113,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Python (PyJWT, requests, Flask, Django) | ✅ shipping (12 rules) |
 | Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping (12 rules) |
 | Go (golang-jwt, crypto/tls, net/http) | ✅ shipping (12 rules) |
-| Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping (6 rules) |
+| Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping (12 rules) |
 
 **Why JS/TS first?** That's where AI coding tools generate the most code — and therefore the most OAuth/JWT bugs. It's the highest-density beachhead, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
 
@@ -121,7 +121,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Package | What it does |
 |---------|--------------|
-| [`rules/`](rules) | 84 Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
+| [`rules/`](rules) | 90 Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
 | [`cli/`](cli) | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
 | [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |

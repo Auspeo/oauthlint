@@ -1,0 +1,77 @@
+rules:
+  - id: auth.rust.flow.timing-unsafe-compare
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      A secret-shaped value (`password`, `token`, `secret`, `apikey`,
+      `hmac`, `signature`, `mac`, `digest`) is being compared with `==` /
+      `!=`. Rust's `PartialEq` for slices and strings short-circuits on the
+      first differing byte, so the comparison time leaks the length of the
+      matching prefix — a classic timing-attack vector (CWE-208).
+
+      Use a constant-time comparison instead: `subtle::ConstantTimeEq`
+      (`a.ct_eq(b).into()`) or the `constant_time_eq` crate
+      (`constant_time_eq(a, b)`). For password verification, use a verifier
+      that compares in constant time for you (`argon2::Argon2::verify_password`,
+      `bcrypt::verify`, `scrypt`).
+    # We want to catch `provided_token == expected_token` but NOT the many
+    # legitimate non-secret comparisons that just happen to involve a
+    # variable whose name ends with one of our secret-looking suffixes:
+    #   token.len() == 32              (length check)
+    #   secret == ""                   (presence check, literal)
+    #   token.is_empty()               (presence check)
+    #   token == None / Some(_)        (option check)
+    #   username == other              (non-secret names)
+    # The pattern-not clauses below carve those out. A secret-named value
+    # compared to a *literal* is never the timing target: a literal baked
+    # into source is already public, so there is nothing to leak byte by
+    # byte.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $A
+              regex: (?i)^.*(password|passwd|secret|token|apikey|api_key|hmac|signature|mac|digest)$
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X == None
+          - pattern-not: $X != None
+          - pattern-not: None == $X
+          - pattern-not: None != $X
+          - pattern-not: $X.len() == $N
+          - pattern-not: $X.len() != $N
+      - patterns:
+          - pattern-either:
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $B
+              regex: (?i)^.*(password|passwd|secret|token|apikey|api_key|hmac|signature|mac|digest)$
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X == None
+          - pattern-not: $X != None
+          - pattern-not: None == $X
+          - pattern-not: None != $X
+          - pattern-not: $X.len() == $N
+          - pattern-not: $X.len() != $N
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-flow-timing-unsafe-compare
+      category: security
+      cwe: CWE-208
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - std
+      references:
+        - https://cwe.mitre.org/data/definitions/208.html
+        - https://docs.rs/subtle/latest/subtle/
+        - https://docs.rs/constant_time_eq/latest/constant_time_eq/

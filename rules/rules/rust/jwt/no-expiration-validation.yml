@@ -1,0 +1,35 @@
+rules:
+  - id: auth.rust.jwt.no-expiration-validation
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      JWT expiration validation is turned off by setting `validate_exp: false`
+      on the `jsonwebtoken` `Validation`. With `exp` checking disabled, `decode`
+      accepts tokens that have already expired, so a leaked or stolen access
+      token stays usable forever. For OAuth/OIDC this defeats token lifetimes
+      and revocation-by-expiry, letting an attacker replay old tokens.
+
+      Leave `validate_exp` at its default `true` so expired tokens are
+      rejected. Build the validator with `Validation::new(Algorithm::HS256)`
+      (or your issuer's algorithm) and do not turn off `validate_exp`.
+    # Matches the assignment `$V.validate_exp = false` (the idiomatic way to
+    # turn the check off after `Validation::new`). `validate_exp: true` and the
+    # field's absence (default true) are not flagged. The struct-literal form
+    # `Validation { validate_exp: false, .. }` is a known false negative:
+    # Semgrep's Rust frontend cannot match a field inside a struct literal with
+    # a rest (`..`), and a text regex would false-positive on comments — so we
+    # keep this AST-only for precision.
+    pattern: $V.validate_exp = false
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-expiration-validation
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#structfield.validate_exp
+        - https://cwe.mitre.org/data/definitions/613.html

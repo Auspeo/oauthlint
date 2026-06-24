@@ -1,0 +1,34 @@
+rules:
+  - id: auth.rust.jwt.no-aud-validation
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      JWT audience (`aud`) validation is disabled by setting
+      `validate_aud: false` on the `jsonwebtoken` `Validation`. With the
+      audience check turned off, a token minted for a different service is
+      accepted by `decode`, so an attacker can replay a token issued for
+      another audience against this API.
+
+      Keep `validate_aud` at its default `true` and declare the audience you
+      expect via `validation.set_audience(&["my-api"])`, so only tokens whose
+      `aud` claim matches your service are accepted.
+    # Flags the assignment `$V.validate_aud = false`. `validate_aud: true` and an
+    # omitted field are not flagged. The struct-literal form
+    # `Validation { validate_aud: false, .. }` is a known false negative:
+    # Semgrep's Rust parser cannot match a field inside a struct literal with a
+    # rest (`..`), and a text regex would false-positive on comments — kept
+    # AST-only for precision.
+    pattern: $V.validate_aud = false
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-aud-validation
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#structfield.validate_aud
+        - https://cwe.mitre.org/data/definitions/287.html

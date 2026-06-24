@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-84 rules grouped by category.
+90 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -203,7 +203,15 @@
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
+| [`auth.rust.crypto.bcrypt-low-cost`](./rust-crypto-bcrypt-low-cost.md) | WARNING | MEDIUM | CWE-916 | A02:2021 |
+| [`auth.rust.crypto.weak-cipher`](./rust-crypto-weak-cipher.md) | ERROR | MEDIUM | CWE-327 | A02:2021 |
 | [`auth.rust.crypto.weak-password-hash`](./rust-crypto-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
+## RUST-FLOW
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.rust.flow.timing-unsafe-compare`](./rust-flow-timing-unsafe-compare.md) | WARNING | MEDIUM | CWE-208 | API2:2023 |
 
 ## RUST-JWT
 
@@ -211,12 +219,15 @@
 |------|----------|-----|-----|-------|
 | [`auth.rust.jwt.disable-signature-validation`](./rust-jwt-disable-signature-validation.md) | ERROR | MEDIUM | CWE-347 | API2:2023 |
 | [`auth.rust.jwt.hardcoded-secret`](./rust-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
+| [`auth.rust.jwt.no-aud-validation`](./rust-jwt-no-aud-validation.md) | WARNING | MEDIUM | CWE-287 | API2:2023 |
+| [`auth.rust.jwt.no-expiration-validation`](./rust-jwt-no-expiration-validation.md) | ERROR | MEDIUM | CWE-613 | API2:2023 |
 
 ## RUST-TLS
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
 | [`auth.rust.tls.accept-invalid-certs`](./rust-tls-accept-invalid-certs.md) | ERROR | HIGH | CWE-295 | A02:2021 |
+| [`auth.rust.tls.accept-invalid-hostnames`](./rust-tls-accept-invalid-hostnames.md) | ERROR | HIGH | CWE-297 | A02:2021 |
 
 ## SECRET
 
