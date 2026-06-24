@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-72 rules grouped by category.
+78 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -67,10 +67,17 @@
 |------|----------|-----|-----|-------|
 | [`auth.java.cookie.insecure`](./java-cookie-insecure.md) | ERROR | HIGH | CWE-614 | A05:2021 |
 
+## JAVA-CORS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.cors.allow-all`](./java-cors-allow-all.md) | ERROR | HIGH | CWE-942 | A05:2021 |
+
 ## JAVA-CRYPTO
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
+| [`auth.java.crypto.ecb-mode`](./java-crypto-ecb-mode.md) | ERROR | MEDIUM | CWE-327 | A02:2021 |
 | [`auth.java.crypto.insecure-random`](./java-crypto-insecure-random.md) | ERROR | HIGH | CWE-330 | A02:2021 |
 | [`auth.java.crypto.weak-password-hash`](./java-crypto-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
 
@@ -78,13 +85,27 @@
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
+| [`auth.java.jwt.hardcoded-secret`](./java-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
 | [`auth.java.jwt.unsigned-jwt`](./java-jwt-unsigned-jwt.md) | ERROR | MEDIUM | CWE-347 | API2:2023 |
+
+## JAVA-SESSION
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.session.fixation-disabled`](./java-session-fixation-disabled.md) | ERROR | MEDIUM | CWE-384 | A07:2021 |
+
+## JAVA-TLS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.tls.trust-all-certs`](./java-tls-trust-all-certs.md) | ERROR | HIGH | CWE-295 | A02:2021 |
 
 ## JAVA-WEB
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
 | [`auth.java.web.csrf-disabled`](./java-web-csrf-disabled.md) | ERROR | HIGH | CWE-352 | A01:2021 |
+| [`auth.java.web.frame-options-disabled`](./java-web-frame-options-disabled.md) | WARNING | MEDIUM | CWE-1021 | A05:2021 |
 | [`auth.java.web.permit-all`](./java-web-permit-all.md) | ERROR | HIGH | CWE-862 | A01:2021 |
 
 ## JWT

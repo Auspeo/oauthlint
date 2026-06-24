@@ -1,0 +1,34 @@
+rules:
+  - id: auth.java.session.fixation-disabled
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security session fixation protection is disabled via
+      `sessionFixation().none()`. With `none()`, the session ID is NOT
+      regenerated when a user authenticates, so an attacker who fixes the
+      victim's session ID before login (e.g. by planting a cookie) keeps a
+      valid session and hijacks the authenticated account (CWE-384).
+
+      Leave the default (`changeSessionId`) in place, or use `migrateSession()`
+      to copy the existing session attributes into a new session ID. Never use
+      `none()`.
+    # Covers the legacy fluent form
+    # `sessionManagement().sessionFixation().none()` and the Spring Security 6
+    # lambda DSL `sessionManagement(s -> s.sessionFixation(f -> f.none()))`.
+    # Targets only `none()` — never `changeSessionId()` or `migrateSession()`.
+    pattern-either:
+      - pattern: $S.sessionFixation().none()
+      - pattern: $S.sessionFixation($F -> $F.none())
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-session-fixation-disabled
+      category: security
+      cwe: CWE-384
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
+        - https://cwe.mitre.org/data/definitions/384.html
