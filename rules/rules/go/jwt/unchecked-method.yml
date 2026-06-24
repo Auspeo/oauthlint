@@ -1,0 +1,72 @@
+rules:
+  - id: auth.go.jwt.unchecked-method
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `Keyfunc` passed to `jwt.Parse`/`jwt.ParseWithClaims` returns the
+      verification key WITHOUT first checking `token.Method` (the signing
+      algorithm). This enables an algorithm-confusion attack: if the server
+      verifies RS256 tokens with an RSA public key, an attacker can forge a
+      token signed with HS256 using that public key as the HMAC secret, and the
+      library will accept it — a complete authentication bypass (CWE-347).
+
+      Always assert the signing method inside the keyfunc before returning the
+      key, e.g.:
+      `if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok { return nil, err }`
+      (or `*jwt.SigningMethodRSA` / `*jwt.SigningMethodECDSA` as appropriate),
+      so a token signed with an unexpected algorithm is rejected.
+    # Matches a keyfunc literal that returns the key directly (`return $KEY, nil`)
+    # and whose body does NOT reference `.Method` (neither a type assertion
+    # `t.Method.(*jwt.SigningMethod...)` nor a comparison `t.Method != ...`).
+    # The `pattern-not` with the `<... $T.Method ...>` deep-expression operator
+    # excludes any keyfunc that inspects the signing method, keeping correct
+    # method-checking keyfuncs from being flagged.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+                ...
+                return $KEY, nil
+              })
+          - pattern: |
+              jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+                ...
+                return $KEY, nil
+              })
+      - pattern-not: |
+          jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+            ...
+            $T.Method
+            ...
+          })
+      - pattern-not: |
+          jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+            ...
+            $T.Method
+            ...
+          })
+      - pattern-not: |
+          jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+            ...
+            if <... $T.Method ...> { ... }
+            ...
+          })
+      - pattern-not: |
+          jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+            ...
+            if <... $T.Method ...> { ... }
+            ...
+          })
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-unchecked-method
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - golang-jwt
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Keyfunc
+        - https://cwe.mitre.org/data/definitions/347.html

@@ -1,0 +1,44 @@
+rules:
+  - id: auth.go.cors.allow-all
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      CORS is configured to allow every origin with the wildcard `*`. Any
+      website can then make cross-origin requests to this endpoint, defeating
+      the same-origin policy (CWE-942). This is a common AI-generated mistake —
+      `AllowAllOrigins: true`, `AllowedOrigins: []string{"*"}`, or a raw
+      `Access-Control-Allow-Origin: *` header is pasted in to "make the browser
+      call work" and the intended scope is never added. Combined with
+      credentials this becomes an account-takeover primitive that leaks
+      OAuth/OIDC tokens cross-origin.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, for
+      example `AllowOrigins: []string{"https://app.example.com"}` (gin-contrib),
+      `AllowedOrigins: []string{"https://app.example.com"}` (rs/cors), or
+      `w.Header().Set("Access-Control-Allow-Origin", "https://app.example.com")`.
+    # Covers gin-contrib/cors (`cors.Config{..., AllowAllOrigins: true, ...}`),
+    # rs/cors (`cors.Options{..., AllowedOrigins: []string{..., "*", ...}, ...}`
+    # whose list literal contains the wildcard `"*"`), and the raw header
+    # `$W.Header().Set("Access-Control-Allow-Origin", "*")`. Only the wildcard /
+    # `AllowAllOrigins: true` is flagged — explicit origins such as
+    # `"https://app.example.com"` are not.
+    pattern-either:
+      - pattern: 'cors.Config{..., AllowAllOrigins: true, ...}'
+      - pattern: 'cors.Options{..., AllowedOrigins: []string{..., "*", ...}, ...}'
+      - pattern: '$W.Header().Set("Access-Control-Allow-Origin", "*")'
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - gin
+        - rs-cors
+        - net/http
+      references:
+        - https://github.com/gin-contrib/cors
+        - https://github.com/rs/cors
+        - https://cwe.mitre.org/data/definitions/942.html

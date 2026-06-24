@@ -1,0 +1,36 @@
+rules:
+  - id: auth.go.tls.min-version
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `tls.Config` is created with `MinVersion` pinned to an obsolete
+      protocol — SSL 3.0, TLS 1.0, or TLS 1.1. These versions have known
+      cryptographic weaknesses (POODLE, BEAST, downgrade attacks) and are
+      deprecated by RFC 8996. Allowing them lets an attacker negotiate a
+      broken cipher and intercept or tamper with OAuth/OIDC traffic,
+      leaking authorization codes, access tokens, and client secrets.
+
+      Set `MinVersion` to at least `tls.VersionTLS12`, and ideally
+      `tls.VersionTLS13`, so the handshake refuses obsolete protocols.
+    # Matches the obsolete constants only. `tls.VersionTLS12` and
+    # `tls.VersionTLS13` are not flagged. Works for both `tls.Config{...}`
+    # and `&tls.Config{...}` (the composite literal matches inside `&`).
+    patterns:
+      - pattern: 'tls.Config{..., MinVersion: $V, ...}'
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^tls\.(VersionSSL30|VersionTLS10|VersionTLS11)$
+    metadata:
+      oauthlint-rule-id: AUTH-GO-TLS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-min-version
+      category: security
+      cwe: CWE-326
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - crypto/tls
+      references:
+        - https://pkg.go.dev/crypto/tls#Config
+        - https://datatracker.ietf.org/doc/html/rfc8996
+        - https://cwe.mitre.org/data/definitions/326.html

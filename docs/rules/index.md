@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-78 rules grouped by category.
+84 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -41,6 +41,20 @@
 |------|----------|-----|-----|-------|
 | [`auth.go.cookie.insecure`](./go-cookie-insecure.md) | ERROR | HIGH | CWE-614 | A05:2021 |
 
+## GO-CORS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.cors.allow-all`](./go-cors-allow-all.md) | ERROR | HIGH | CWE-942 | A05:2021 |
+
+## GO-CRYPTO
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.crypto.bcrypt-low-cost`](./go-crypto-bcrypt-low-cost.md) | WARNING | MEDIUM | CWE-916 | A02:2021 |
+| [`auth.go.crypto.weak-cipher`](./go-crypto-weak-cipher.md) | ERROR | MEDIUM | CWE-327 | A02:2021 |
+| [`auth.go.crypto.weak-password-hash`](./go-crypto-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
 ## GO-FLOW
 
 | Rule | Severity | LLM | CWE | OWASP |
@@ -54,12 +68,14 @@
 | [`auth.go.jwt.hardcoded-secret`](./go-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
 | [`auth.go.jwt.none-algorithm`](./go-jwt-none-algorithm.md) | ERROR | HIGH | CWE-347 | API2:2023 |
 | [`auth.go.jwt.parse-unverified`](./go-jwt-parse-unverified.md) | ERROR | HIGH | CWE-347 | API2:2023 |
+| [`auth.go.jwt.unchecked-method`](./go-jwt-unchecked-method.md) | ERROR | HIGH | CWE-347 | API2:2023 |
 
 ## GO-TLS
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
 | [`auth.go.tls.insecure-skip-verify`](./go-tls-insecure-skip-verify.md) | ERROR | HIGH | CWE-295 | A02:2021 |
+| [`auth.go.tls.min-version`](./go-tls-min-version.md) | ERROR | MEDIUM | CWE-326 | A02:2021 |
 
 ## JAVA-COOKIE
 
