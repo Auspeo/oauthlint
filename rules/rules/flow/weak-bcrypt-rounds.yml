@@ -1,0 +1,41 @@
+rules:
+  - id: auth.flow.weak-bcrypt-rounds
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A bcrypt cost factor below 10 was used. A low work factor makes the
+      hash cheap to compute, which lets an attacker brute-force stolen
+      password hashes far too quickly. OWASP recommends a bcrypt cost of at
+      least 10, and ≥ 12 for new applications, tuned so a single hash takes
+      roughly 250ms on your hardware.
+
+      Common LLM-generated mistake: `bcrypt.hash(pw, 8)` or
+      `bcrypt.genSalt(5)` because the literal "looks fast enough". Raise the
+      cost factor to 12 or higher.
+    patterns:
+      - pattern-either:
+          - pattern: bcrypt.hash($PW, $N)
+          - pattern: bcrypt.hash($PW, $N, ...)
+          - pattern: bcrypt.hashSync($PW, $N)
+          - pattern: bcrypt.hashSync($PW, $N, ...)
+          - pattern: bcrypt.genSalt($N)
+          - pattern: bcrypt.genSalt($N, ...)
+          - pattern: bcrypt.genSaltSync($N)
+          - pattern: bcrypt.genSaltSync($N, ...)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 10
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-weak-bcrypt-rounds
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - bcrypt
+        - bcryptjs
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
