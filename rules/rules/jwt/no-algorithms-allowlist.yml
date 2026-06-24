@@ -1,0 +1,38 @@
+rules:
+  - id: auth.jwt.no-algorithms-allowlist
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.verify(...)` is called without an explicit `algorithms` allowlist.
+      Without pinning the accepted algorithms, a token signed with an
+      unexpected algorithm — or even `alg: none` on older versions — can be
+      accepted, opening the door to algorithm-confusion attacks.
+
+      Always pass the algorithm(s) you actually expect, e.g.
+      `{ algorithms: ['RS256'] }`.
+    # Scoped to the `jsonwebtoken` library by matching the common alias
+    # `jwt`. Only `jwt.verify(...)` is flagged — `jwt.sign(...)`,
+    # `jwt.decode(...)` and `jose.jwtVerify(...)` are intentionally ignored.
+    pattern-either:
+      - pattern: 'jwt.verify($T, $SECRET)'
+      - patterns:
+          - pattern: 'jwt.verify($T, $SECRET, $OPTS)'
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., algorithms: ..., ...}'
+                - pattern: '{...}'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-algorithms-allowlist
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - jsonwebtoken
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
