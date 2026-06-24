@@ -179,18 +179,22 @@ function toFinding(r: SemgrepResult): Finding {
  * `packages/oauthlint-rules/rules/jwt/alg-none.yml` is reported as
  * `packages.oauthlint-rules.rules.jwt.auth.jwt.alg-none`.
  *
- * OAuthLint rule ids always have the shape `auth.<category>.<name>`, so we
- * pull out the trailing match. The regex is deliberately strict: it has to
- * land at the END of the string so we don't accidentally truncate
+ * OAuthLint rule ids have the shape `auth.<category>.<name>` (JS/TS) or
+ * `auth.<lang>.<category>.<name>` for language packs (e.g.
+ * `auth.py.jwt.no-verify`), so we pull out the trailing match. The regex is
+ * deliberately anchored at the END so we don't accidentally truncate
  * `auth.oauth.hardcoded-secret` into `auth.hardcoded-secret` when the
  * path itself contains the substring `auth.` more than once (e.g.
  * `rules.oauth.auth.oauth.hardcoded-secret`, where `oauth` ends with
- * "auth" before the dot).
+ * "auth" before the dot). The optional middle segment captures the language.
  *
  * Custom (non-OAuthLint) rule ids that don't fit the shape are returned
  * unchanged.
  */
-const OAUTHLINT_ID_RE = /auth\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
+// The `(?<![a-z])` lookbehind pins `auth` to a segment boundary so the `auth`
+// inside `oauth` is not mistaken for the id start (which the optional language
+// segment would otherwise allow, e.g. `...oauth.auth.oauth.hardcoded-secret`).
+const OAUTHLINT_ID_RE = /(?<![a-z])auth\.(?:[a-z][a-z0-9]*\.)?[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
 
 export function normaliseRuleId(rawId: string): string {
   const match = rawId.match(OAUTHLINT_ID_RE);

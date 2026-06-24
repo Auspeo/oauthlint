@@ -1,6 +1,6 @@
 {
   "name": "oauthlint",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce. CLI wrapper around the oauthlint-rules Semgrep rule pack.",
   "type": "module",
   "main": "./dist/index.js",
