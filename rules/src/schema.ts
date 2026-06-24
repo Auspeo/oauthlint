@@ -14,8 +14,11 @@ export type Severity = z.infer<typeof SeveritySchema>;
  * Claude Code, Copilot, Gemini Code Assist).
  */
 export const OAuthLintMetadataSchema = z.object({
-  'oauthlint-rule-id': z.string().regex(/^AUTH-[A-Z]+-\d{3}$/, {
-    message: 'oauthlint-rule-id must match AUTH-<CATEGORY>-<NNN>',
+  // AUTH-<CATEGORY>-<NNN> for the JS/TS pack (e.g. AUTH-JWT-001); language
+  // packs add a language segment (e.g. AUTH-PY-JWT-001).
+  'oauthlint-rule-id': z.string().regex(/^AUTH-[A-Z]+(-[A-Z]+)*-\d{3}$/, {
+    message:
+      'oauthlint-rule-id must match AUTH-<CATEGORY>-<NNN> (optionally AUTH-<LANG>-<CATEGORY>-<NNN>)',
   }),
   'oauthlint-doc-url': z.string().url(),
   category: z.literal('security'),
@@ -41,8 +44,13 @@ const PatternEntrySchema: z.ZodType<unknown> = z.lazy(() =>
 
 export const RuleSchema = z
   .object({
-    id: z.string().regex(/^auth\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/, {
-      message: 'Rule id must follow auth.<category>.<name> (kebab-case)',
+    // auth.<category>.<name> for the JS/TS pack; language packs prepend a
+    // language segment — auth.<lang>.<category>.<name> (e.g. auth.py.jwt.no-verify).
+    // The optional middle segment keeps every existing JS/TS id (and its
+    // published doc URL) untouched while making the scheme language-scalable.
+    id: z.string().regex(/^auth\.([a-z][a-z0-9]*\.)?[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/, {
+      message:
+        'Rule id must follow auth.<category>.<name> or auth.<lang>.<category>.<name> (kebab-case)',
     }),
     languages: z.array(z.string()).min(1),
     severity: SeveritySchema,

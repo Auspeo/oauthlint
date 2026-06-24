@@ -20,8 +20,10 @@ describe('loadAllRules', () => {
     const fixturesRoot = new URL('./fixtures/', import.meta.url).pathname;
     for (const { rule } of rules) {
       const fixtureName = rule.id.replace(/^auth\./, '').replace(/\./g, '-');
-      const vuln = `${fixturesRoot}${fixtureName}/vulnerable.ts`;
-      const safe = `${fixturesRoot}${fixtureName}/safe.ts`;
+      // Python rule packs ship `.py` fixtures; everything else is `.ts`.
+      const ext = rule.languages.includes('python') ? 'py' : 'ts';
+      const vuln = `${fixturesRoot}${fixtureName}/vulnerable.${ext}`;
+      const safe = `${fixturesRoot}${fixtureName}/safe.${ext}`;
       expect(existsSync(vuln), `Missing vulnerable fixture for ${rule.id} at ${vuln}`).toBe(true);
       expect(existsSync(safe), `Missing safe fixture for ${rule.id} at ${safe}`).toBe(true);
     }

@@ -1,0 +1,37 @@
+rules:
+  - id: auth.py.jwt.no-verify
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT is decoded with signature verification disabled. PyJWT's
+      `jwt.decode(token, verify=False)` (legacy) or
+      `options={"verify_signature": False}` parses the token WITHOUT checking
+      the signature, so any attacker-forged token is accepted — a complete
+      authentication bypass.
+
+      Always verify: `jwt.decode(token, key, algorithms=["RS256"])`. If you
+      only need to read an unverified header (e.g. the `kid` before fetching
+      the key), use `jwt.get_unverified_header(token)` and treat the claims
+      as untrusted.
+    # Scoped to PyJWT's `jwt.decode(...)`. Matches both the legacy
+    # `verify=False` keyword and the modern `options={"verify_signature": False}`.
+    pattern-either:
+      - pattern: jwt.decode(..., verify=False, ...)
+      - patterns:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., "verify_signature": False, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - pyjwt
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html

@@ -1,0 +1,50 @@
+rules:
+  - id: auth.py.flow.requests-verify-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A `requests` call disables TLS certificate verification with
+      `verify=False`. This silences the validation of the server's
+      certificate, so an attacker who can intercept the connection can
+      present any certificate and read or tamper with the traffic — a
+      classic man-in-the-middle exposure. For OAuth/OIDC this leaks
+      authorization codes, access tokens and client secrets.
+
+      Never set `verify=False`. Leave verification on (the default) so the
+      system CA bundle is used. In development against a private CA, point
+      `verify` at the CA bundle instead, e.g.
+      `requests.get(url, verify="/path/to/ca-bundle.pem")` or set the
+      `REQUESTS_CA_BUNDLE` env var (certifi).
+    # Scoped to `requests.<method>(...)`, `requests.request(...)` and Session
+    # objects (`$SESSION.<method>(...)`). Fires only on the literal
+    # `verify=False`; `verify=True` and `verify="/path/ca.pem"` are not flagged.
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+      - pattern: requests.put(..., verify=False, ...)
+      - pattern: requests.delete(..., verify=False, ...)
+      - pattern: requests.patch(..., verify=False, ...)
+      - pattern: requests.head(..., verify=False, ...)
+      - pattern: requests.options(..., verify=False, ...)
+      - pattern: requests.request(..., verify=False, ...)
+      - pattern: $SESSION.get(..., verify=False, ...)
+      - pattern: $SESSION.post(..., verify=False, ...)
+      - pattern: $SESSION.put(..., verify=False, ...)
+      - pattern: $SESSION.delete(..., verify=False, ...)
+      - pattern: $SESSION.patch(..., verify=False, ...)
+      - pattern: $SESSION.head(..., verify=False, ...)
+      - pattern: $SESSION.options(..., verify=False, ...)
+      - pattern: $SESSION.request(..., verify=False, ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-requests-verify-disabled
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - requests
+      references:
+        - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+        - https://cwe.mitre.org/data/definitions/295.html

@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-42 rules grouped by category.
+48 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -65,6 +65,27 @@
 | [`auth.oauth.open-redirect-callback`](./oauth-open-redirect-callback.md) | ERROR | HIGH | CWE-601 | API1:2023 |
 | [`auth.oauth.pkce-plain`](./oauth-pkce-plain.md) | WARNING | MEDIUM | CWE-757 | API2:2023 |
 | [`auth.oauth.wildcard-redirect`](./oauth-wildcard-redirect.md) | ERROR | MEDIUM | CWE-601 | API1:2023 |
+
+## PY-FLOW
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.py.flow.requests-verify-disabled`](./py-flow-requests-verify-disabled.md) | ERROR | HIGH | CWE-295 | API8:2023 |
+| [`auth.py.flow.weak-password-hash`](./py-flow-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
+## PY-JWT
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.py.jwt.alg-none`](./py-jwt-alg-none.md) | ERROR | HIGH | CWE-347 | API2:2023 |
+| [`auth.py.jwt.hardcoded-secret`](./py-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
+| [`auth.py.jwt.no-verify`](./py-jwt-no-verify.md) | ERROR | HIGH | CWE-347 | API2:2023 |
+
+## PY-SECRET
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.py.secret.flask-hardcoded-key`](./py-secret-flask-hardcoded-key.md) | ERROR | HIGH | CWE-798 | A07:2021 |
 
 ## SECRET
 
