@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-54 rules grouped by category.
+60 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -34,6 +34,32 @@
 | [`auth.flow.timing-unsafe-compare`](./flow-timing-unsafe-compare.md) | WARNING | MEDIUM | CWE-208 | API2:2023 |
 | [`auth.flow.weak-bcrypt-rounds`](./flow-weak-bcrypt-rounds.md) | WARNING | MEDIUM | CWE-916 | A02:2021 |
 | [`auth.flow.weak-password-hash`](./flow-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
+## GO-COOKIE
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.cookie.insecure`](./go-cookie-insecure.md) | ERROR | HIGH | CWE-614 | A05:2021 |
+
+## GO-FLOW
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.flow.weak-rand`](./go-flow-weak-rand.md) | ERROR | HIGH | CWE-330 | A02:2021 |
+
+## GO-JWT
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.jwt.hardcoded-secret`](./go-jwt-hardcoded-secret.md) | ERROR | HIGH | CWE-798 | API2:2023 |
+| [`auth.go.jwt.none-algorithm`](./go-jwt-none-algorithm.md) | ERROR | HIGH | CWE-347 | API2:2023 |
+| [`auth.go.jwt.parse-unverified`](./go-jwt-parse-unverified.md) | ERROR | HIGH | CWE-347 | API2:2023 |
+
+## GO-TLS
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.go.tls.insecure-skip-verify`](./go-tls-insecure-skip-verify.md) | ERROR | HIGH | CWE-295 | A02:2021 |
 
 ## JWT
 

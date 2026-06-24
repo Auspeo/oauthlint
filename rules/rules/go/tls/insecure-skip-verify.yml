@@ -1,0 +1,32 @@
+rules:
+  - id: auth.go.tls.insecure-skip-verify
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `tls.Config` is created with `InsecureSkipVerify: true`, which disables
+      verification of the server's certificate chain and host name. Any
+      attacker who can intercept the connection can present any certificate
+      and read or tamper with the traffic — a classic man-in-the-middle hole.
+      For OAuth/OIDC this leaks authorization codes, access tokens, and client
+      secrets in transit.
+
+      Never set `InsecureSkipVerify: true`. Leave verification on (the default).
+      To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`
+      loaded with that CA instead.
+    # Matches only the literal `true`. `InsecureSkipVerify: false` and the
+    # field's absence are not flagged. Works for `tls.Config{...}` and
+    # `&tls.Config{...}` (the composite literal matches inside the address-of).
+    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-GO-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-insecure-skip-verify
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - crypto/tls
+      references:
+        - https://pkg.go.dev/crypto/tls#Config
+        - https://cwe.mitre.org/data/definitions/295.html

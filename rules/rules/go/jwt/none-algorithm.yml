@@ -1,0 +1,38 @@
+rules:
+  - id: auth.go.jwt.none-algorithm
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A JWT is created or accepted with the `none` algorithm, which produces an
+      unsigned token. Anyone can forge such a token by setting `alg: none` and
+      omitting the signature, so the server has no way to verify who issued it —
+      a complete authentication bypass (CWE-347). In golang-jwt this happens
+      when signing with `jwt.SigningMethodNone` or passing the
+      `jwt.UnsafeAllowNoneSignatureType` sentinel to `SignedString`.
+
+      Never use the `none` algorithm. Sign tokens with a real algorithm such as
+      HS256 (`jwt.SigningMethodHS256`), RS256 (`jwt.SigningMethodRS256`), or
+      ES256 (`jwt.SigningMethodES256`) and verify them with the matching key.
+    # Targets code that ENABLES `none`: building a token with
+    # `SigningMethodNone`, or the `UnsafeAllowNoneSignatureType` sentinel (which
+    # is only ever used to allow none). A defensive comparison such as
+    # `token.Method == jwt.SigningMethodNone` to REJECT none is deliberately not
+    # flagged. HS256/RS256/ES256 are never matched.
+    pattern-either:
+      - pattern: jwt.NewWithClaims(jwt.SigningMethodNone, ...)
+      - pattern: jwt.New(jwt.SigningMethodNone, ...)
+      - pattern: jwt.New(jwt.SigningMethodNone)
+      - pattern: jwt.UnsafeAllowNoneSignatureType
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-none-algorithm
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - golang-jwt
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#pkg-variables
+        - https://cwe.mitre.org/data/definitions/347.html

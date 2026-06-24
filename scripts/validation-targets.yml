@@ -61,6 +61,22 @@ targets:
     notes: Flask core. Exercises the Flask SECRET_KEY rule against clean code.
 
   # ─────────────────────────────────────────────────────────────
+  # Mature Go auth libraries — exercise the Go rule pack.
+  # (golang-jwt itself is intentionally NOT listed: it *implements* the
+  #  none/ParseUnverified primitives, so its own source and CLI trip the
+  #  rules by design — it is not a representative "app" target.)
+  # ─────────────────────────────────────────────────────────────
+  - repo: golang/oauth2
+    ref: master
+    expectedSignal: low
+    notes: Go OAuth2 client library. Go rules should fire zero on its source.
+
+  - repo: gorilla/sessions
+    ref: main
+    expectedSignal: low
+    notes: Gorilla session store. Exercises the Go cookie rule against clean code.
+
+  # ─────────────────────────────────────────────────────────────
   # Auth-heavy apps — expect a richer signal.
   # ─────────────────────────────────────────────────────────────
   - repo: directus/directus

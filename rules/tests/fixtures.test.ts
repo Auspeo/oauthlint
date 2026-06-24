@@ -48,6 +48,7 @@ const fixtureDirs = readdirSync(fixturesDir, { withFileTypes: true })
 // is derived from the rule id, so a `<lang>-` prefix marks a language pack.
 const LANG_DIRS: Record<string, { ext: string }> = {
   py: { ext: 'py' },
+  go: { ext: 'go' },
 };
 
 function langOf(dir: string): { lang: string; ext: string } | null {
