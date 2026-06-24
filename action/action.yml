@@ -26,6 +26,14 @@ inputs:
     description: 'Path to write the JSON report (only used when json=true).'
     required: false
     default: 'oauthlint-report.json'
+  sarif:
+    description: 'When true, emit a SARIF 2.1.0 report for GitHub Code Scanning.'
+    required: false
+    default: 'false'
+  sarif-file:
+    description: 'Path to write the SARIF report (only used when sarif=true).'
+    required: false
+    default: 'oauthlint.sarif'
 
 outputs:
   findings:
@@ -34,6 +42,9 @@ outputs:
   highest-severity:
     description: Highest severity in the report.
     value: ${{ steps.run.outputs.highest-severity }}
+  sarif-file:
+    description: Path to the generated SARIF report (only set when sarif=true).
+    value: ${{ steps.run.outputs.sarif-file }}
 
 runs:
   using: docker
@@ -44,3 +55,5 @@ runs:
     - ${{ inputs.fail-on }}
     - ${{ inputs.json }}
     - ${{ inputs.output }}
+    - ${{ inputs.sarif }}
+    - ${{ inputs.sarif-file }}

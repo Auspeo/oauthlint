@@ -29,15 +29,29 @@ describe('action.yml', () => {
     expect(yml.name).toMatch(/OAuthLint/);
     expect(yml.inputs).toBeDefined();
     const inputNames = Object.keys(yml.inputs ?? {});
-    for (const expected of ['path', 'severity', 'fail-on', 'json', 'output']) {
+    for (const expected of [
+      'path',
+      'severity',
+      'fail-on',
+      'json',
+      'output',
+      'sarif',
+      'sarif-file',
+    ]) {
       expect(inputNames, `missing input: ${expected}`).toContain(expected);
     }
   });
 
-  it('declares both findings and highest-severity as outputs', async () => {
+  it('defaults sarif to disabled and sarif-file to oauthlint.sarif', async () => {
+    const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
+    expect(yml.inputs?.sarif?.default).toBe('false');
+    expect(yml.inputs?.['sarif-file']?.default).toBe('oauthlint.sarif');
+  });
+
+  it('declares findings, highest-severity, and sarif-file as outputs', async () => {
     const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
     expect(Object.keys(yml.outputs ?? {})).toEqual(
-      expect.arrayContaining(['findings', 'highest-severity']),
+      expect.arrayContaining(['findings', 'highest-severity', 'sarif-file']),
     );
   });
 
@@ -49,6 +63,8 @@ describe('action.yml', () => {
       '${{ inputs.fail-on }}',
       '${{ inputs.json }}',
       '${{ inputs.output }}',
+      '${{ inputs.sarif }}',
+      '${{ inputs.sarif-file }}',
     ]);
   });
 });
@@ -61,12 +77,26 @@ describe('entrypoint.sh', () => {
     expect(sh).toMatch(/FAIL_ON="\$\{3:-/);
     expect(sh).toMatch(/EMIT_JSON="\$\{4:-/);
     expect(sh).toMatch(/OUTPUT_PATH="\$\{5:-/);
+    expect(sh).toMatch(/EMIT_SARIF="\$\{6:-/);
+    expect(sh).toMatch(/SARIF_PATH="\$\{7:-/);
   });
 
   it('writes GITHUB_OUTPUT for both declared outputs', async () => {
     const sh = await readFile(entrypointPath, 'utf8');
     expect(sh).toMatch(/findings=\$FINDINGS"?\s*>>\s*"?\$GITHUB_OUTPUT/);
     expect(sh).toMatch(/highest-severity=\$HIGHEST"?\s*>>\s*"?\$GITHUB_OUTPUT/);
+  });
+
+  it('generates SARIF only when enabled and exposes its path as an output', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    expect(sh).toMatch(/if\s+\[\[\s+"\$EMIT_SARIF"\s+==\s+"true"\s+\]\]/);
+    expect(sh).toMatch(/oauthlint "\$\{SARIF_ARGS\[@\]\}"\s*>\s*"\$SARIF_PATH"/);
+    expect(sh).toMatch(/sarif-file=\$SARIF_PATH"?\s*>>\s*"?\$GITHUB_OUTPUT/);
+  });
+
+  it('emits SARIF with --format sarif and never gates the job on it', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    expect(sh).toMatch(/SARIF_ARGS=\(\s*scan "\$PATH_TO_SCAN" --format sarif --fail-on off/);
   });
 
   it('invokes oauthlint via npx (not a locally bundled copy)', async () => {
