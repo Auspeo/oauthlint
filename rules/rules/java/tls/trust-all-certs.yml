@@ -1,0 +1,48 @@
+rules:
+  - id: auth.java.tls.trust-all-certs
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      TLS hostname verification is disabled. A permissive `HostnameVerifier`
+      that returns `true` for every host — or Apache HttpClient's
+      `NoopHostnameVerifier` — accepts any certificate regardless of the name
+      it was issued for, so a man-in-the-middle can present a certificate for a
+      different domain and the connection succeeds (CWE-295). This is a common
+      AI-generated mistake — the verifier is stubbed out to "fix" a handshake
+      or certificate error during development and shipped to production.
+
+      Never accept all hosts. Leave the default hostname verification in place
+      (do not call `setHostnameVerifier`/`setDefaultHostnameVerifier` with a
+      permissive verifier), or fix the trust chain by supplying a proper
+      truststore so the certificate validates normally.
+    # Targets only the permissive verifier: a lambda returning a constant true,
+    # an anonymous HostnameVerifier whose verify(...) returns true, and Apache
+    # HttpClient's NoopHostnameVerifier. A HostnameVerifier with real
+    # (non-trivial) logic and the default verifier are not matched.
+    pattern-either:
+      # Lambda that always returns true: (hostname, session) -> true
+      - pattern: ($HOST, $SESSION) -> true
+      # Anonymous HostnameVerifier whose verify(...) just returns true.
+      - pattern: |
+          new HostnameVerifier() {
+            public boolean verify(String $H, SSLSession $S) { return true; }
+          }
+      # Apache HttpClient NoopHostnameVerifier (constructor or INSTANCE).
+      - pattern: new org.apache.http.conn.ssl.NoopHostnameVerifier()
+      - pattern: new NoopHostnameVerifier()
+      - pattern: org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE
+      - pattern: NoopHostnameVerifier.INSTANCE
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-tls-trust-all-certs
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - javax.net.ssl
+        - apache-httpclient
+      references:
+        - https://cwe.mitre.org/data/definitions/295.html
+        - https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/HostnameVerifier.html

@@ -1,0 +1,47 @@
+rules:
+  - id: auth.java.cors.allow-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      CORS is configured to allow every origin with the wildcard `*`. Any
+      website can then make cross-origin requests to this endpoint, defeating
+      the same-origin policy (CWE-942). This is a common AI-generated Spring
+      mistake — `@CrossOrigin(origins = "*")` or `addAllowedOrigin("*")` is
+      pasted in to "make the browser call work" and the intended scope is
+      never added. A bare `@CrossOrigin` (no arguments) also defaults to all
+      origins.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, e.g.
+      `@CrossOrigin(origins = "https://app.example.com")` or
+      `config.setAllowedOrigins(List.of("https://app.example.com"))`. Note that
+      `addAllowedOriginPattern("*")` combined with `setAllowCredentials(true)`
+      is just as dangerous, because it sends the victim's cookies cross-origin.
+    # Covers the Spring MVC annotation (with an explicit `origins = "*"`, with
+    # the value alias `@CrossOrigin("*")`, and the bare `@CrossOrigin` which
+    # defaults to all origins), plus the programmatic CorsConfiguration API:
+    # `addAllowedOrigin("*")` and `setAllowedOrigins(...)` whose argument is a
+    # list literal containing `"*"` (`List.of("*")`, `Arrays.asList("*")`,
+    # `Collections.singletonList("*")`, ...). Only the literal `"*"` is
+    # flagged — explicit origins like `"https://app.example.com"` are not.
+    pattern-either:
+      - pattern: '@CrossOrigin(origins = "*")'
+      - pattern: '@CrossOrigin(origins = {..., "*", ...})'
+      - pattern: '@CrossOrigin("*")'
+      - pattern: |
+          @CrossOrigin
+          $RET $M(...) { ... }
+      - pattern: $C.addAllowedOrigin("*")
+      - pattern: $C.setAllowedOrigins($L(..., "*", ...))
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - spring-web
+      references:
+        - https://docs.spring.io/spring-framework/reference/web/webmvc-cors.html
+        - https://cwe.mitre.org/data/definitions/942.html

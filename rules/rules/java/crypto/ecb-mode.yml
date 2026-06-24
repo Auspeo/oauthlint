@@ -1,0 +1,42 @@
+rules:
+  - id: auth.java.crypto.ecb-mode
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A JCA `Cipher` is being created in ECB mode (or with a bare algorithm
+      alias that defaults to ECB). ECB encrypts each block independently, so
+      identical plaintext blocks produce identical ciphertext blocks — it is
+      deterministic and leaks structure/patterns of the plaintext (CWE-327).
+      `Cipher.getInstance("AES")`, `"DES"`, `"DESede"`, or `"Blowfish"` with no
+      mode specified silently falls back to ECB as well.
+
+      Use an authenticated mode: `Cipher.getInstance("AES/GCM/NoPadding")` with
+      a unique 12-byte IV per message. At minimum use CBC with a random IV plus
+      a separate HMAC (encrypt-then-MAC). Never use ECB or a bare cipher alias.
+    # Match only the transformation string passed to Cipher.getInstance(...).
+    # The metavariable-regex flags either a bare symmetric algorithm alias
+    # (AES / DES / DESede / Blowfish with no mode — these default to ECB) or an
+    # explicit ECB mode on one of those block ciphers (any padding). It is
+    # scoped to symmetric block ciphers on purpose: "AES/GCM/NoPadding" and
+    # "AES/CBC/PKCS5Padding" have a safe mode, and "RSA/ECB/OAEPWith..." is
+    # asymmetric (the "/ECB/" token there is a JCA quirk, not block-ECB), so
+    # none of them match.
+    patterns:
+      - pattern: javax.crypto.Cipher.getInstance($TRANSFORM, ...)
+      - metavariable-regex:
+          metavariable: $TRANSFORM
+          regex: (?i)^"(aes|des|desede|blowfish)(/ecb/.*)?"$
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - javax.crypto
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+        - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html

@@ -1,0 +1,37 @@
+rules:
+  - id: auth.java.web.frame-options-disabled
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      Spring Security's `X-Frame-Options` header is disabled. This header is
+      the browser's clickjacking defense — with it off, an attacker can embed
+      the application in a hidden `<iframe>` on a malicious page and trick a
+      logged-in victim into clicking UI elements they cannot see (CWE-1021).
+
+      Keep `X-Frame-Options` set to DENY or SAMEORIGIN — e.g.
+      `frameOptions(f -> f.sameOrigin())` or `frameOptions(f -> f.deny())`. If
+      you need to allow framing from a specific set of origins, use a Content
+      Security Policy `frame-ancestors` directive instead of disabling the
+      protection outright.
+    # Covers the legacy fluent form `http.headers().frameOptions().disable()`,
+    # the Spring Security 6 lambda DSL
+    # `http.headers(h -> h.frameOptions(f -> f.disable()))`, and the method
+    # reference `frameOptions(FrameOptionsConfig::disable)`. Only the `disable`
+    # terminal is flagged; `sameOrigin()` and `deny()` are left alone.
+    pattern-either:
+      - pattern: $H.frameOptions().disable()
+      - pattern: $H.frameOptions($F -> $F.disable())
+      - pattern: $H.frameOptions(FrameOptionsConfig::disable)
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-frame-options-disabled
+      category: security
+      cwe: CWE-1021
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/exploits/headers.html
+        - https://cwe.mitre.org/data/definitions/1021.html
