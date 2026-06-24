@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Finding, ScanResult, SeverityName } from '../types.js';
 
@@ -158,15 +158,25 @@ function buildResult(f: Finding): SarifResult {
   };
 }
 
-function relativise(filePath: string): string {
-  // GitHub Code Scanning wants paths relative to the repo root. Strip
-  // the cwd if present; otherwise leave the path alone (caller responsibility).
-  const cwd = process.cwd();
-  if (filePath.startsWith(`${cwd}/`)) {
-    return filePath.slice(cwd.length + 1);
+/**
+ * GitHub Code Scanning wants forward-slash paths relative to the repo root.
+ *
+ * - Absolute paths are made relative to `base` (defaults to the cwd, which is
+ *   the repository root when the Action runs `oauthlint scan .`).
+ * - A file that resolves *outside* `base` (the relative path would start with
+ *   `..`) keeps its absolute form rather than emitting a misleading traversal.
+ * - Already-relative paths are passed through, normalised.
+ * - Windows separators are converted to `/` and any leading `./` is stripped.
+ *
+ * Exported for direct unit testing — the old implementation assumed
+ * `cwd === repo root` and string-sliced, which silently produced absolute
+ * paths (and broken Code Scanning annotations) whenever that did not hold.
+ */
+export function relativise(filePath: string, base: string = process.cwd()): string {
+  let p = filePath;
+  if (isAbsolute(p)) {
+    const rel = relative(base, p);
+    p = rel && !rel.startsWith('..') ? rel : p;
   }
-  if (filePath.startsWith(cwd)) {
-    return filePath.slice(cwd.length).replace(/^\/+/, '');
-  }
-  return filePath;
+  return p.replace(/\\/g, '/').replace(/^\.\//, '');
 }

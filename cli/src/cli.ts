@@ -13,6 +13,28 @@ interface PkgJson {
   version: string;
 }
 
+/**
+ * Exit only once buffered stdout/stderr have drained.
+ *
+ * `process.exit()` terminates immediately and does NOT flush async writes to a
+ * pipe. When output exceeds the OS pipe buffer (~64 KB on macOS) — e.g. a large
+ * `--json` or `--format sarif` report piped to a file or another process — the
+ * tail is silently truncated, producing invalid JSON/SARIF. Waiting for the
+ * `drain` event first guarantees the whole report is written.
+ */
+async function exitAfterFlush(code: number): Promise<never> {
+  const flush = (s: NodeJS.WriteStream): Promise<void> =>
+    new Promise((res) => {
+      if (s.writableLength === 0) {
+        res();
+        return;
+      }
+      s.once('drain', () => res());
+    });
+  await Promise.all([flush(process.stdout), flush(process.stderr)]);
+  process.exit(code);
+}
+
 async function readPackageVersion(): Promise<string> {
   const here = dirname(fileURLToPath(import.meta.url));
   // dist/cli.js → ../package.json (when published)
@@ -66,7 +88,7 @@ export async function buildProgram(): Promise<Command> {
         rulesDir: opts.rulesDir,
         fix: opts.fix,
       });
-      process.exit(code);
+      await exitAfterFlush(code);
     });
 
   program
@@ -74,7 +96,7 @@ export async function buildProgram(): Promise<Command> {
     .description('List every rule the current install ships with')
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
-      process.exit(await runList({ json: opts.json }));
+      await exitAfterFlush(await runList({ json: opts.json }));
     });
 
   program
@@ -82,7 +104,7 @@ export async function buildProgram(): Promise<Command> {
     .description('Generate a .oauthlintrc.yml at the current directory')
     .option('-f, --force', 'Overwrite an existing config file')
     .action(async (opts: { force?: boolean }) => {
-      process.exit(await runInit({ cwd: process.cwd(), force: opts.force }));
+      await exitAfterFlush(await runInit({ cwd: process.cwd(), force: opts.force }));
     });
 
   program
@@ -90,7 +112,7 @@ export async function buildProgram(): Promise<Command> {
     .description('Diagnose your OAuthLint install (Node, Semgrep, rule pack)')
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
-      process.exit(await runDoctor({ json: opts.json }));
+      await exitAfterFlush(await runDoctor({ json: opts.json }));
     });
 
   program.showHelpAfterError(pc.dim('(run `oauthlint --help` for available commands)'));

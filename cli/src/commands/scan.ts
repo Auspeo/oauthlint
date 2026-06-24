@@ -1,6 +1,10 @@
 import { resolve } from 'node:path';
 import { RULES_ROOT } from 'oauthlint-rules';
-import { SemgrepAdapter, SemgrepNotInstalledError } from '../adapters/semgrep.js';
+import {
+  SemgrepAdapter,
+  SemgrepNotInstalledError,
+  SemgrepOutputError,
+} from '../adapters/semgrep.js';
 import { loadConfig } from '../core/config.js';
 import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
@@ -49,6 +53,12 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
     if (err instanceof SemgrepNotInstalledError) {
       (opts.stream ?? process.stderr).write(`${err.message}\n`);
       return 127;
+    }
+    if (err instanceof SemgrepOutputError) {
+      // Fail loudly: a scan we cannot interpret must not exit 0 and look
+      // clean in CI. 2 mirrors the "critical" exit code.
+      (opts.stream ?? process.stderr).write(`${err.message}\n`);
+      return 2;
     }
     throw err;
   }

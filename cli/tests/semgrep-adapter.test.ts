@@ -1,17 +1,46 @@
-import { describe, expect, it } from 'vitest';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
 import {
   SemgrepAdapter,
   SemgrepNotInstalledError,
+  SemgrepOutputError,
   normaliseRuleId,
 } from '../src/adapters/semgrep.js';
 
+/** Write an executable fake `semgrep` that echoes the given stdout, verbatim. */
+function fakeSemgrep(dir: string, stdout: string): string {
+  const bin = join(dir, 'semgrep');
+  // `printf %s` keeps the payload byte-exact (no trailing newline surprises).
+  writeFileSync(bin, `#!/bin/sh\nprintf '%s' ${JSON.stringify(stdout)}\n`);
+  chmodSync(bin, 0o755);
+  return bin;
+}
+
 describe('SemgrepAdapter', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'oauthlint-semgrep-'));
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
+
   it('throws SemgrepNotInstalledError when the binary is missing', async () => {
     const adapter = new SemgrepAdapter({
       binary: '/definitely/not/a/real/binary/semgrep-xyz',
       configPath: '/tmp',
     });
     await expect(adapter.scan('/tmp')).rejects.toBeInstanceOf(SemgrepNotInstalledError);
+  });
+
+  it('throws SemgrepOutputError on non-empty unparseable output (no silent 0 findings)', async () => {
+    const binary = fakeSemgrep(tmp, '{"results": [ truncated…');
+    const adapter = new SemgrepAdapter({ binary, configPath: '/tmp' });
+    await expect(adapter.scan('/tmp')).rejects.toBeInstanceOf(SemgrepOutputError);
+  });
+
+  it('treats empty output as a clean (zero-finding) scan', async () => {
+    const binary = fakeSemgrep(tmp, '');
+    const adapter = new SemgrepAdapter({ binary, configPath: '/tmp' });
+    const result = await adapter.scan('/tmp');
+    expect(result.findings).toEqual([]);
   });
 
   it('getVersion returns null when the binary is missing', async () => {

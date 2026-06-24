@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toSarif } from '../src/core/sarif.js';
+import { relativise, toSarif } from '../src/core/sarif.js';
 import type { Finding, ScanResult } from '../src/types.js';
 
 const baseResult = (findings: Finding[]): ScanResult => ({
@@ -88,5 +88,33 @@ describe('toSarif', () => {
     const loc = sarif.runs[0]?.results[0]?.locations[0]?.physicalLocation;
     expect(loc?.region.startLine).toBe(12);
     expect(loc?.region.endLine).toBe(14);
+  });
+});
+
+describe('relativise', () => {
+  const base = '/repo/root';
+
+  it('makes an absolute path under base relative to it', () => {
+    expect(relativise('/repo/root/src/auth/jwt.ts', base)).toBe('src/auth/jwt.ts');
+  });
+
+  it('handles base without trailing slash and nested dirs', () => {
+    expect(relativise('/repo/root/a/b/c.ts', base)).toBe('a/b/c.ts');
+  });
+
+  it('passes already-relative paths through unchanged', () => {
+    expect(relativise('src/auth/jwt.ts', base)).toBe('src/auth/jwt.ts');
+  });
+
+  it('strips a leading ./', () => {
+    expect(relativise('./src/auth/jwt.ts', base)).toBe('src/auth/jwt.ts');
+  });
+
+  it('keeps an absolute path that resolves outside base (no misleading ..)', () => {
+    expect(relativise('/elsewhere/file.ts', base)).toBe('/elsewhere/file.ts');
+  });
+
+  it('normalises Windows separators to forward slashes', () => {
+    expect(relativise('src\\auth\\jwt.ts', base)).toBe('src/auth/jwt.ts');
   });
 });
