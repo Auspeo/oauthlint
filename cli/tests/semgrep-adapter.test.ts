@@ -62,8 +62,24 @@ describe('normaliseRuleId', () => {
     );
   });
 
-  it('leaves already-clean ids untouched', () => {
+  it('strips the prefix for language-pack ids (4 segments)', () => {
+    expect(normaliseRuleId('rules.rules.py.jwt.auth.py.jwt.no-verify')).toBe(
+      'auth.py.jwt.no-verify',
+    );
+    expect(normaliseRuleId('rules.rules.go.tls.auth.go.tls.insecure-skip-verify')).toBe(
+      'auth.go.tls.insecure-skip-verify',
+    );
+    expect(normaliseRuleId('rules.rules.java.web.auth.java.web.csrf-disabled')).toBe(
+      'auth.java.web.csrf-disabled',
+    );
+    expect(normaliseRuleId('rules.rules.rust.flow.auth.rust.flow.timing-unsafe-compare')).toBe(
+      'auth.rust.flow.timing-unsafe-compare',
+    );
+  });
+
+  it('leaves already-clean ids untouched (3 and 4 segments)', () => {
     expect(normaliseRuleId('auth.jwt.alg-none')).toBe('auth.jwt.alg-none');
+    expect(normaliseRuleId('auth.py.jwt.no-verify')).toBe('auth.py.jwt.no-verify');
   });
 
   it('keeps non-OAuthLint rule ids unchanged (custom rule packs)', () => {
