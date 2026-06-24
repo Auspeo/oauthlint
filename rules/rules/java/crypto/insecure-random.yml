@@ -1,0 +1,62 @@
+rules:
+  - id: auth.java.crypto.insecure-random
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A security-sensitive value (token, secret, key, password, nonce, OTP, or
+      salt) is generated with a non-cryptographic PRNG. `java.util.Random` and
+      `Math.random()` are predictable: their output is seeded from system time
+      and the internal state can be recovered from a few observed values, so an
+      attacker can reconstruct the "random" secret (CWE-330). This is a common
+      AI-generated mistake — `new Random().nextInt(...)` gets pasted in to
+      produce a token because it looks random enough.
+
+      Use `java.security.SecureRandom` instead. For example,
+      `new SecureRandom().nextBytes(buf)` to fill a byte buffer, then encode it
+      (Base64/hex) to build the token or secret.
+    pattern-either:
+      # $VAR = new Random().nextInt(...) / nextLong() / nextDouble() / nextFloat()
+      - patterns:
+          - pattern-either:
+              - pattern: $VAR = new java.util.Random(...).$M(...)
+              - pattern: $VAR = new Random(...).$M(...)
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(nextInt|nextLong|nextDouble|nextFloat|nextBoolean)$
+      # $VAR = Math.random()
+      - patterns:
+          - pattern: $VAR = Math.random()
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+      # $RND.nextBytes($BUF) where $RND is a java.util.Random (not SecureRandom)
+      # and the buffer is a secret.
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  java.util.Random $RND = new java.util.Random(...);
+                  ...
+                  $RND.nextBytes($BUF);
+              - pattern: |
+                  Random $RND = new Random(...);
+                  ...
+                  $RND.nextBytes($BUF);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-insecure-random
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - java.util
+      references:
+        - https://docs.oracle.com/javase/8/docs/api/java/security/SecureRandom.html
+        - https://cwe.mitre.org/data/definitions/330.html

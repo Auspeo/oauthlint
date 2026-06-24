@@ -1,0 +1,36 @@
+rules:
+  - id: auth.java.web.permit-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security authorizes every request without authentication via
+      `anyRequest().permitAll()`. Because `anyRequest()` is the catch-all
+      matcher, this makes the entire application publicly accessible — any
+      endpoint, including state-changing and sensitive ones, can be reached
+      without a logged-in user (CWE-862, broken access control). This is a
+      common AI-generated Spring mistake: the default-allow line is pasted in
+      to "make it work" and the intended access rules are never added.
+
+      Require authentication by default with `anyRequest().authenticated()`,
+      and open only the specific public routes explicitly, e.g.
+      `requestMatchers("/public/**").permitAll()`. Granting `permitAll()` on a
+      specific matcher is fine; granting it on `anyRequest()` is not.
+    # Targets the catch-all `anyRequest().permitAll()` in both the legacy
+    # fluent chain and the Spring Security 6 lambda DSL. `$X` lets the chain be
+    # rooted on `http`, `auth`, an `authorizeHttpRequests(...)` registry, or
+    # any earlier matcher in the chain.
+    pattern-either:
+      - pattern: $X.anyRequest().permitAll()
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-permit-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html
+        - https://cwe.mitre.org/data/definitions/862.html

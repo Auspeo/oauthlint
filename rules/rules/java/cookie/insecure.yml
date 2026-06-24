@@ -1,0 +1,31 @@
+rules:
+  - id: auth.java.cookie.insecure
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A servlet Cookie is created with a security attribute explicitly
+      disabled. `setSecure(false)` lets the cookie travel over plain HTTP,
+      and `setHttpOnly(false)` makes it readable from JavaScript — either way
+      a session or auth cookie can be intercepted or stolen (CWE-614). This is
+      a common AI-generated mistake where the flag is set to `false` to "make
+      it work" over localhost and never switched back.
+
+      Set `cookie.setSecure(true)` and `cookie.setHttpOnly(true)` on every
+      session or authentication cookie, and add `SameSite` (e.g. `Strict` or
+      `Lax`) to further limit cross-site exposure.
+    pattern-either:
+      - pattern: $C.setSecure(false)
+      - pattern: $C.setHttpOnly(false)
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - servlet
+      references:
+        - https://owasp.org/www-community/controls/SecureCookieAttribute
+        - https://cwe.mitre.org/data/definitions/614.html

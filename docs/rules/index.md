@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-60 rules grouped by category.
+66 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -60,6 +60,32 @@
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
 | [`auth.go.tls.insecure-skip-verify`](./go-tls-insecure-skip-verify.md) | ERROR | HIGH | CWE-295 | A02:2021 |
+
+## JAVA-COOKIE
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.cookie.insecure`](./java-cookie-insecure.md) | ERROR | HIGH | CWE-614 | A05:2021 |
+
+## JAVA-CRYPTO
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.crypto.insecure-random`](./java-crypto-insecure-random.md) | ERROR | HIGH | CWE-330 | A02:2021 |
+| [`auth.java.crypto.weak-password-hash`](./java-crypto-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
+
+## JAVA-JWT
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.jwt.unsigned-jwt`](./java-jwt-unsigned-jwt.md) | ERROR | MEDIUM | CWE-347 | API2:2023 |
+
+## JAVA-WEB
+
+| Rule | Severity | LLM | CWE | OWASP |
+|------|----------|-----|-----|-------|
+| [`auth.java.web.csrf-disabled`](./java-web-csrf-disabled.md) | ERROR | HIGH | CWE-352 | A01:2021 |
+| [`auth.java.web.permit-all`](./java-web-permit-all.md) | ERROR | HIGH | CWE-862 | A01:2021 |
 
 ## JWT
 

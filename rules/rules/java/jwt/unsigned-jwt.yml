@@ -1,0 +1,41 @@
+rules:
+  - id: auth.java.jwt.unsigned-jwt
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      This JWT is created or parsed without a signature, so its contents are
+      neither authenticated nor tamper-proof (CWE-347). An unsecured ("alg=none")
+      token can be forged by anyone — changing the claims (e.g. the subject or
+      roles) costs nothing because there is no signature to verify. This is a
+      common AI-generated mistake: the "plaintext"/"unsecured" JWT API is reached
+      for during prototyping and never swapped for a signed token.
+
+      Sign tokens and verify their signatures. With nimbus-jose-jwt use
+      `SignedJWT` (and verify with a `JWSVerifier`); with jjwt build tokens via
+      `Jwts.builder()...signWith(key)` and parse them with `parseSignedClaims`
+      (or the legacy `parseClaimsJws`) instead of `parseClaimsJwt` /
+      `parsePlaintextJwt`.
+    # nimbus-jose-jwt: PlainJWT is the unsecured (alg=none) variant.
+    # jjwt (io.jsonwebtoken): parseClaimsJwt / parsePlaintextJwt parse an
+    # UNSIGNED JWT; the signed counterparts are parseSignedClaims /
+    # parseClaimsJws and are intentionally not matched.
+    pattern-either:
+      - pattern: new com.nimbusds.jwt.PlainJWT(...)
+      - pattern: new PlainJWT(...)
+      - pattern: $P.parseClaimsJwt(...)
+      - pattern: $P.parsePlaintextJwt(...)
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-unsigned-jwt
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jjwt
+        - nimbus-jose-jwt
+      references:
+        - https://connect2id.com/products/nimbus-jose-jwt/examples/unsecured-jwt
+        - https://github.com/jwtk/jjwt#reading-a-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
