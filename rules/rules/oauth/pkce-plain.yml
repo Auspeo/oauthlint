@@ -1,0 +1,40 @@
+rules:
+  - id: auth.oauth.pkce-plain
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      PKCE is configured with `code_challenge_method=plain`. The `plain`
+      method sends the `code_verifier` itself as the `code_challenge`, so an
+      attacker who intercepts the authorization request learns the verifier
+      and PKCE provides no protection against authorization-code interception.
+
+      Use `code_challenge_method=S256`: derive `code_challenge =
+      BASE64URL-NoPad(SHA256(code_verifier))` (RFC 7636 §4.2). S256 is
+      mandatory for clients that can compute SHA-256.
+    pattern-either:
+      # Query-string form: inline authorize URL, template fragment, or any
+      # string carrying the plain method. Matched literally so S256 never hits.
+      - pattern-regex: |-
+          code_challenge_method=plain\b
+      # Object literal: { code_challenge_method: 'plain' } (AST match — robust
+      # to key order and object length).
+      - pattern: "{..., code_challenge_method: 'plain', ...}"
+      - pattern: '{..., code_challenge_method: "plain", ...}'
+      # URLSearchParams.set / .append with the plain method.
+      - pattern: $P.set('code_challenge_method', 'plain')
+      - pattern: $P.set("code_challenge_method", "plain")
+      - pattern: $P.append('code_challenge_method', 'plain')
+      - pattern: $P.append("code_challenge_method", "plain")
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-011
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-pkce-plain
+      category: security
+      cwe: CWE-757
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7636#section-4.2

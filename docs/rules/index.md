@@ -1,6 +1,6 @@
 # OAuthLint rule catalogue
 
-36 rules grouped by category.
+42 rules grouped by category.
 
 <!-- Generated from rules/rules/ + the matching fixtures — keep the YAML/fixtures authoritative. -->
 
@@ -17,6 +17,7 @@
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
+| [`auth.cors.null-origin`](./cors-null-origin.md) | ERROR | MEDIUM | CWE-942 | A05:2021 |
 | [`auth.cors.reflect-origin`](./cors-reflect-origin.md) | ERROR | MEDIUM | CWE-942 | A05:2021 |
 | [`auth.cors.wildcard-with-credentials`](./cors-wildcard-with-credentials.md) | ERROR | HIGH | CWE-942 | API8:2023 |
 
@@ -24,10 +25,12 @@
 
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
+| [`auth.flow.credentials-in-url`](./flow-credentials-in-url.md) | ERROR | HIGH | CWE-598 | API2:2023 |
 | [`auth.flow.insecure-random`](./flow-insecure-random.md) | ERROR | HIGH | CWE-338 | API2:2023 |
 | [`auth.flow.no-rate-limit`](./flow-no-rate-limit.md) | INFO | HIGH | CWE-307 | API4:2023 |
 | [`auth.flow.password-min-length`](./flow-password-min-length.md) | WARNING | MEDIUM | CWE-521 | API2:2023 |
 | [`auth.flow.password-plaintext`](./flow-password-plaintext.md) | ERROR | MEDIUM | CWE-256 | API2:2023 |
+| [`auth.flow.secret-in-log`](./flow-secret-in-log.md) | WARNING | HIGH | CWE-532 | API8:2023 |
 | [`auth.flow.timing-unsafe-compare`](./flow-timing-unsafe-compare.md) | WARNING | MEDIUM | CWE-208 | API2:2023 |
 | [`auth.flow.weak-bcrypt-rounds`](./flow-weak-bcrypt-rounds.md) | WARNING | MEDIUM | CWE-916 | A02:2021 |
 | [`auth.flow.weak-password-hash`](./flow-weak-password-hash.md) | ERROR | HIGH | CWE-916 | A02:2021 |
@@ -41,6 +44,7 @@
 | [`auth.jwt.decode-without-verify`](./jwt-decode-without-verify.md) | WARNING | HIGH | CWE-347 | API2:2023 |
 | [`auth.jwt.in-url`](./jwt-in-url.md) | ERROR | MEDIUM | CWE-598 | API1:2023 |
 | [`auth.jwt.localstorage`](./jwt-localstorage.md) | WARNING | HIGH | CWE-922 | API8:2023 |
+| [`auth.jwt.no-algorithms-allowlist`](./jwt-no-algorithms-allowlist.md) | WARNING | HIGH | CWE-347 | API2:2023 |
 | [`auth.jwt.no-audience`](./jwt-no-audience.md) | WARNING | MEDIUM | CWE-345 | API2:2023 |
 | [`auth.jwt.no-expiration`](./jwt-no-expiration.md) | WARNING | HIGH | CWE-613 | API2:2023 |
 | [`auth.jwt.no-issuer`](./jwt-no-issuer.md) | INFO | LOW | CWE-345 | API2:2023 |
@@ -59,6 +63,7 @@
 | [`auth.oauth.no-state`](./oauth-no-state.md) | ERROR | HIGH | CWE-352 | API1:2023 |
 | [`auth.oauth.no-state-validation`](./oauth-no-state-validation.md) | WARNING | HIGH | CWE-352 | API1:2023 |
 | [`auth.oauth.open-redirect-callback`](./oauth-open-redirect-callback.md) | ERROR | HIGH | CWE-601 | API1:2023 |
+| [`auth.oauth.pkce-plain`](./oauth-pkce-plain.md) | WARNING | MEDIUM | CWE-757 | API2:2023 |
 | [`auth.oauth.wildcard-redirect`](./oauth-wildcard-redirect.md) | ERROR | MEDIUM | CWE-601 | API1:2023 |
 
 ## SECRET
@@ -66,6 +71,7 @@
 | Rule | Severity | LLM | CWE | OWASP |
 |------|----------|-----|-----|-------|
 | [`auth.secret.provider-key`](./secret-provider-key.md) | ERROR | HIGH | CWE-798 | API8:2023 |
+| [`auth.secret.public-env-secret`](./secret-public-env-secret.md) | ERROR | HIGH | CWE-200 | A02:2021 |
 
 ## SESSION
 
