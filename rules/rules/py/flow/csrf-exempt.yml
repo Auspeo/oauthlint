@@ -1,0 +1,39 @@
+rules:
+  - id: auth.py.flow.csrf-exempt
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A Django view disables CSRF protection. The `@csrf_exempt` decorator
+      (from `django.views.decorators.csrf`), or `@method_decorator(csrf_exempt,
+      ...)` on a class-based view, turns off Django's CSRF middleware check for
+      that endpoint. An attacker can then forge cross-site requests that the
+      victim's browser submits with their session cookie — a CSRF vulnerability.
+
+      Do not exempt views from CSRF. Keep the default protection and submit the
+      CSRF token from your client. For machine-to-machine endpoints such as
+      webhooks, validate a signed request signature (e.g. an HMAC header)
+      instead of disabling CSRF wholesale.
+    # Scoped to the `@csrf_exempt` decorator and `@method_decorator(csrf_exempt, ...)`.
+    # A bare `import csrf_exempt` or an unrelated decorator is not matched.
+    pattern-either:
+      - patterns:
+          - pattern: |
+              @csrf_exempt
+              def $VIEW(...): ...
+      - patterns:
+          - pattern: |
+              @method_decorator(csrf_exempt, ...)
+              class $VIEW(...): ...
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-csrf-exempt
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - django
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/csrf/
+        - https://cwe.mitre.org/data/definitions/352.html

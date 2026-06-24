@@ -1,0 +1,51 @@
+rules:
+  - id: auth.py.flow.insecure-random-token
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A security-sensitive value (token, secret, password, OTP, nonce, API key,
+      reset/verification code) is being generated with the `random` module.
+      `random` is a pseudo-random number generator seeded from predictable state
+      and is NOT cryptographically secure — its output can be predicted or
+      reproduced by an attacker, defeating the secret entirely.
+
+      Use the `secrets` module or `os.urandom` instead:
+      `secrets.token_urlsafe(32)`, `secrets.token_hex(16)`,
+      `secrets.choice(alphabet)`, or `os.urandom(32)`. These draw from the
+      operating system's CSPRNG.
+    # Anchored on the NAME of the assigned target (must look like a secret) plus
+    # a value coming from `random.`. This avoids flagging `random.random()` used
+    # for jitter/sampling/colors, and never matches `secrets....` or `os.urandom`.
+    patterns:
+      - pattern-either:
+          - pattern: $VAR = random.random()
+          - pattern: $VAR = random.randint(...)
+          - pattern: $VAR = random.randrange(...)
+          - pattern: $VAR = random.choice(...)
+          - pattern: $VAR = random.choices(...)
+          - pattern: $VAR = random.sample(...)
+          - pattern: $VAR = random.getrandbits(...)
+          - patterns:
+              - pattern: $VAR = "".join($X)
+              - metavariable-pattern:
+                  metavariable: $X
+                  patterns:
+                    - pattern-either:
+                        - pattern: random.choice(...)
+                        - pattern: random.choices(...)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i).*(token|secret|password|passwd|otp|nonce|api_?key|reset|verification).*
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-insecure-random-token
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - random
+      references:
+        - https://docs.python.org/3/library/secrets.html
+        - https://cwe.mitre.org/data/definitions/330.html
