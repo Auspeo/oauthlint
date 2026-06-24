@@ -7,6 +7,8 @@
 #   $3  fail-on     — severity at which the action should fail
 #   $4  json        — "true" to also write JSON
 #   $5  output      — JSON output path (when json=true)
+#   $6  sarif       — "true" to also write a SARIF 2.1.0 report
+#   $7  sarif-file  — SARIF output path (when sarif=true)
 set -euo pipefail
 
 PATH_TO_SCAN="${1:-.}"
@@ -14,6 +16,8 @@ SEVERITY="${2:-}"
 FAIL_ON="${3:-HIGH}"
 EMIT_JSON="${4:-false}"
 OUTPUT_PATH="${5:-oauthlint-report.json}"
+EMIT_SARIF="${6:-false}"
+SARIF_PATH="${7:-oauthlint.sarif}"
 
 cd "${GITHUB_WORKSPACE:-/github/workspace}"
 
@@ -57,6 +61,22 @@ if [[ "$EMIT_JSON" == "true" ]]; then
 else
   echo "findings=0" >> "$GITHUB_OUTPUT"
   echo "highest-severity=NONE" >> "$GITHUB_OUTPUT"
+fi
+
+if [[ "$EMIT_SARIF" == "true" ]]; then
+  echo "::group::Generating SARIF report"
+  # SARIF is for upload to Code Scanning, not for gating: --fail-on off and we
+  # swallow the exit code so this extra pass can never fail the job.
+  SARIF_ARGS=( scan "$PATH_TO_SCAN" --format sarif --fail-on off )
+  if [[ -n "$SEVERITY" ]]; then
+    SARIF_ARGS+=( --severity "$SEVERITY" )
+  fi
+  set +e
+  npx --yes oauthlint "${SARIF_ARGS[@]}" > "$SARIF_PATH"
+  set -e
+  echo "SARIF report written to $SARIF_PATH"
+  echo "sarif-file=$SARIF_PATH" >> "$GITHUB_OUTPUT"
+  echo "::endgroup::"
 fi
 
 exit "$EXIT_CODE"

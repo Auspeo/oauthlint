@@ -29,6 +29,8 @@ jobs:
 | `fail-on` | no | `HIGH` | Severity at which the job should fail. `off` = never fail. |
 | `json` | no | `false` | When true, also write a JSON report |
 | `output` | no | `oauthlint-report.json` | Path of the JSON report (when `json=true`) |
+| `sarif` | no | `false` | When true, also write a SARIF 2.1.0 report for GitHub Code Scanning |
+| `sarif-file` | no | `oauthlint.sarif` | Path of the SARIF report (when `sarif=true`) |
 
 ## Outputs
 
@@ -36,6 +38,7 @@ jobs:
 |------|-------------|
 | `findings` | Number of findings (after filtering) |
 | `highest-severity` | Highest severity in the run |
+| `sarif-file` | Path to the generated SARIF report (only set when `sarif=true`) |
 
 ## Examples
 
@@ -60,6 +63,40 @@ jobs:
   with:
     name: oauthlint-report
     path: oauthlint.json
+```
+
+### Upload findings to GitHub Code Scanning (SARIF)
+
+Enable `sarif: true`, then feed the `sarif-file` output to the official
+`upload-sarif` action so findings show up in the **Security → Code scanning**
+tab and as inline PR annotations.
+
+```yaml
+name: OAuthLint
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  security-events: write   # required to upload SARIF
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: oauthlint
+        uses: OAuthLint/oauthlint-action@v1
+        with:
+          sarif: 'true'
+          # SARIF is for surfacing findings, not for gating — let the upload
+          # decide what to do. Use fail-on to gate the job independently.
+          fail-on: 'off'
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ steps.oauthlint.outputs.sarif-file }}
 ```
 
 ## License
