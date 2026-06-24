@@ -6,7 +6,7 @@
 
 **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
 
-30 Semgrep rules · CLI + GitHub Action + VS Code extension · free & MIT licensed
+48 Semgrep rules (JS/TS + Python) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -99,7 +99,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported �
 
 ## Rules
 
-30 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene — each mapped to CWE & OWASP, each with a documentation page.
+48 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene (42 JavaScript/TypeScript + 6 Python) — each mapped to CWE & OWASP, each with a documentation page.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -109,8 +109,8 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Language | Status |
 |----------|:------:|
-| JavaScript / TypeScript | ✅ shipping (30 rules) |
-| Python (PyJWT, Authlib, FastAPI, Django) | 🗺️ planned |
+| JavaScript / TypeScript | ✅ shipping (42 rules) |
+| Python (PyJWT, requests, Flask) | ✅ shipping (6 rules) |
 | Java (Spring Security, nimbus-jose-jwt) | 🗺️ planned |
 | Go (golang-jwt, oauth2) | 🗺️ planned |
 | Rust (jsonwebtoken, oauth2) | 🗺️ planned |
@@ -121,7 +121,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Package | What it does |
 |---------|--------------|
-| [`rules/`](rules) | 30 Semgrep rules, schema-validated, with vulnerable + safe fixtures |
+| [`rules/`](rules) | 48 Semgrep rules (JS/TS + Python), schema-validated, with vulnerable + safe fixtures |
 | [`cli/`](cli) | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
 | [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |

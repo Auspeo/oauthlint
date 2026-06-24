@@ -42,6 +42,25 @@ targets:
     notes: Auth.js / NextAuth.js — the most-used auth library in the JS ecosystem.
 
   # ─────────────────────────────────────────────────────────────
+  # Mature Python auth libraries — exercise the Python rule pack.
+  # Findings here are candidate FPs for triage (verified 0 at add time).
+  # ─────────────────────────────────────────────────────────────
+  - repo: jpadilla/pyjwt
+    ref: master
+    expectedSignal: low
+    notes: Reference PyJWT library. Python rules should fire zero on its source.
+
+  - repo: lepture/authlib
+    ref: master
+    expectedSignal: low
+    notes: Authlib — OAuth/OIDC for Python. Should fire zero on its source.
+
+  - repo: pallets/flask
+    ref: main
+    expectedSignal: low
+    notes: Flask core. Exercises the Flask SECRET_KEY rule against clean code.
+
+  # ─────────────────────────────────────────────────────────────
   # Auth-heavy apps — expect a richer signal.
   # ─────────────────────────────────────────────────────────────
   - repo: directus/directus

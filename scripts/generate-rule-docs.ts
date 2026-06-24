@@ -23,9 +23,17 @@ const DOCS_DIR = join(ROOT, 'docs', 'rules');
 const FIXTURES_DIR = join(ROOT, 'rules', 'tests', 'fixtures');
 
 interface Snippet {
-  language: 'ts' | 'js';
+  // Markdown fence language id.
+  language: 'ts' | 'js' | 'python';
   content: string;
 }
+
+// File extension -> markdown fence id.
+const EXT_FENCE: Record<string, Snippet['language']> = {
+  ts: 'ts',
+  js: 'js',
+  py: 'python',
+};
 
 async function readFixturePair(ruleId: string): Promise<{
   vulnerable?: Snippet;
@@ -34,11 +42,11 @@ async function readFixturePair(ruleId: string): Promise<{
   const dir = ruleId.replace(/^auth\./, '').replace(/\./g, '-');
   const out: { vulnerable?: Snippet; safe?: Snippet } = {};
   for (const kind of ['vulnerable', 'safe'] as const) {
-    for (const ext of ['ts', 'js'] as const) {
+    for (const ext of ['ts', 'js', 'py'] as const) {
       const file = join(FIXTURES_DIR, dir, `${kind}.${ext}`);
       try {
         const content = await readFile(file, 'utf8');
-        out[kind] = { language: ext, content: content.trim() };
+        out[kind] = { language: EXT_FENCE[ext], content: content.trim() };
         break;
       } catch {
         /* try next */
@@ -103,11 +111,16 @@ function renderRulePage(
     sections.push('');
   }
 
+  const isPython = rule.languages.includes('python');
   sections.push('## Suppressing this rule (when you really must)');
   sections.push('');
-  sections.push('```ts');
-  sections.push(`// oauthlint-disable-next-line ${rule.id} -- <reason>`);
-  sections.push('thisLineWouldOtherwiseTriggerTheRule();');
+  sections.push(isPython ? '```python' : '```ts');
+  sections.push(`${isPython ? '#' : '//'} oauthlint-disable-next-line ${rule.id} -- <reason>`);
+  sections.push(
+    isPython
+      ? 'this_line_would_otherwise_trigger_the_rule()'
+      : 'thisLineWouldOtherwiseTriggerTheRule();',
+  );
   sections.push('```');
   sections.push('');
   sections.push(
@@ -143,7 +156,9 @@ async function ensureDir(p: string): Promise<void> {
 async function writeIndex(rules: LoadedRule[]): Promise<void> {
   const byCategory = new Map<string, LoadedRule[]>();
   for (const r of rules) {
-    const cat = r.rule.id.split('.')[1] ?? 'misc';
+    // auth.jwt.alg-none -> 'jwt'; auth.py.jwt.no-verify -> 'py-jwt' (language pack).
+    const parts = r.rule.id.split('.');
+    const cat = (parts.length >= 4 ? `${parts[1]}-${parts[2]}` : parts[1]) ?? 'misc';
     let bucket = byCategory.get(cat);
     if (!bucket) {
       bucket = [];

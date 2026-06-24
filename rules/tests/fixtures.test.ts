@@ -43,15 +43,41 @@ const fixtureDirs = readdirSync(fixturesDir, { withFileTypes: true })
   .map((e) => e.name)
   .sort();
 
+// Language packs live in a `<lang>/<category>/<name>.yml` tree (one level
+// deeper than the JS/TS pack) and ship `.py`-style fixtures. The fixture dir
+// is derived from the rule id, so a `<lang>-` prefix marks a language pack.
+const LANG_DIRS: Record<string, { ext: string }> = {
+  py: { ext: 'py' },
+};
+
+function langOf(dir: string): { lang: string; ext: string } | null {
+  const head = dir.slice(0, dir.indexOf('-'));
+  const entry = LANG_DIRS[head];
+  return entry ? { lang: head, ext: entry.ext } : null;
+}
+
 function ruleFileFor(dir: string): string {
+  const lang = langOf(dir);
+  if (lang) {
+    // py-jwt-no-verify -> rules/py/jwt/no-verify.yml
+    const rest = dir.slice(lang.lang.length + 1);
+    const sep = rest.indexOf('-');
+    return join(rulesRoot, lang.lang, rest.slice(0, sep), `${rest.slice(sep + 1)}.yml`);
+  }
   const sep = dir.indexOf('-');
   return join(rulesRoot, dir.slice(0, sep), `${dir.slice(sep + 1)}.yml`);
 }
 
+function fixtureKinds(dir: string): [string, string] {
+  const ext = langOf(dir)?.ext ?? 'ts';
+  return [`safe.${ext}`, `vulnerable.${ext}`];
+}
+
 function expectedCount(file: string): number {
+  // `// ruleid:` (JS/TS) or `# ruleid:` (Python) — count annotated cases.
   return readFileSync(file, 'utf8')
     .split('\n')
-    .filter((line) => line.includes('// ruleid:')).length;
+    .filter((line) => /(?:\/\/|#)\s*ruleid:/.test(line)).length;
 }
 
 async function scanCount(ruleFile: string, target: string): Promise<number> {
@@ -72,7 +98,7 @@ beforeAll(async () => {
   const jobs: { key: string; ruleFile: string; file: string }[] = [];
   for (const dir of fixtureDirs) {
     const ruleFile = ruleFileFor(dir);
-    for (const kind of ['safe.ts', 'vulnerable.ts']) {
+    for (const kind of fixtureKinds(dir)) {
       const file = join(fixturesDir, dir, kind);
       if (existsSync(file)) jobs.push({ key: `${dir}/${kind}`, ruleFile, file });
     }
@@ -87,7 +113,7 @@ beforeAll(async () => {
 
 describe.skipIf(!semgrepAvailable)('rule fixtures fire as annotated', () => {
   for (const dir of fixtureDirs) {
-    for (const kind of ['safe.ts', 'vulnerable.ts']) {
+    for (const kind of fixtureKinds(dir)) {
       const file = join(fixturesDir, dir, kind);
       if (!existsSync(file)) continue;
       it(`${dir}/${kind}`, () => {
