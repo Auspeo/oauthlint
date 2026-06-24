@@ -1,0 +1,41 @@
+rules:
+  - id: auth.rust.crypto.weak-cipher
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A broken or deprecated cipher from the RustCrypto ecosystem is used to
+      protect data. DES (`Des::new`, crate `des`) and 3DES (`TdesEde3::new` /
+      `TdesEde2::new`) have a 64-bit block and are considered insecure
+      (Sweet32, brute-force), while RC4 (`Rc4::new`, crate `rc4`) has
+      well-known keystream biases and is forbidden by RFC 7465. For OAuth/OIDC
+      this means tokens, client secrets, and other sensitive material are not
+      adequately protected and may be recovered by an attacker.
+
+      Use an authenticated AEAD cipher instead: AES-GCM via the `aes-gcm`
+      crate (`Aes256Gcm::new(key)`) or ChaCha20-Poly1305
+      (`ChaCha20Poly1305::new(key)`), both of which provide confidentiality
+      and integrity.
+    # Flags only the broken ciphers DES, 3DES, and RC4. Modern AEAD
+    # constructors such as `Aes256Gcm::new`, `Aes128::new`, and
+    # `ChaCha20Poly1305::new` are intentionally not matched.
+    patterns:
+      - pattern-either:
+          - pattern: Des::new(...)
+          - pattern: TdesEde3::new(...)
+          - pattern: TdesEde2::new(...)
+          - pattern: Rc4::new(...)
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-crypto-weak-cipher
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - des
+        - rc4
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://docs.rs/aes-gcm/latest/aes_gcm/
+        - https://datatracker.ietf.org/doc/html/rfc7465

@@ -1,0 +1,32 @@
+rules:
+  - id: auth.rust.tls.accept-invalid-hostnames
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A reqwest client is built with `danger_accept_invalid_hostnames(true)`,
+      which turns off TLS hostname verification. The certificate chain is still
+      checked, but a certificate valid for any other domain is accepted for this
+      connection — so an attacker holding a valid certificate for a host they
+      control can intercept the connection and read or tamper with the traffic,
+      a man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
+      access tokens, and client secrets in transit.
+
+      Never accept invalid hostnames. Leave hostname verification on (the
+      default). To trust a private CA in development, add it explicitly with
+      `ClientBuilder::add_root_certificate(cert)` instead.
+    # Matches only the literal `true`. `danger_accept_invalid_hostnames(false)`
+    # and the method's absence are not flagged. `$B` is any builder expression.
+    pattern: $B.danger_accept_invalid_hostnames(true)
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-TLS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-tls-accept-invalid-hostnames
+      category: security
+      cwe: CWE-297
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - reqwest
+      references:
+        - https://docs.rs/reqwest/latest/reqwest/struct.ClientBuilder.html#method.danger_accept_invalid_hostnames
+        - https://cwe.mitre.org/data/definitions/297.html
