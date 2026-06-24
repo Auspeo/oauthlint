@@ -80,6 +80,18 @@ export function presenceChecks(token?: string) {
   if (typeof token != 'string') return false;
   return token.length != 0;
 }
+
+// ok: auth.flow.timing-unsafe-compare -- comparing a secret-named value to a
+// string literal is not a timing target (the literal is public in source).
+export function demoPassword(password: string) {
+  return password !== 'password';
+}
+
+// ok: auth.flow.timing-unsafe-compare -- boolean-literal / feature-flag checks
+export function featureFlag(opts: { idToken?: boolean }) {
+  if (opts.idToken === false) return false;
+  return opts.idToken !== true;
+}
 ```
 
 ## Suppressing this rule (when you really must)
