@@ -1,0 +1,68 @@
+rules:
+  - id: auth.cors.reflect-origin
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      CORS is configured to echo the request's `Origin` back as
+      `Access-Control-Allow-Origin`. Reflecting the incoming origin is
+      functionally identical to allowing EVERY origin: any site can make
+      cross-origin requests and read the responses. Combined with
+      credentials this becomes a CSRF / account-takeover primitive, because
+      the browser will attach the victim's cookies to the attacker-controlled
+      request.
+
+      This is distinct from a literal `*` wildcard — here the origin is
+      reflected dynamically, which silently defeats the same-origin policy
+      while looking "scoped" in code review.
+
+      Use an explicit allowlist of trusted origins instead:
+       - `cors({ origin: 'https://app.example.com', credentials: true })`
+       - `cors({ origin: ['https://app.example.com', 'https://admin.example.com'] })`
+       - a callback that validates against an allowlist before calling
+         `cb(null, true)`.
+
+      Never set `Access-Control-Allow-Origin` to `req.headers.origin`, never
+      use `origin: true`, and never write a callback that unconditionally
+      returns `cb(null, true)`.
+    pattern-either:
+      # Manual header write: ACAO set to the request's origin in any form
+      # (req.headers.origin, req.header('origin'), req.get('Origin'), ...).
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.header("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("Origin"))
+      # express cors() middleware: origin: true echoes the request origin back.
+      - pattern: 'cors({ ..., origin: true, ... })'
+      # express cors() middleware: a callback that unconditionally allows
+      # every origin (cb(null, true) regardless of the origin argument).
+      - pattern: 'cors({ ..., origin: ($O, $CB) => $CB(null, true), ... })'
+      - patterns:
+          - pattern: |
+              cors({ ..., origin: ($O, $CB) => { ... }, ... })
+          - pattern-inside: |
+              cors({ ..., origin: ($O, $CB) => { ... return $CB(null, true); }, ... })
+      - patterns:
+          - pattern: |
+              cors({ ..., origin: function ($O, $CB) { ... }, ... })
+          - pattern-inside: |
+              cors({ ..., origin: function ($O, $CB) { ... return $CB(null, true); }, ... })
+    metadata:
+      oauthlint-rule-id: AUTH-CORS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/cors-reflect-origin
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - cors
+        - express
+      references:
+        - https://portswigger.net/web-security/cors
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS

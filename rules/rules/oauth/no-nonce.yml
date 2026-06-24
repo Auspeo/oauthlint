@@ -1,0 +1,55 @@
+rules:
+  - id: auth.oauth.no-nonce
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OIDC authorization request (scope contains `openid`) is being built
+      WITHOUT a `nonce` parameter. The nonce binds the id_token to this
+      specific authorization request — without it, an attacker can replay or
+      substitute a stolen/forged id_token (OIDC Core §3.1.2.1).
+
+      Generate a cryptographically random `nonce`, store it in the
+      session/cookie, send it on the authorize call, and verify the `nonce`
+      claim in the returned id_token. It is REQUIRED for the implicit and
+      hybrid flows and RECOMMENDED for the authorization-code flow.
+    pattern-either:
+      # Inline authorize URL carrying an OIDC scope (scope=openid…) but no
+      # nonce. The endpoint path is not hardcoded (Google /o/oauth2/v2/auth,
+      # Auth0/Okta /authorize, …). Only OIDC requests carry `openid` in scope.
+      - patterns:
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*scope=[^'"&]*openid[^'"]*['"]
+          - pattern-regex: |-
+              response_type=
+          # Suppress when the SAME URL string already carries a nonce. A bare
+          # `nonce=` not-regex would be tested against the narrow
+          # `response_type=` span and never subtract, so match the whole URL.
+          - pattern-not-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*nonce=[^'"]*['"]
+      # Programmatic URLSearchParams build (AST object match — robust to key
+      # order and object length). Fires when response_type is present and the
+      # scope value contains `openid`, but nonce is not (covers both
+      # `nonce: x` and the `nonce` shorthand). The scope test is an AST
+      # metavariable-regex so it composes with the `nonce` pattern-not on the
+      # same node (a free-floating pattern-regex would not).
+      - patterns:
+          - pattern: 'new URLSearchParams({..., response_type: $R, ...})'
+          - pattern: 'new URLSearchParams({..., scope: $S, ...})'
+          - metavariable-regex:
+              metavariable: $S
+              regex: .*openid.*
+          - pattern-not: 'new URLSearchParams({..., nonce: $N, ...})'
+          - pattern-not: 'new URLSearchParams({..., nonce, ...})'
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-nonce
+      category: security
+      cwe: CWE-294
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oidc
+      references:
+        - https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest

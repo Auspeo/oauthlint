@@ -1,0 +1,56 @@
+rules:
+  - id: auth.jwt.decode-without-verify
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.decode()` from `jsonwebtoken` only parses the token — it does NOT
+      verify the signature. Trusting any claim returned by `decode()` (e.g.
+      `sub`, `role`, `scope`) lets an attacker forge a token and bypass
+      authentication entirely.
+
+      Use `jwt.verify(token, secret, { algorithms: ['RS256'] })`, which checks
+      the signature before returning the payload. Only use `decode()` for
+      non-security-sensitive inspection (e.g. reading `kid` before verifying).
+    # Scoped to the `jsonwebtoken` library via the common alias `jwt`, mirroring
+    # no-expiration.yml / alg-none.yml. `jwt.verify(...)` is never matched, and
+    # other libraries (`jose.decodeJwt`, a bare `decodeJwt(...)`) are out of
+    # scope. We also support the destructured import `import { decode } from
+    # 'jsonwebtoken'`, scoped to that import so an unrelated `decode()` is safe.
+    #
+    # FP guard: jsonwebtoken's `decode(token[, options])` takes the token STRING
+    # as its first argument and is synchronous. Other libraries that expose a
+    # `jwt.decode` — notably next-auth's own jose-backed helper — are called as
+    # `await jwt.decode({ token, salt, ... })` (awaited, single options object).
+    # We exclude both shapes so we don't flag those (real-world FP on next-auth).
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: 'jwt.decode($X)'
+              - pattern: 'jwt.decode($X, $OPTS)'
+          - pattern-not: 'jwt.decode({...})'
+          - pattern-not: 'jwt.decode({...}, $OPTS)'
+          - pattern-not: 'await jwt.decode(...)'
+      - patterns:
+          - pattern-inside: |
+              import { ..., decode, ... } from 'jsonwebtoken'
+              ...
+          - pattern-either:
+              - pattern: 'decode($X)'
+              - pattern: 'decode($X, $OPTS)'
+          - pattern-not: 'decode({...})'
+          - pattern-not: 'decode({...}, $OPTS)'
+          - pattern-not: 'await decode(...)'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-decode-without-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - jsonwebtoken
+      references:
+        - https://github.com/auth0/node-jsonwebtoken#jwtdecodetoken--options
+        - https://cwe.mitre.org/data/definitions/347.html
