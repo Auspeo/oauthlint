@@ -38,14 +38,37 @@ rules:
           - pattern-not: 'typeof $X !== $Y'
           - pattern-not: 'typeof $X == $Y'
           - pattern-not: 'typeof $X != $Y'
-          - pattern-not: '$X === ""'
-          - pattern-not: "$X === ''"
-          - pattern-not: '$X !== ""'
-          - pattern-not: "$X !== ''"
-          - pattern-not: '$X == ""'
-          - pattern-not: "$X == ''"
-          - pattern-not: '$X != ""'
-          - pattern-not: "$X != ''"
+          # A secret-named value compared to a *literal* is never the
+          # timing target: a literal baked into source is already public,
+          # so there is no secret to leak byte-by-byte. This covers demo
+          # passwords (`pw !== "password"`), feature flags
+          # (`idToken === false`) and status checks — the dominant FP
+          # class on next-auth in real-world validation. `"..."` matches
+          # any string literal (including the empty string).
+          - pattern-not: '$X === "..."'
+          - pattern-not: '$X !== "..."'
+          - pattern-not: '$X == "..."'
+          - pattern-not: '$X != "..."'
+          - pattern-not: '"..." === $X'
+          - pattern-not: '"..." !== $X'
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: '$X === true'
+          - pattern-not: '$X !== true'
+          - pattern-not: '$X == true'
+          - pattern-not: '$X != true'
+          - pattern-not: '$X === false'
+          - pattern-not: '$X !== false'
+          - pattern-not: '$X == false'
+          - pattern-not: '$X != false'
+          - pattern-not: 'true === $X'
+          - pattern-not: 'true !== $X'
+          - pattern-not: 'true == $X'
+          - pattern-not: 'true != $X'
+          - pattern-not: 'false === $X'
+          - pattern-not: 'false !== $X'
+          - pattern-not: 'false == $X'
+          - pattern-not: 'false != $X'
           - pattern-not: '$X.length === $N'
           - pattern-not: '$X.length !== $N'
           - pattern-not: '$X.length == $N'
@@ -71,14 +94,37 @@ rules:
           - pattern-not: 'typeof $X !== $Y'
           - pattern-not: 'typeof $X == $Y'
           - pattern-not: 'typeof $X != $Y'
-          - pattern-not: '$X === ""'
-          - pattern-not: "$X === ''"
-          - pattern-not: '$X !== ""'
-          - pattern-not: "$X !== ''"
-          - pattern-not: '$X == ""'
-          - pattern-not: "$X == ''"
-          - pattern-not: '$X != ""'
-          - pattern-not: "$X != ''"
+          # A secret-named value compared to a *literal* is never the
+          # timing target: a literal baked into source is already public,
+          # so there is no secret to leak byte-by-byte. This covers demo
+          # passwords (`pw !== "password"`), feature flags
+          # (`idToken === false`) and status checks — the dominant FP
+          # class on next-auth in real-world validation. `"..."` matches
+          # any string literal (including the empty string).
+          - pattern-not: '$X === "..."'
+          - pattern-not: '$X !== "..."'
+          - pattern-not: '$X == "..."'
+          - pattern-not: '$X != "..."'
+          - pattern-not: '"..." === $X'
+          - pattern-not: '"..." !== $X'
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: '$X === true'
+          - pattern-not: '$X !== true'
+          - pattern-not: '$X == true'
+          - pattern-not: '$X != true'
+          - pattern-not: '$X === false'
+          - pattern-not: '$X !== false'
+          - pattern-not: '$X == false'
+          - pattern-not: '$X != false'
+          - pattern-not: 'true === $X'
+          - pattern-not: 'true !== $X'
+          - pattern-not: 'true == $X'
+          - pattern-not: 'true != $X'
+          - pattern-not: 'false === $X'
+          - pattern-not: 'false !== $X'
+          - pattern-not: 'false == $X'
+          - pattern-not: 'false != $X'
           - pattern-not: '$X.length === $N'
           - pattern-not: '$X.length !== $N'
           - pattern-not: '$X.length == $N'
