@@ -39,6 +39,21 @@ export class SemgrepNotInstalledError extends Error {
   }
 }
 
+/**
+ * Thrown when Semgrep's `--json` output cannot be parsed. Previously this was
+ * swallowed and reported as "0 findings" — which made a broken scan look like
+ * a clean one and let CI pass silently. We now fail loudly instead.
+ */
+export class SemgrepOutputError extends Error {
+  constructor(detail: string, snippet?: string) {
+    const tail = snippet ? `\n--- first bytes of output ---\n${snippet}` : '';
+    super(
+      `Could not parse Semgrep output: ${detail}.\nThis usually means the scan was interrupted or Semgrep emitted an error.\nRe-run with the semgrep CLI directly to see the raw output.${tail}`,
+    );
+    this.name = 'SemgrepOutputError';
+  }
+}
+
 export interface SemgrepAdapterOptions {
   /** Override path to the semgrep binary (defaults to `semgrep` on PATH). */
   binary?: string;
@@ -103,18 +118,16 @@ export class SemgrepAdapter {
       throw new SemgrepNotInstalledError();
     }
 
+    const stdout = typeof result.stdout === 'string' ? result.stdout : '';
     let parsed: SemgrepJson;
     try {
-      const stdout = typeof result.stdout === 'string' ? result.stdout : '';
-      parsed = JSON.parse(stdout || '{}') as SemgrepJson;
-    } catch {
-      return {
-        findings: [],
-        scannedFiles: 0,
-        durationMs: Date.now() - start,
-        semgrepVersion: null,
-        errors: ['semgrep output was not valid JSON'],
-      };
+      // An empty stdout is legitimate (no targets / no findings on some
+      // Semgrep versions); anything non-empty that fails to parse is a real
+      // failure we must surface rather than silently report as "clean".
+      parsed = JSON.parse(stdout.trim() || '{}') as SemgrepJson;
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new SemgrepOutputError(detail, stdout.slice(0, 200));
     }
 
     const findings = (parsed.results ?? []).map(toFinding);

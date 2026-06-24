@@ -16,7 +16,11 @@ vi.mock('execa', () => ({
   ExecaError: class ExecaError extends Error {},
 }));
 
-import { SemgrepAdapter, SemgrepNotInstalledError } from '../src/adapters/semgrep.js';
+import {
+  SemgrepAdapter,
+  SemgrepNotInstalledError,
+  SemgrepOutputError,
+} from '../src/adapters/semgrep.js';
 
 /** Make the next execa call resolve with `value`. */
 const resolveWith = (value: unknown) => {
@@ -98,12 +102,20 @@ describe('SemgrepAdapter.scan (mocked execa)', () => {
     expect(args).toContain('--autofix');
   });
 
-  it('returns an error result when stdout is not valid JSON', async () => {
+  it('throws SemgrepOutputError when stdout is non-empty but unparseable', async () => {
+    // Regression guard: this used to be swallowed as "0 findings, exit 0",
+    // which made a truncated/interrupted scan look clean in CI.
     resolveWith({ stdout: 'not json at all' });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    await expect(adapter.scan('/target')).rejects.toBeInstanceOf(SemgrepOutputError);
+  });
+
+  it('treats empty stdout as a clean zero-finding scan', async () => {
+    resolveWith({ stdout: '   ' });
     const adapter = new SemgrepAdapter({ configPath: '/rules' });
     const result = await adapter.scan('/target');
     expect(result.findings).toEqual([]);
-    expect(result.errors).toEqual(['semgrep output was not valid JSON']);
+    expect(result.errors).toEqual([]);
   });
 
   it('surfaces semgrep-reported errors', async () => {

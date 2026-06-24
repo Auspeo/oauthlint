@@ -2,7 +2,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { type SemgrepAdapter, SemgrepNotInstalledError } from '../src/adapters/semgrep.js';
+import {
+  type SemgrepAdapter,
+  SemgrepNotInstalledError,
+  SemgrepOutputError,
+} from '../src/adapters/semgrep.js';
 import { runScan } from '../src/commands/scan.js';
 import type { Finding, ScanResult } from '../src/types.js';
 
@@ -148,6 +152,17 @@ describe('runScan (error handling)', () => {
     });
     expect(code).toBe(127);
     expect(stream.buf).toContain('Semgrep is not installed');
+  });
+
+  it('returns 2 and prints guidance when Semgrep output cannot be parsed', async () => {
+    const stream = new FakeStream();
+    const code = await runScan({
+      path: '.',
+      adapter: throwingAdapter(new SemgrepOutputError('Unexpected end of JSON input')),
+      stream: stream as unknown as NodeJS.WritableStream,
+    });
+    expect(code).toBe(2);
+    expect(stream.buf).toContain('Could not parse Semgrep output');
   });
 
   it('re-throws unexpected adapter errors', async () => {
