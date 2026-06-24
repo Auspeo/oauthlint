@@ -1,0 +1,41 @@
+rules:
+  - id: auth.py.cookie.insecure-flags
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A session/auth cookie is issued with a security attribute explicitly
+      disabled. `secure=False` lets the cookie travel over plain HTTP (it can be
+      sniffed on the wire), and `httponly=False` exposes it to JavaScript so an
+      XSS payload can read and exfiltrate it — either way the session token is
+      at risk of theft (CWE-614, OWASP A05:2021). The same applies to Django's
+      `SESSION_COOKIE_SECURE = False`, `CSRF_COOKIE_SECURE = False`, and
+      `SESSION_COOKIE_HTTPONLY = False` settings.
+
+      Always set Secure + HttpOnly (and ideally `SameSite`) on auth cookies,
+      e.g. `response.set_cookie("session", token, secure=True, httponly=True,
+      samesite="Lax")` or, in Django settings, `SESSION_COOKIE_SECURE = True`
+      and `SESSION_COOKIE_HTTPONLY = True`.
+    # Matches ONLY the literal `False` on these specific kwargs/settings keys.
+    # `secure=True`, `SESSION_COOKIE_SECURE = True`, and the absence of the
+    # kwarg are NOT flagged. `$RESP` matches any response variable name.
+    pattern-either:
+      - pattern: $RESP.set_cookie(..., secure=False, ...)
+      - pattern: $RESP.set_cookie(..., httponly=False, ...)
+      - pattern: SESSION_COOKIE_SECURE = False
+      - pattern: CSRF_COOKIE_SECURE = False
+      - pattern: SESSION_COOKIE_HTTPONLY = False
+    metadata:
+      oauthlint-rule-id: AUTH-PY-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-cookie-insecure-flags
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - flask
+        - django
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/settings/#session-cookie-secure
+        - https://flask.palletsprojects.com/en/stable/api/#flask.Response.set_cookie
+        - https://cwe.mitre.org/data/definitions/614.html

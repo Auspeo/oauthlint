@@ -1,0 +1,45 @@
+rules:
+  - id: auth.py.jwt.no-algorithms
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A JWT is decoded with a verification key but WITHOUT an explicit
+      `algorithms` allowlist. Without pinning the accepted algorithms, PyJWT
+      may accept a token signed with an unexpected algorithm, enabling
+      algorithm-confusion attacks (e.g. an RS256 verifier tricked into
+      treating an attacker-supplied HS256 token as valid by using the public
+      key as an HMAC secret).
+
+      Always pass an explicit allowlist: `jwt.decode(token, key,
+      algorithms=["RS256"])` (or the exact algorithm you expect). List only the
+      algorithms your application actually uses.
+    # Scoped to PyJWT's `jwt.decode(token, key, ...)` with a verification key
+    # and NO `algorithms=` kwarg. The `verify_signature: False` /
+    # `verify=False` cases are intentionally excluded here — those are reported
+    # by auth.py.jwt.no-verify, so we avoid a duplicate finding.
+    #
+    # The `import jwt` guard pins this to PyJWT. Other libraries expose a
+    # `jwt.decode(token, key)` that DOES verify and takes no `algorithms`
+    # kwarg — notably joserfc (`from joserfc import jwt`), used by Authlib.
+    # Requiring the bare `import jwt` excludes those (real-world FP on Authlib).
+    patterns:
+      - pattern: jwt.decode($T, $K, ...)
+      - pattern-not: jwt.decode($T, $K, ..., algorithms=$A, ...)
+      - pattern-not: jwt.decode($T, ..., verify=False, ...)
+      - pattern-not: jwt.decode($T, ..., options=$OPTS, ...)
+      - pattern-inside: |
+          import jwt
+          ...
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-algorithms
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - pyjwt
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html

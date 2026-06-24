@@ -1,0 +1,37 @@
+rules:
+  - id: auth.py.flow.debug-enabled
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      Debug mode is hard-coded to `True`. In production this leaks the
+      `SECRET_KEY`, environment variables, and full tracebacks, and Flask's
+      Werkzeug debugger additionally exposes an interactive console that
+      allows remote code execution.
+
+      Never enable debug mode in production. Drive it from an environment
+      variable that defaults to off, e.g.
+      `debug=os.environ.get("FLASK_DEBUG") == "1"` (Flask) or
+      `DEBUG = os.environ.get("DJANGO_DEBUG") == "1"` (Django).
+    # Matches only the literal `True`. `debug=False`, `DEBUG = False`,
+    # `DEBUG = os.environ.get(...)`, and `config(...)` are NOT matched.
+    # `$APP` is a metavariable for any application object name.
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: $APP.config["DEBUG"] = True
+      - pattern: $APP.debug = True
+      - pattern: DEBUG = True
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-debug-enabled
+      category: security
+      cwe: CWE-489
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - flask
+        - django
+      references:
+        - https://flask.palletsprojects.com/en/stable/config/#DEBUG
+        - https://docs.djangoproject.com/en/stable/ref/settings/#debug
+        - https://cwe.mitre.org/data/definitions/489.html
