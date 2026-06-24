@@ -50,6 +50,7 @@ const LANG_DIRS: Record<string, { ext: string }> = {
   py: { ext: 'py' },
   go: { ext: 'go' },
   java: { ext: 'java' },
+  rust: { ext: 'rs' },
 };
 
 function langOf(dir: string): { lang: string; ext: string } | null {

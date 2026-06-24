@@ -1,0 +1,35 @@
+rules:
+  - id: auth.rust.cookie.insecure
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A session/auth cookie is built with a security attribute explicitly
+      disabled (`secure(false)` or `http_only(false)`). With `secure(false)`
+      the cookie is sent over plain HTTP, so a network attacker can read the
+      session token. With `http_only(false)` the cookie is readable from
+      JavaScript, so any XSS can steal it. For OAuth/OIDC this exposes session
+      and token cookies to theft and hijacking.
+
+      Set `secure(true)` and `http_only(true)` on auth cookies, and add an
+      appropriate `SameSite` mode (for example
+      `same_site(SameSite::Lax)`).
+    # Matches only the literal `false`. `secure(true)`, `http_only(true)`, and
+    # the absence of the call are not flagged. `$C` is any cookie builder
+    # expression (for example `Cookie::build(...)`).
+    patterns:
+      - pattern-either:
+          - pattern: $C.secure(false)
+          - pattern: $C.http_only(false)
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - cookie
+      references:
+        - https://docs.rs/cookie/latest/cookie/struct.CookieBuilder.html
+        - https://cwe.mitre.org/data/definitions/614.html

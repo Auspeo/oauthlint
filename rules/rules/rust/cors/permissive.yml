@@ -1,0 +1,38 @@
+rules:
+  - id: auth.rust.cors.permissive
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A wide-open CORS policy is configured. `Cors::permissive()` (actix-web),
+      `CorsLayer::permissive()` / `CorsLayer::very_permissive()` (tower-http),
+      and `CorsLayer::new().allow_origin(Any)` all allow requests from any
+      origin. Combined with credentialed requests this lets any website read
+      authenticated responses — including OAuth/OIDC tokens, session data, and
+      user info exposed by your API.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, e.g.
+      `allow_origin("https://app.example.com".parse().unwrap())` or
+      `allow_origin(["https://app.example.com".parse().unwrap()])`.
+    # Targets only the fully-open helpers and `allow_origin(Any)`. An explicit
+    # origin or a list of origins is not flagged.
+    patterns:
+      - pattern-either:
+          - pattern: Cors::permissive()
+          - pattern: CorsLayer::permissive()
+          - pattern: CorsLayer::very_permissive()
+          - pattern: $B.allow_origin(Any)
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-cors-permissive
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - actix-web
+        - tower-http
+      references:
+        - https://docs.rs/actix-cors/latest/actix_cors/struct.Cors.html#method.permissive
+        - https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html
+        - https://cwe.mitre.org/data/definitions/942.html
