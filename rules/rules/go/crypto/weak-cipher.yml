@@ -1,0 +1,38 @@
+rules:
+  - id: auth.go.crypto.weak-cipher
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A broken or deprecated block/stream cipher is used to protect data. DES
+      (`des.NewCipher`) and 3DES (`des.NewTripleDESCipher`) have a 64-bit block
+      and are considered insecure (Sweet32, brute-force), while RC4
+      (`rc4.NewCipher`) has well-known keystream biases and is forbidden by RFC
+      7465. For OAuth/OIDC this means tokens, client secrets, and other
+      sensitive material are not adequately protected and may be recovered by
+      an attacker.
+
+      Use authenticated AES instead: load the key with `crypto/aes`
+      (`aes.NewCipher(key)`) and wrap it in `cipher.NewGCM(block)` to get
+      AES-GCM, which provides both confidentiality and integrity.
+    # Flags only the broken ciphers DES, 3DES, and RC4. `aes.NewCipher(...)`
+    # is intentionally not matched.
+    patterns:
+      - pattern-either:
+          - pattern: des.NewCipher(...)
+          - pattern: des.NewTripleDESCipher(...)
+          - pattern: rc4.NewCipher(...)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-crypto-weak-cipher
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - crypto/des
+        - crypto/rc4
+      references:
+        - https://pkg.go.dev/crypto/aes#NewCipher
+        - https://pkg.go.dev/crypto/cipher#NewGCM
+        - https://cwe.mitre.org/data/definitions/327.html
