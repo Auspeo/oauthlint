@@ -6,7 +6,7 @@
 
 **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
 
-90 Semgrep rules (JS/TS · Python · Go · Java · Rust) · CLI + GitHub Action + VS Code extension · free & MIT licensed
+A curated, multi-language Semgrep rule pack (JS/TS · Python · Go · Java · Rust, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -49,9 +49,9 @@ Honest answer: nothing stops you from writing these rules yourself. Semgrep is o
 
 What we have is the work most people never do:
 
-- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more — and anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the invisible, tedious work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): 90 rules × ~9,400 files, zero false positives on the clean auth libraries.)
-- **One coherent product across five languages.** Same concept, same ID scheme, same docs — `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go. Not a patchwork of community rules with mismatched styles.
-- **Every finding teaches.** All 90 rules link to a fix page with CWE and OWASP mappings. It's a lesson, not a grep hit.
+- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more — and anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the invisible, tedious work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): validated across thousands of files of real auth-library source, with zero false positives on the clean auth libraries.)
+- **One coherent product across every language it covers.** Same concept, same ID scheme, same docs — `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go. Not a patchwork of community rules with mismatched styles.
+- **Every finding teaches.** Every rule links to a fix page with CWE and OWASP mappings. It's a lesson, not a grep hit.
 - **The angle the registry doesn't have:** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat — encoded in each rule's `llm-prevalence` metadata.
 
 Use OAuthLint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
@@ -112,7 +112,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported �
 
 ## Rules
 
-90 rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene (42 JavaScript/TypeScript + 12 Python + 12 Go + 12 Java + 12 Rust) — each mapped to CWE & OWASP, each with a documentation page.
+Rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust — each mapped to CWE & OWASP, each with a documentation page. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -122,11 +122,12 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Language | Status |
 |----------|:------:|
-| JavaScript / TypeScript | ✅ shipping (42 rules) |
-| Python (PyJWT, requests, Flask, Django) | ✅ shipping (12 rules) |
-| Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping (12 rules) |
-| Go (golang-jwt, crypto/tls, net/http) | ✅ shipping (12 rules) |
-| Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping (12 rules) |
+| JavaScript / TypeScript | ✅ shipping |
+| Python (PyJWT, requests, Flask, Django) | ✅ shipping |
+| Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping |
+| Go (golang-jwt, crypto/tls, net/http) | ✅ shipping |
+| Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping |
+| More (open an issue to request your stack) | 🔜 planned |
 
 **Why JS/TS first?** That's where AI coding tools generate the most code — and therefore the most OAuth/JWT bugs. It's the highest-density beachhead, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
 
@@ -134,7 +135,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Package | What it does |
 |---------|--------------|
-| [`rules/`](rules) | 90 Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
+| [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
 | [`cli/`](cli) | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
 | [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |
@@ -170,4 +171,4 @@ Want a new anti-pattern caught, or want to write the rule yourself? See
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Built by [Maurice Anney](https://github.com/Mauriceanney), an IAM engineer.
+MIT — see [LICENSE](LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).

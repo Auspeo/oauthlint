@@ -5,6 +5,17 @@ All notable changes to oauthlint are recorded here. Per-package detail lives in
 The project follows [Semantic Versioning](https://semver.org); it is pre-1.0, so
 minor versions may still change behavior.
 
+## [0.2.3] — 2026-06-25
+
+### Changed
+
+- Attribution: the project is credited to **Auspeo** instead of a personal name
+  across the LICENSE, package `author` fields, and README bylines.
+- Docs/copy no longer freeze the rule and language counts ("90 rules", "five
+  languages") in prose — wording is now evergreen ("a curated, multi-language
+  rule pack", "and growing") and exact counts live only in the always-current
+  rule catalogue, so the copy doesn't go stale as coverage grows.
+
 ## [0.2.2] — 2026-06-25
 
 ### Changed
@@ -82,6 +93,7 @@ minor versions may still change behavior.
 - Docker-based GitHub Action.
 - VS Code extension with inline diagnostics and Quick Fix suppressions.
 
+[0.2.3]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.3
 [0.2.2]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.2
 [0.2.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.0

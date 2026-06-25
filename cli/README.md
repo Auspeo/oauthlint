@@ -6,7 +6,7 @@
 
 **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
 
-90 Semgrep rules · JS/TS · Python · Go · Java · Rust · CLI + GitHub Action + VS Code · free & MIT
+A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Java · Rust (and growing) · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -60,9 +60,10 @@ oauthlint gives you is the work most people never do:
 - **Low false positives, validated against real auth libraries.** The rules are
   run against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`,
   Spring Security and more. Anything that fires on mature library source goes to
-  a triage queue, not to you — 90 rules × ~9,400 files, **zero false positives**
-  on the clean auth libraries ([validation report](https://oauthlint.dev/VALIDATION)).
-- **One coherent product across five languages.** Same concepts, same ID scheme,
+  a triage queue, not to you — validated across thousands of files of real
+  auth-library source, with **zero false positives** on the clean libraries
+  ([validation report](https://oauthlint.dev/VALIDATION)).
+- **One coherent product across every language it covers.** Same concepts, same ID scheme,
   same docs — not a patchwork of community rules with mismatched styles.
 - **Every finding teaches.** All 90 rules link to a fix page with CWE and OWASP
   mappings. It's a lesson, not a grep hit.
@@ -134,18 +135,19 @@ Or just fail the build on HIGH findings: `npx oauthlint scan ./src --fail-on HIG
 
 ## What it catches
 
-90 rules across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session
-hygiene — each mapped to CWE & OWASP, each with a documentation page.
+Rules across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene —
+each mapped to CWE & OWASP, each with a documentation page. Languages covered
+today (more on the way):
 
-| Language | Rules |
-|----------|:-----:|
-| JavaScript / TypeScript | 42 |
-| Python (PyJWT, requests, Flask, Django) | 12 |
-| Java (Spring Security, jjwt, nimbus-jose-jwt) | 12 |
-| Go (golang-jwt, crypto/tls, net/http) | 12 |
-| Rust (jsonwebtoken, reqwest, actix/tower) | 12 |
+| Language | Libraries |
+|----------|-----------|
+| JavaScript / TypeScript | jose, jsonwebtoken, NextAuth, express, … |
+| Python | PyJWT, Authlib, requests, Flask, Django |
+| Java | Spring Security, jjwt, nimbus-jose-jwt |
+| Go | golang-jwt, crypto/tls, net/http |
+| Rust | jsonwebtoken, reqwest, actix/tower |
 
-👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
+👉 **Browse the full, always-current catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
 ## Configuration
 
@@ -184,5 +186,5 @@ the next reviewer needs to see exactly which lines opted out, and why.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE). Built
-by [Maurice Anney](https://github.com/Mauriceanney), an IAM engineer.
+MIT — see [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE).
+Built and maintained by [Auspeo](https://github.com/Auspeo).
