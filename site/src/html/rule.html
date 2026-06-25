@@ -1,0 +1,107 @@
+<div style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
+
+  <nav style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);">
+    <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
+      <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
+      <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
+    </a>
+    <div style="flex:1;"></div>
+    <div style="display:flex; gap:var(--ol-space-6); align-items:center;" data-navlinks>
+      <a href="/docs" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">docs</a>
+      <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">rules</a>
+      <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">pricing</a>
+      <a href="/about" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">about</a>
+    </div>
+    <a href="#" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">GitHub ↗</a>
+  </nav>
+
+  <div style="max-width:1120px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:var(--ol-space-10); padding:var(--ol-space-10) var(--ol-space-6) var(--ol-space-20);" data-rulegrid>
+
+    <main style="min-width:0;">
+      <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); margin-bottom:var(--ol-space-5);"><a href="/rules" style="color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-accent);">rules</a> / jwt / jwt-no-verification</div>
+
+      <!-- finding header as the page masthead -->
+      <div style="display:grid; grid-template-columns:3px 1fr; border:1px solid var(--ol-border); background:var(--ol-surface); margin-bottom:var(--ol-space-8);">
+        <div style="background:var(--ol-sev-critical);"></div>
+        <div style="padding:var(--ol-space-6);">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:var(--ol-space-4);">
+            <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.08em; color:var(--ol-neutral-50); background:var(--ol-sev-critical-solid); padding:4px 10px;">CRITICAL</span>
+            <span style="font-family:var(--ol-font-mono); font-size:16px; color:var(--ol-text);">jwt-no-verification</span>
+          </div>
+          <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); line-height:1.15;">JWT is decoded but never verified</h1>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">CWE-347</span>
+            <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP A02:2021</span>
+            <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">ts · python · go</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">What it catches</h2>
+      <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-8);">Code that <em style="color:var(--ol-text);">decodes</em> a JSON Web Token to read its claims without ever <em style="color:var(--ol-text);">verifying</em> the signature. Decoding is a reversible base64 operation — it proves nothing about who issued the token. Acting on those claims lets any attacker forge a token and impersonate any user.</p>
+
+      <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Why it matters</h2>
+      <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-8);">This is the single most common critical that AI assistants generate — <code style="font-family:var(--ol-font-mono); color:var(--ol-accent);">jwt.decode()</code> reads as harmless and the happy path works in tests. There is no error and no crash until an attacker sends <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">{"sub":"admin"}</code> with a throwaway signature.</p>
+
+      <!-- Vulnerable -->
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:var(--ol-space-3);"><span style="width:8px; height:8px; background:var(--ol-sev-critical);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--ol-sev-critical);">VULNERABLE</span></div>
+      <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-sev-critical-border); overflow:hidden; margin-bottom:var(--ol-space-6);">
+        <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">auth/session.ts</div>
+        <div style="padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; overflow-x:auto;">
+          <div><span style="color:var(--ol-accent-300);">const</span> token = req.headers.authorization?.<span style="color:var(--ol-sev-medium);">split</span>(<span style="color:var(--ol-sev-pass);">' '</span>)[<span style="color:var(--ol-sev-medium);">1</span>]</div>
+          <div style="background:var(--ol-sev-critical-bg); border-left:2px solid var(--ol-sev-critical); padding-left:8px; margin-left:-10px;"><span style="color:var(--ol-accent-300);">const</span> claims = jwt.<span style="color:var(--ol-sev-critical); text-decoration:underline wavy var(--ol-sev-critical); text-underline-offset:3px;">decode</span>(token)</div>
+          <div>req.userId = claims.<span style="color:var(--ol-text);">sub</span> <span style="color:var(--ol-text-faint);">// trusts an unverified token</span></div>
+        </div>
+      </div>
+
+      <!-- Safe -->
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:var(--ol-space-3);"><span style="width:8px; height:8px; background:var(--ol-sev-pass);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--ol-sev-pass);">SAFE</span></div>
+      <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-sev-pass-border); overflow:hidden; margin-bottom:var(--ol-space-10);">
+        <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">auth/session.ts</div>
+        <div style="padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; overflow-x:auto;">
+          <div><span style="color:var(--ol-accent-300);">const</span> claims = jwt.<span style="color:var(--ol-sev-pass);">verify</span>(token, publicKey, {</div>
+          <div>&nbsp;&nbsp;algorithms: [<span style="color:var(--ol-sev-pass);">'RS256'</span>], <span style="color:var(--ol-text-faint);">// pin the algorithm</span></div>
+          <div>&nbsp;&nbsp;issuer: <span style="color:var(--ol-sev-pass);">'https://auth.example.com'</span>,</div>
+          <div>&nbsp;&nbsp;audience: <span style="color:var(--ol-sev-pass);">'api://default'</span>,</div>
+          <div>})</div>
+          <div>req.userId = claims.<span style="color:var(--ol-text);">sub</span> <span style="color:var(--ol-sev-pass);">// signature, alg, iss &amp; aud checked</span></div>
+        </div>
+      </div>
+
+      <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Suppressing this rule</h2>
+      <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">If a finding is a genuine false positive, scope the suppression to the exact line and leave a reason — never disable the rule project-wide.</p>
+      <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-border); padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; overflow-x:auto; margin-bottom:var(--ol-space-10);">
+        <div style="color:var(--ol-text-faint);">// oauthlint-disable-next-line jwt-no-verification -- token pre-verified by gateway</div>
+        <div><span style="color:var(--ol-accent-300);">const</span> claims = jwt.<span style="color:var(--ol-sev-medium);">decode</span>(token)</div>
+      </div>
+
+      <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-4);">References</h2>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <a href="#" style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-accent); text-decoration:none;" style-hover="text-decoration:underline;">CWE-347 — Improper Verification of Cryptographic Signature ↗</a>
+        <a href="#" style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-accent); text-decoration:none;" style-hover="text-decoration:underline;">RFC 7519 — JSON Web Token ↗</a>
+        <a href="#" style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-accent); text-decoration:none;" style-hover="text-decoration:underline;">OWASP — JSON Web Token Cheat Sheet ↗</a>
+      </div>
+    </main>
+
+    <aside style="position:sticky; top:80px; align-self:start; height:fit-content; display:flex; flex-direction:column; gap:var(--ol-space-4);" data-meta>
+      <div style="border:1px solid var(--ol-border);">
+        <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); padding:12px 16px; border-bottom:1px solid var(--ol-border);">METADATA</div>
+        <div style="padding:var(--ol-space-4) var(--ol-space-4); display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Severity</span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:var(--ol-sev-critical);">● CRITICAL</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">CWE</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">CWE-347</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Category</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">JWT</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Since</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">v0.1.0</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">FP on clean libs</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-sev-pass);">0</span></div>
+        </div>
+      </div>
+      <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">← all rules</a>
+    </aside>
+  </div>
+
+  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-neutral-1000);">
+    <div style="max-width:1120px; margin:0 auto; padding:var(--ol-space-8) var(--ol-space-6); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">{{ copyright }}</span>
+      <a href="/rules" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-accent);">all rules →</a>
+    </div>
+  </footer>
+</div>

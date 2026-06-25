@@ -1,0 +1,7 @@
+---
+import Base from '../layouts/Base.astro';
+import body from '../html/rules.html?raw';
+---
+<Base title="Rules — OAuthLint" description="Browse the OAuthLint rule pack. Filter auth anti-pattern rules by language, category and severity. Every rule maps to a CWE and ships a vulnerable and a safe example.">
+  <Fragment set:html={body} />
+</Base>

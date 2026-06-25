@@ -1,0 +1,342 @@
+<div data-bg style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
+
+  <!-- NAV -->
+  <nav style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);">
+    <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
+      <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
+      <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
+    </a>
+    <div style="flex:1;"></div>
+    <div style="display:flex; gap:var(--ol-space-6); align-items:center;" data-navlinks>
+      <a href="/docs" style="font-family:var(--ol-font-mono); font-size:12px; letter-spacing:0.02em; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">docs</a>
+      <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; letter-spacing:0.02em; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">rules</a>
+      <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:12px; letter-spacing:0.02em; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">pricing</a>
+      <a href="/about" style="font-family:var(--ol-font-mono); font-size:12px; letter-spacing:0.02em; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">about</a>
+    </div>
+    <a href="#" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.85 9.73.5.1.68-.22.68-.49v-1.7c-2.79.62-3.38-1.22-3.38-1.22-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.9 1.56 2.36 1.11 2.94.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.4 9.4 0 0112 6.84c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9v2.82c0 .27.18.6.69.49A10.26 10.26 0 0022 12.25C22 6.58 17.52 2 12 2z"/></svg>
+      <span style="color:var(--ol-text);">8.2k</span>
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <header style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6) var(--ol-space-12);">
+    <div style="display:grid; grid-template-columns:minmax(0,0.92fr) minmax(0,1.08fr); gap:var(--ol-space-12); align-items:center;" data-hero-grid>
+      <div style="min-width:0;">
+        <div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-6);">
+          <span style="width:6px; height:6px; background:var(--ol-sev-pass);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">OPEN SOURCE · MIT · BUILT ON SEMGREP</span>
+        </div>
+        <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(2.2rem, 5vw, 3.3rem); line-height:1.04; letter-spacing:-0.03em; margin:0 0 var(--ol-space-5);">AI ships the auth bug.<br>OAuthLint catches it<br>before the PR.</h1>
+        <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0 0 var(--ol-space-8); max-width:50ch;">A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns that Copilot, Cursor and Claude generate by default. Hand-curated rules across every language you ship auth in — and zero false positives on clean auth libraries.</p>
+
+        <div style="display:flex; align-items:center; gap:10px; height:46px; padding:0 6px 0 16px; background:var(--ol-neutral-1000); border:1px solid var(--ol-border-strong); max-width:400px; margin-bottom:var(--ol-space-4);">
+          <span style="color:var(--ol-accent); font-family:var(--ol-font-mono); font-size:13px;">$</span>
+          <span style="flex:1; font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">npx oauthlint scan ./src</span>
+          <button onClick="{{ copyInstall }}" aria-label="Copy install command" style="display:flex; align-items:center; gap:6px; height:34px; padding:0 12px; font-family:var(--ol-font-mono); font-size:11px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); cursor:pointer; transition:all var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-accent);">{{ installLabel }}</button>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center;">
+          <a href="/docs" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-ui); font-weight:600; font-size:14px; color:var(--ol-accent-fg); background:var(--ol-accent); height:40px; padding:0 18px; text-decoration:none; transition:background var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="background:var(--ol-accent-hover);">Read the docs</a>
+          <a href="#" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:13px; color:var(--ol-text-secondary); background:transparent; border:1px solid var(--ol-border-strong); height:40px; padding:0 16px; text-decoration:none; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">View source ↗</a>
+        </div>
+      </div>
+
+      <!-- HERO ARTIFACT: live VULN -> FIX -->
+      <div style="min-width:0; position:relative; background:var(--ol-neutral-1000); border:1px solid var(--ol-border-strong); overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:8px; padding:0 14px; height:38px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border);">
+          <span style="width:10px; height:10px; border-radius:50%; background:var(--ol-neutral-700);"></span>
+          <span style="width:10px; height:10px; border-radius:50%; background:var(--ol-neutral-700);"></span>
+          <span style="width:10px; height:10px; border-radius:50%; background:var(--ol-neutral-700);"></span>
+          <span style="margin-left:8px; font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">auth/session.ts</span>
+          <span style="margin-left:auto; display:flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:10px; color:var(--ol-text-muted);"><span style="width:6px; height:6px; border-radius:50%; background:var(--ol-accent); animation:ol-blink 1.4s steps(1) infinite;"></span>oauthlint · watching</span>
+        </div>
+        <div style="position:relative;">
+          <div data-sweep style="position:absolute; left:0; right:0; top:0; height:46px; background:linear-gradient(180deg, transparent, color-mix(in oklch, var(--ol-accent) 11%, transparent), transparent); pointer-events:none; animation:ol-sweep 4.5s var(--ol-ease-standard) infinite;"></div>
+          <div style="font-family:var(--ol-font-mono); font-size:12.5px; line-height:1.95; padding:var(--ol-space-4) 0; position:relative;">
+            <div style="display:flex; padding:0 16px;"><span style="width:26px; color:var(--ol-text-faint); flex-shrink:0; user-select:none;">40</span><span style="color:var(--ol-accent-300);">export async function </span><span style="color:var(--ol-text);">getUser</span>(req) {</div>
+            <div style="display:flex; padding:0 16px;"><span style="width:26px; color:var(--ol-text-faint); flex-shrink:0; user-select:none;">41</span><span>&nbsp;&nbsp;<span style="color:var(--ol-accent-300);">const</span> token = <span style="color:var(--ol-sev-medium);">bearer</span>(req.headers)</span></div>
+            <div style="display:flex; padding:0 16px; background:var(--ol-sev-critical-bg);"><span style="width:24px; color:var(--ol-sev-critical); flex-shrink:0; user-select:none; border-left:2px solid var(--ol-sev-critical); margin-left:-2px;">42</span><span>&nbsp;&nbsp;<span style="color:var(--ol-accent-300);">const</span> claims = jwt.<span style="color:var(--ol-sev-critical); text-decoration:underline wavy var(--ol-sev-critical); text-underline-offset:3px;">decode</span>(token)</span></div>
+            <div style="display:flex; padding:0 16px;"><span style="width:26px; color:var(--ol-text-faint); flex-shrink:0; user-select:none;">43</span><span>&nbsp;&nbsp;<span style="color:var(--ol-accent-300);">return</span> db.users.<span style="color:var(--ol-sev-medium);">find</span>(claims.sub)</span></div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:3px 1fr; border-top:1px solid var(--ol-border);">
+          <div style="background:var(--ol-sev-critical);"></div>
+          <div style="padding:var(--ol-space-4) var(--ol-space-5);">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+              <span style="font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-neutral-50); background:var(--ol-sev-critical-solid); padding:3px 8px;">CRITICAL</span>
+              <span style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text);">jwt-no-verification</span>
+              <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">CWE-347</span>
+              <span style="margin-left:auto; font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">session.ts:42:18</span>
+            </div>
+            <p style="font-size:var(--ol-text-body-s); line-height:1.55; color:var(--ol-text-secondary); margin:0 0 12px;">Decoding a JWT does not verify its signature. Any attacker can forge <span style="font-family:var(--ol-font-mono); color:var(--ol-text); font-size:0.92em;">claims.sub</span> and become any user.</p>
+            <div style="display:grid; grid-template-columns:3px 1fr; border:1px solid var(--ol-sev-pass-border); background:var(--ol-sev-pass-bg);">
+              <div style="background:var(--ol-sev-pass);"></div>
+              <div style="padding:10px 12px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ol-sev-pass)" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span style="font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-sev-pass);">SUGGESTED FIX</span></div>
+                <div style="font-family:var(--ol-font-mono); font-size:12px; line-height:1.7; color:var(--ol-text); overflow-x:auto; white-space:nowrap;"><span style="color:var(--ol-accent-300);">const</span> claims = jwt.<span style="color:var(--ol-sev-pass);">verify</span>(token, key, { algorithms: [<span style="color:var(--ol-sev-pass);">'RS256'</span>] })</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAT STRIP (evergreen, count-free of pack sizes — Stat component) -->
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); margin-top:var(--ol-space-12); border:1px solid var(--ol-border);" data-statgrid>
+      <div style="border-right:1px solid var(--ol-border);" data-statcell><dc-import name="Stat" number="0" label="false positives · clean libs" color="var(--ol-sev-pass)" hint-size="100%,92px"></dc-import></div>
+      <div style="border-right:1px solid var(--ol-border);" data-statcell><dc-import name="Stat" number="100%" label="findings hand-verified" hint-size="100%,92px"></dc-import></div>
+      <div style="border-right:1px solid var(--ol-border);" data-statcell><dc-import name="Stat" number="CWE·OWASP" label="every rule mapped" hint-size="100%,92px"></dc-import></div>
+      <div data-statcell><dc-import name="Stat" number="MIT" label="free &amp; open, forever" hint-size="100%,92px"></dc-import></div>
+    </div>
+  </header>
+
+  <!-- PROBLEM -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-sev-critical);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">THE PROBLEM</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); max-width:24ch;">The same findings, in every AI-generated PR.</h2>
+    <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-8);">LLMs learned auth from a decade of insecure answers. The code compiles, passes your tests, and ships a token-forgery bug. Here is exactly how OAuthLint reports each one.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--ol-border);" data-findgrid>
+      <sc-for list="{{ findings }}" as="f" hint-placeholder-count="4">
+        <article style="display:grid; grid-template-columns:3px 1fr; background:var(--ol-surface); border:1px solid var(--ol-border); margin:-0.5px;">
+          <div style="background:{{ f.rail }};"></div>
+          <div style="padding:var(--ol-space-5);">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <span style="font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:{{ f.tagOn }}; background:{{ f.tagBg }}; padding:3px 8px;">{{ f.sevLabel }}</span>
+              <span style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text);">{{ f.id }}</span>
+              <span style="margin-left:auto; font-family:var(--ol-font-mono); font-size:10.5px; color:var(--ol-text-faint);">{{ f.file }}</span>
+            </div>
+            <div style="font-family:var(--ol-font-mono); font-size:12px; line-height:1.7; background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); padding:9px 11px; margin-bottom:12px; overflow-x:auto; white-space:nowrap;">{{ f.pre }}<span style="color:{{ f.fg }}; text-decoration:underline wavy {{ f.fg }}; text-underline-offset:3px;">{{ f.bad }}</span>{{ f.post }}</div>
+            <p style="font-size:var(--ol-text-body-s); line-height:1.55; color:var(--ol-text-muted); margin:0 0 12px;">{{ f.msg }}</p>
+            <div style="display:flex; align-items:flex-start; gap:8px; padding-top:10px; border-top:1px solid var(--ol-border-subtle);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ol-sev-pass)" stroke-width="2.5" style="flex-shrink:0; margin-top:2px;" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+              <span style="font-size:var(--ol-text-body-s); line-height:1.5; color:var(--ol-text-secondary);">{{ f.fix }}</span>
+            </div>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-accent);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">HOW IT WORKS</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-10); max-width:22ch;">Scan, triage, fix — wherever you work.</h2>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); border:1px solid var(--ol-border);" data-howgrid>
+      <div style="padding:var(--ol-space-6); border-right:1px solid var(--ol-border);" data-howcell>
+        <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin-bottom:var(--ol-space-4);">01 / SCAN</div>
+        <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-m); margin:0 0 var(--ol-space-3);">One command, or zero clicks</h3>
+        <p style="font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Run it locally, on every PR via the GitHub Action, or inline as you type in VS Code.</p>
+        <div style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); padding:9px 11px;"><span style="color:var(--ol-accent);">$</span> npx oauthlint scan</div>
+      </div>
+      <div style="padding:var(--ol-space-6); border-right:1px solid var(--ol-border);" data-howcell>
+        <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin-bottom:var(--ol-space-4);">02 / TRIAGE</div>
+        <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-m); margin:0 0 var(--ol-space-3);">Sorted by severity, not noise</h3>
+        <p style="font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Findings rank critical → info, each mapped to CWE/OWASP. Near-zero false positives means every red line is worth your time.</p>
+        <div style="display:flex; gap:14px; font-family:var(--ol-font-mono); font-size:11px;"><span style="color:var(--ol-sev-critical);">● 1 CRIT</span><span style="color:var(--ol-sev-high);">● 2 HIGH</span><span style="color:var(--ol-sev-medium);">● 3 MED</span></div>
+      </div>
+      <div style="padding:var(--ol-space-6);" data-howcell>
+        <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin-bottom:var(--ol-space-4);">03 / FIX</div>
+        <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-m); margin:0 0 var(--ol-space-3);">A safe example for every rule</h3>
+        <p style="font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Every rule ships a vulnerable and a corrected snippet, so the fix is copy-paste obvious — not a CWE number to go research.</p>
+        <div style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-sev-pass); background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); padding:9px 11px;"><span style="color:var(--ol-sev-pass);">✓</span> jwt.verify(token, key, {alg})</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-accent);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">PROOF</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); max-width:24ch;">Signal you can trust, measured in the open.</h2>
+    <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:62ch; margin:0 0 var(--ol-space-10);">A linter is only as useful as its precision. We hold OAuthLint to a hard silence bar on clean libraries — then measure how often each AI assistant actually generates each anti-pattern.</p>
+
+    <div style="display:grid; grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr); border:1px solid var(--ol-border); margin-bottom:var(--ol-space-4);" data-proofgrid>
+      <div style="padding:var(--ol-space-8); border-right:1px solid var(--ol-border); display:flex; flex-direction:column; justify-content:center;" data-proofcell>
+        <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(4rem,9vw,6.5rem); line-height:0.9; letter-spacing:-0.04em; color:var(--ol-sev-pass);">0</div>
+        <div style="font-family:var(--ol-font-mono); font-size:12px; letter-spacing:0.04em; color:var(--ol-text-secondary); margin-top:var(--ol-space-3); line-height:1.6;">FALSE POSITIVES ACROSS<br>CLEAN AUTH LIBRARIES</div>
+      </div>
+      <div style="padding:var(--ol-space-6) var(--ol-space-8); display:flex; flex-direction:column; justify-content:center;">
+        <sc-for list="{{ cleanLibs }}" as="lib" hint-placeholder-count="4">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--ol-border-subtle);"><span style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text);">{{ lib }}</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-sev-pass);">✓ 0 findings</span></div>
+        </sc-for>
+        <p style="font-size:var(--ol-text-body-s); color:var(--ol-text-muted); line-height:1.55; margin:var(--ol-space-4) 0 0;">Fire on a correct, idiomatic auth library and it's a bug in the rule — it doesn't ship.</p>
+      </div>
+    </div>
+
+    <!-- BENCHMARK HEATMAP -->
+    <div style="border:1px solid var(--ol-border);">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:var(--ol-space-5) var(--ol-space-6); border-bottom:1px solid var(--ol-border);">
+        <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-m); margin:0;">The AI auth benchmark</h3>
+        <span style="font-family:var(--ol-font-mono); font-size:10px; color:var(--ol-text-muted); border:1px solid var(--ol-border-strong); padding:2px 7px;">{{ benchVersion }}</span>
+        <span style="margin-left:auto; font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{{ benchCaption }}</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <div style="min-width:680px;">
+          <div style="display:grid; grid-template-columns:minmax(220px,1.4fr) repeat(4, 1fr); border-bottom:1px solid var(--ol-border);">
+            <div style="padding:11px 16px; font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.08em; color:var(--ol-text-faint);">ANTI-PATTERN</div>
+            <sc-for list="{{ benchTools }}" as="tool" hint-placeholder-count="4">
+              <div style="padding:11px 10px; text-align:center; border-left:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{{ tool }}</div>
+            </sc-for>
+          </div>
+          <sc-for list="{{ benchRows }}" as="row" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns:minmax(220px,1.4fr) repeat(4, 1fr); border-bottom:1px solid var(--ol-border-subtle);">
+              <div style="display:grid; grid-template-columns:3px 1fr; align-items:center;">
+                <div style="background:{{ row.rail }}; height:100%;"></div>
+                <div style="padding:12px 16px; display:flex; flex-direction:column; gap:3px;">
+                  <span style="font-size:13px; color:var(--ol-text);">{{ row.bug }}</span>
+                  <span style="font-family:var(--ol-font-mono); font-size:10px; color:{{ row.fg }};">● {{ row.sevLabel }}</span>
+                </div>
+              </div>
+              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                <div style="{{ cell.style }}"><span style="font-family:var(--ol-font-mono); font-size:13px; font-weight:500; color:var(--ol-neutral-50);">{{ cell.val }}</span></div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:12px 16px; border-top:1px solid var(--ol-border);">
+        <span style="font-family:var(--ol-font-mono); font-size:10px; color:var(--ol-text-faint);">LOWER IS BETTER · cell tint ∝ rate, hue = severity</span>
+        <span style="margin-left:auto; font-family:var(--ol-font-mono); font-size:10px; color:var(--ol-text-faint);">reproduce: <span style="color:var(--ol-accent);">npx oauthlint bench</span></span>
+      </div>
+    </div>
+    <p style="font-family:var(--ol-font-mono); font-size:10.5px; color:var(--ol-text-faint); margin:var(--ol-space-3) 0 0;">// illustrative figures · full methodology &amp; dataset in the repo</p>
+  </section>
+
+  <!-- COVERAGE -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-accent);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">COVERAGE</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); max-width:26ch;">Every language you ship auth in. Every auth surface.</h2>
+    <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-8);">The rule pack grows with the ecosystem. Today it covers these languages, with more landing every release.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:var(--ol-space-6);">
+      <sc-for list="{{ langs }}" as="l" hint-placeholder-count="5">
+        <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); padding:7px 13px;">{{ l.label }}</span>
+      </sc-for>
+      <sc-if value="{{ moreLangs }}" hint-placeholder-val="{{ true }}">
+        <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); background:var(--ol-accent-subtle); border:1px solid var(--ol-accent-border); padding:7px 13px;">+ more coming</span>
+      </sc-if>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      <sc-for list="{{ cats }}" as="c" hint-placeholder-count="7">
+        <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none; border:1px solid var(--ol-border); padding:7px 13px; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">{{ c.label }}</a>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-accent);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">INTEGRATIONS</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-10); max-width:24ch;">Lives where your code already does.</h2>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); border:1px solid var(--ol-border);" data-intgrid>
+      <div style="border-right:1px solid var(--ol-border); display:flex; flex-direction:column;" data-intcell>
+        <div style="padding:var(--ol-space-5) var(--ol-space-5) var(--ol-space-4);">
+          <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 6px;">GitHub Action</h3>
+          <p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.55; margin:0;">PR annotations on the exact line, plus SARIF upload to code scanning.</p>
+        </div>
+        <div style="margin:0 var(--ol-space-5) var(--ol-space-5); background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); font-family:var(--ol-font-mono); font-size:11px; line-height:1.7;">
+          <div style="padding:8px 10px; border-bottom:1px solid var(--ol-border-subtle); color:var(--ol-text-faint);">auth/session.ts</div>
+          <div style="display:grid; grid-template-columns:3px 1fr;"><div style="background:var(--ol-sev-critical);"></div><div style="padding:8px 10px;"><span style="color:var(--ol-sev-critical);">! jwt-no-verification</span><div style="color:var(--ol-text-muted); margin-top:3px;">critical · CWE-347</div></div></div>
+        </div>
+      </div>
+      <div style="border-right:1px solid var(--ol-border); display:flex; flex-direction:column;" data-intcell>
+        <div style="padding:var(--ol-space-5) var(--ol-space-5) var(--ol-space-4);">
+          <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 6px;">VS Code</h3>
+          <p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.55; margin:0;">Inline diagnostics as you type — squiggle on the call, hover for the fix.</p>
+        </div>
+        <div style="margin:0 var(--ol-space-5) var(--ol-space-5); background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); padding:10px; font-family:var(--ol-font-mono); font-size:11px; line-height:1.8;">
+          <div><span style="color:var(--ol-text-faint);">41</span> &nbsp;const c = jwt.<span style="text-decoration:underline wavy var(--ol-sev-critical); text-underline-offset:3px;">decode</span>(t)</div>
+          <div style="margin-top:6px; background:var(--ol-surface); border:1px solid var(--ol-border); padding:6px 8px; color:var(--ol-text-secondary);"><span style="color:var(--ol-sev-critical);">●</span> decoded but never verified</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column;" data-intcell>
+        <div style="padding:var(--ol-space-5) var(--ol-space-5) var(--ol-space-4);">
+          <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 6px;">CLI &amp; CI</h3>
+          <p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.55; margin:0;">Exit non-zero on a threshold you set. JSON, SARIF or pretty output.</p>
+        </div>
+        <div style="margin:0 var(--ol-space-5) var(--ol-space-5); background:var(--ol-neutral-1000); border:1px solid var(--ol-border-subtle); padding:10px; font-family:var(--ol-font-mono); font-size:11px; line-height:1.8;">
+          <div><span style="color:var(--ol-accent);">$</span> oauthlint scan --fail-on high</div>
+          <div style="color:var(--ol-sev-critical);">✗ 1 critical, 2 high</div>
+          <div style="color:var(--ol-text-faint);">exit 1 — build blocked</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY NOT SEMGREP -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-text-muted);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">HONEST ANSWER</span></div>
+    <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); max-width:26ch;">"Why not just use Semgrep?"</h2>
+    <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:64ch; margin:0 0 var(--ol-space-8);">You can — OAuthLint is built on Semgrep's engine, and we love it. But a generic engine with a thousand community rules is a different product than a curated, auth-only ruleset with a precision guarantee. The difference is the work we do so you don't have to.</p>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); border:1px solid var(--ol-border);" data-whygrid>
+      <div style="padding:var(--ol-space-6); border-right:1px solid var(--ol-border);" data-whycell><div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-accent); margin-bottom:10px;">CURATION</div><p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.6; margin:0;">Rules chosen and tuned for AI-generated auth code — not thousands of generic patterns you have to triage.</p></div>
+      <div style="padding:var(--ol-space-6); border-right:1px solid var(--ol-border);" data-whycell><div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-accent); margin-bottom:10px;">PRECISION</div><p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.6; margin:0;">A hard 0-false-positive bar on real auth libraries. Every benchmark finding hand-verified before release.</p></div>
+      <div style="padding:var(--ol-space-6);" data-whycell><div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-accent); margin-bottom:10px;">FIXES, NOT FLAGS</div><p style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.6; margin:0;">Vulnerable + safe example for every rule, mapped to CWE/OWASP. The remediation is in the finding.</p></div>
+    </div>
+  </section>
+
+  <!-- OAUTHHOUND -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-16) var(--ol-space-6); border-top:1px solid var(--ol-border);">
+    <article style="position:relative; background:var(--ol-surface); border:1px solid var(--ol-pro-border); padding:var(--ol-space-10) var(--ol-space-8);">
+      <div style="position:absolute; top:0; left:0; right:0; height:2px; background:var(--ol-pro);"></div>
+      <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-8); align-items:center; justify-content:space-between;">
+        <div style="max-width:54ch;">
+          <div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-4);">
+            <div style="width:20px; height:20px; border:1.5px solid var(--ol-pro); display:grid; place-items:center;"><div style="width:5px; height:5px; background:var(--ol-pro);"></div></div>
+            <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px;">OAuthHound</span>
+            <span style="font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.06em; color:var(--ol-neutral-50); background:var(--ol-pro-strong); padding:2px 8px;">COMING SOON</span>
+          </div>
+          <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.5rem,3.5vw,2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3);">When a linter isn't enough.</h2>
+          <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0;">OAuthLint stays free and MIT, forever. OAuthHound is the pro evolution — continuous, cross-file auth analysis that follows a token across your whole request path, with org-wide policy and historical drift. Same instrument, deeper teeth.</p>
+        </div>
+        <a href="/pricing" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-ui); font-weight:600; font-size:14px; color:var(--ol-neutral-50); background:var(--ol-pro-strong); height:42px; padding:0 20px; text-decoration:none; white-space:nowrap;">Join the waitlist →</a>
+      </div>
+    </article>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section style="max-width:1180px; margin:0 auto; padding:var(--ol-space-20) var(--ol-space-6) var(--ol-space-24); border-top:1px solid var(--ol-border); text-align:center;">
+    <h2 style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(1.9rem,5vw,2.7rem); letter-spacing:-0.03em; margin:0 auto var(--ol-space-4); max-width:18ch;">Scan your codebase in 30 seconds.</h2>
+    <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0 auto var(--ol-space-8); max-width:48ch;">No signup, no config, no account. Point it at your source and read the findings.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); justify-content:center; align-items:center;">
+      <div style="display:flex; align-items:center; gap:10px; height:46px; padding:0 6px 0 16px; background:var(--ol-neutral-1000); border:1px solid var(--ol-border-strong);">
+        <span style="color:var(--ol-accent); font-family:var(--ol-font-mono); font-size:13px;">$</span>
+        <span style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text);">npx oauthlint scan ./src</span>
+        <button onClick="{{ copyFinal }}" aria-label="Copy install command" style="display:flex; align-items:center; height:34px; padding:0 12px; font-family:var(--ol-font-mono); font-size:11px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); cursor:pointer; transition:all var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-accent);">{{ finalLabel }}</button>
+      </div>
+      <a href="#" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:13px; color:var(--ol-text-secondary); background:transparent; border:1px solid var(--ol-border-strong); height:46px; padding:0 18px; text-decoration:none;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">Star on GitHub ↗</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-neutral-1000);">
+    <div style="max-width:1180px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6); display:flex; flex-wrap:wrap; gap:var(--ol-space-8); align-items:flex-start;">
+      <div style="flex:1; min-width:240px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);">
+          <div style="width:22px; height:22px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:5px; height:5px; background:var(--ol-accent);"></div></div>
+          <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px;">OAuthLint</span>
+        </div>
+        <p style="font-size:var(--ol-text-body-s); color:var(--ol-text-muted); line-height:1.6; margin:0; max-width:38ch;">Catch the auth bugs AI assistants ship. Built by identity &amp; security engineers. Open source, MIT-licensed, obsessively low-noise.</p>
+      </div>
+      <div style="display:flex; gap:var(--ol-space-16); flex-wrap:wrap;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <span style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint);">PRODUCT</span>
+          <a href="/docs" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">docs</a>
+          <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">rules</a>
+          <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">pricing</a>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <span style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint);">PROJECT</span>
+          <a href="#" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">github ↗</a>
+          <a href="/about" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">about</a>
+          <a href="/about#changelog" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="color:var(--ol-accent);">changelog</a>
+        </div>
+      </div>
+    </div>
+    <div style="max-width:1180px; margin:0 auto; padding:var(--ol-space-5) var(--ol-space-6); border-top:1px solid var(--ol-border); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
+      <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">{{ copyright }}</span>
+      <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">npx oauthlint scan ./src</span>
+    </div>
+  </footer>
+
+</div>

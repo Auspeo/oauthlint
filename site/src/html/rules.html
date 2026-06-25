@@ -1,0 +1,98 @@
+<div style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
+
+  <nav style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);">
+    <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
+      <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
+      <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
+    </a>
+    <div style="flex:1;"></div>
+    <div style="display:flex; gap:var(--ol-space-6); align-items:center;" data-navlinks>
+      <a href="/docs" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">docs</a>
+      <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">rules</a>
+      <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">pricing</a>
+      <a href="/about" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">about</a>
+    </div>
+    <a href="#" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">GitHub ↗</a>
+  </nav>
+
+  <main style="max-width:1120px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6) var(--ol-space-20);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);"><span style="width:6px; height:6px; background:var(--ol-accent);"></span><span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">RULES CATALOGUE</span></div>
+    <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Every rule earns its place.</h1>
+    <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-6);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category or severity.</p>
+
+    <!-- live exact count — the ONLY place it appears -->
+    <div style="display:inline-flex; align-items:stretch; border:1px solid var(--ol-border); margin-bottom:var(--ol-space-8);">
+      <div style="padding:10px 16px; border-right:1px solid var(--ol-border); display:flex; align-items:baseline; gap:8px;"><span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-text);">{{ ruleCount }}</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">rules in the pack · and counting</span></div>
+      <div style="padding:10px 16px; display:flex; align-items:baseline; gap:8px;"><span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-accent);">{{ langCount }}</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">languages supported</span></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-bottom:var(--ol-space-5);" data-filterbar>
+      <div style="display:flex; align-items:center; gap:10px; height:40px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); flex:1; min-width:200px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ol-text-muted)" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+        <input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Search rule id or title…" aria-label="Search rules" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--ol-text); font-family:var(--ol-font-mono); font-size:13px;" />
+      </div>
+      <select value="{{ lang }}" onChange="{{ onLang }}" aria-label="Filter by language" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+        <option value="all">All languages</option>
+        <sc-for list="{{ langOptions }}" as="o" hint-placeholder-count="5">
+          <option value="{{ o.id }}">{{ o.label }}</option>
+        </sc-for>
+      </select>
+      <select value="{{ cat }}" onChange="{{ onCat }}" aria-label="Filter by category" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+        <option value="all">All categories</option>
+        <sc-for list="{{ catOptions }}" as="o" hint-placeholder-count="7">
+          <option value="{{ o.id }}">{{ o.label }}</option>
+        </sc-for>
+      </select>
+    </div>
+
+    <!-- SEVERITY CHIPS -->
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:var(--ol-space-5);">
+      <sc-for list="{{ sevChips }}" as="chip" hint-placeholder-count="5">
+        <button onClick="{{ chip.onClick }}" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer; color:{{ chip.color }}; background:{{ chip.bg }}; border:1px solid {{ chip.border }}; transition:all var(--ol-dur-fast) var(--ol-ease-standard);">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); margin-bottom:var(--ol-space-3);">{{ countLabel }}</div>
+
+    <!-- TABLE -->
+    <div style="border:1px solid var(--ol-border);">
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:var(--ol-text-body-s); min-width:640px;">
+          <thead>
+            <tr style="background:var(--ol-surface);">
+              <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">RULE</th>
+              <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">SEVERITY</th>
+              <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">CATEGORY</th>
+              <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">LANG</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+              <tr style="transition:background var(--ol-dur-fast) var(--ol-ease-standard); cursor:pointer;" style-hover="background:var(--ol-surface);" onClick="{{ r.open }}">
+                <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); border-left:3px solid {{ r.rail }};">
+                  <div style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-accent); margin-bottom:2px;">{{ r.id }}</div>
+                  <div style="font-size:12.5px; color:var(--ol-text-secondary);">{{ r.title }}</div>
+                </td>
+                <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); white-space:nowrap;"><span style="font-family:var(--ol-font-mono); font-size:10px; font-weight:600; color:{{ r.sevColor }};">● {{ r.sevLabel }}</span></td>
+                <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);"><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{{ r.cat }}</span></td>
+                <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);"><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{{ r.langStr }}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-neutral-1000);">
+    <div style="max-width:1120px; margin:0 auto; padding:var(--ol-space-8) var(--ol-space-6); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">{{ copyright }}</span>
+      <div style="display:flex; gap:var(--ol-space-5);">
+        <a href="/docs" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-accent);">docs</a>
+        <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-accent);">pricing</a>
+        <a href="#" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-accent);">github ↗</a>
+      </div>
+    </div>
+  </footer>
+</div>
