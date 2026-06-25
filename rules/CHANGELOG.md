@@ -1,5 +1,14 @@
 # oauthlint-rules
 
+## 0.2.2
+
+### Patch Changes
+
+- chore: attribute the project to Auspeo instead of a personal name (LICENSE,
+  package `author`, README bylines) and stop freezing the rule/language counts in
+  prose ("90 rules", "five languages") so the copy doesn't go stale as coverage
+  grows — counts now live only in the always-current rule catalogue.
+
 ## 0.2.1
 
 ### Patch Changes

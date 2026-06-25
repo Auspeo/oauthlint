@@ -51,7 +51,7 @@
     "pnpm": ">=9.0.0"
   },
   "packageManager": "pnpm@10.26.2",
-  "author": "Maurice Anney <webofboss@gmail.com>",
+  "author": "Auspeo (https://github.com/Auspeo)",
   "license": "MIT",
   "repository": {
     "type": "git",
