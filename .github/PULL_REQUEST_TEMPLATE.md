@@ -17,6 +17,5 @@
 - [ ] `pnpm test:run` passes locally (Semgrep installed)
 - [ ] `pnpm lint` and `pnpm typecheck` pass
 - [ ] If a rule changed: added/updated `vulnerable.ts` + `safe.ts` fixtures
-- [ ] If a rule changed: ran `pnpm docs:rules`
 - [ ] Added a changeset (`pnpm changeset`) if this affects a published package
 - [ ] Commits follow Conventional Commits
