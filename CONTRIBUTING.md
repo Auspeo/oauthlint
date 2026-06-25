@@ -24,8 +24,9 @@ cli/         oauthlint — the CLI (scan, list, init, doctor)
 action/      Docker-based GitHub Action wrapping the CLI
 vscode/      VS Code extension
 examples/    deliberately-vulnerable demo app used for dogfooding
-docs/        VitePress site (oauthlint.dev); docs/rules/*.md are generated
-scripts/     doc generation + rule validation
+site/        Astro docs site (oauthlint.dev); rule pages generated from the rule pack
+docs/        static assets served by the docs site (logo, demo.gif, og image, CNAME)
+scripts/     rule validation
 ```
 
 ## Local setup
@@ -39,7 +40,7 @@ pnpm build
 pnpm test:run     # rule pack + CLI + Action + VS Code + scripts
 pnpm lint
 pnpm typecheck
-pnpm docs:dev     # preview the docs site locally
+pnpm --filter oauthlint-site dev     # preview the docs site locally
 ```
 
 ## Adding a rule
@@ -91,8 +92,9 @@ findings and `vulnerable.ts` yields exactly one per `// ruleid:` annotation:
 pnpm test:run
 ```
 
-**4. Refresh the docs:** `pnpm docs:rules` regenerates `docs/rules/*.md` from
-your rule and fixtures.
+**4. Docs are automatic:** the docs site (`site/`) generates each rule's page
+directly from the rule pack and fixtures at build time — there's nothing to
+regenerate by hand. Preview locally with `pnpm --filter oauthlint-site dev`.
 
 **5. Add a changeset:** `pnpm changeset` (pick a `patch` for a new rule), then
 commit it with your change.

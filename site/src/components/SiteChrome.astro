@@ -14,10 +14,10 @@ const year = new Date().getFullYear();
 const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--ol-text-muted)');
 ---
 <div
-  style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;"
+  style="min-height:100vh; background-color:var(--ol-canvas); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;"
 >
   <nav
-    style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);"
+    style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-canvas) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);"
   >
     <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
       <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
@@ -25,21 +25,22 @@ const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--o
     </a>
     <div style="flex:1;"></div>
     <div style="display:flex; gap:var(--ol-space-6); align-items:center;">
-      <a href="/docs" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
-      <a href="/rules" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
-      <a href="/about" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('about')}; text-decoration:none;`}>about</a>
+      <a href="/docs" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
+      <a href="/rules" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
+      <a href="/about" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('about')}; text-decoration:none;`}>about</a>
     </div>
+    <button type="button" data-theme-toggle aria-label="Toggle colour theme" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:var(--ol-surface); border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); cursor:pointer; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);"><span data-theme-icon aria-hidden="true" style="font-family:var(--ol-font-mono); font-size:14px; line-height:1;">◐</span></button>
     <a href="https://github.com/Auspeo/oauthlint" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;">GitHub ↗</a>
   </nav>
 
   <slot />
 
-  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-neutral-1000);">
+  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-canvas);">
     <div style="max-width:1120px; margin:0 auto; padding:var(--ol-space-8) var(--ol-space-6); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
       <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">© {year} OAuthLint · MIT</span>
       <div style="display:flex; gap:var(--ol-space-5);">
-        <a href="/docs" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;">docs</a>
-        <a href="https://github.com/Auspeo/oauthlint" target="_blank" rel="noopener noreferrer" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;">github ↗</a>
+        <a href="/docs" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">docs</a>
+        <a href="https://github.com/Auspeo/oauthlint" target="_blank" rel="noopener noreferrer" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">github ↗</a>
       </div>
     </div>
   </footer>

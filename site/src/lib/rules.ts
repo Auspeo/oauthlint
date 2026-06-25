@@ -6,9 +6,9 @@
  * pair under `rules/tests/fixtures/<slug>/`, and exposes a typed, design-ready
  * view of each rule for the catalogue and per-rule pages.
  *
- * Reuses the parsing approach from `scripts/generate-rule-docs.ts` and the
- * `oauthlint-rules` loader: same `yaml` package, same fixture directory
- * convention (`auth.<...>.<name>` -> `<...>-<name>`), same metadata keys.
+ * Parses the rule pack with the `oauthlint-rules` loader's conventions: the
+ * `yaml` package, the fixture directory convention
+ * (`auth.<...>.<name>` -> `<...>-<name>`), and the same metadata keys.
  *
  * No new dependencies: Node `fs` + the workspace `yaml` package only.
  */

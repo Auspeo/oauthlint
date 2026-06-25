@@ -113,7 +113,7 @@ const langBadge = rule.languages.join(' · ');
               <span style={`width:8px; height:8px; background:${sev.main};`}></span>
               <span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:${sev.main};`}>VULNERABLE</span>
             </div>
-            <div style={`background:var(--ol-neutral-1000); border:1px solid ${sev.border}; overflow:hidden; margin-bottom:var(--ol-space-6);`}>
+            <div style={`background:var(--ol-canvas); border:1px solid ${sev.border}; overflow:hidden; margin-bottom:var(--ol-space-6);`}>
               <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.vulnerable.filename}</div>
               <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.vulnerable.code}</code></pre>
             </div>
@@ -126,7 +126,7 @@ const langBadge = rule.languages.join(' · ');
               <span style="width:8px; height:8px; background:var(--ol-sev-pass);"></span>
               <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--ol-sev-pass);">SAFE</span>
             </div>
-            <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-sev-pass-border); overflow:hidden; margin-bottom:var(--ol-space-10);">
+            <div style="background:var(--ol-canvas); border:1px solid var(--ol-sev-pass-border); overflow:hidden; margin-bottom:var(--ol-space-10);">
               <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.safe.filename}</div>
               <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.safe.code}</code></pre>
             </div>
@@ -135,7 +135,7 @@ const langBadge = rule.languages.join(' · ');
 
         <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Suppressing this rule</h2>
         <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">If a finding is a genuine false positive, scope the suppression to the exact line and leave a reason — never disable the rule project-wide. Disable directives are line-scoped by design.</p>
-        <pre style={`background:var(--ol-neutral-1000); border:1px solid var(--ol-border); padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-faint); ${codeFont} margin-bottom:var(--ol-space-10);`}><code>{commentPrefix} oauthlint-disable-next-line {rule.id} -- &lt;reason&gt;</code></pre>
+        <pre style={`background:var(--ol-canvas); border:1px solid var(--ol-border); padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-faint); ${codeFont} margin-bottom:var(--ol-space-10);`}><code>{commentPrefix} oauthlint-disable-next-line {rule.id} -- &lt;reason&gt;</code></pre>
 
         {rule.references.length > 0 && (
           <>

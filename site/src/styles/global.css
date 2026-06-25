@@ -11,7 +11,7 @@ body {
   scroll-behavior: smooth;
 }
 body {
-  background: var(--ol-neutral-1000);
+  background: var(--ol-canvas);
   color: var(--ol-text);
   font-family: var(--ol-font-ui);
   -webkit-font-smoothing: antialiased;
@@ -33,6 +33,42 @@ a {
    style-hover, so restore a baseline hover here (overrides the inline color). */
 nav a[href]:hover {
   color: var(--ol-text) !important;
+}
+
+/* Theme toggle is hidden until the designed light theme lands (see the forced-
+   dark note in Base.astro). Remove this rule + restore the init logic to re-enable. */
+[aria-label="Toggle colour theme"] {
+  display: none !important;
+}
+
+/* Baseline interactive hovers for the captured marketing pages (index/docs/
+   about/notfound). Those were headless-rendered and lost the design's
+   `style-hover` interactions; only nav-link hover was restored above. These
+   give the common controls a tasteful, fast hover consistent with the design:
+   bordered buttons/CTAs lift their border to the accent border, and the theme
+   toggle matches. Restrained (border/colour only, no transforms) and the global
+   prefers-reduced-motion block already neutralises the transition. The `.scpN`
+   marker classes come from the captured Cloud Design export. */
+.scp1,
+.scp2,
+.scp3,
+[data-theme-toggle] {
+  transition: border-color var(--ol-dur-fast) var(--ol-ease-standard), color var(--ol-dur-fast)
+    var(--ol-ease-standard), background var(--ol-dur-fast) var(--ol-ease-standard);
+}
+.scp1:hover,
+.scp2:hover,
+[data-theme-toggle]:hover {
+  border-color: var(--ol-accent-border) !important;
+  color: var(--ol-text) !important;
+}
+.scp3:hover {
+  background: var(--ol-surface) !important;
+}
+/* Standalone footer/content links (the `.scp4` export marker) warm to the
+   accent on hover, matching the design's link affordance. */
+.scp4:hover {
+  color: var(--ol-accent) !important;
 }
 
 @keyframes ol-blink {
