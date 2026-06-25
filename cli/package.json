@@ -1,6 +1,6 @@
 {
   "name": "oauthlint",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce. CLI wrapper around the oauthlint-rules Semgrep rule pack.",
   "type": "module",
   "main": "./dist/index.js",
@@ -67,7 +67,7 @@
   "homepage": "https://oauthlint.dev",
   "bugs": "https://github.com/Auspeo/oauthlint/issues",
   "license": "MIT",
-  "author": "Maurice Anney <webofboss@gmail.com>",
+  "author": "Auspeo (https://github.com/Auspeo)",
   "engines": {
     "node": ">=20.0.0"
   }
