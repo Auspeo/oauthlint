@@ -1,0 +1,22 @@
+{
+  "name": "oauthlint-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "oauthlint.dev — marketing site + docs + rule catalogue (Astro).",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "astro": "5.14.1",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "vitest": "2.1.9"
+  }
+}

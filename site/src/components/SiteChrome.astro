@@ -1,0 +1,48 @@
+---
+/**
+ * Shared site chrome (sticky nav + footer + the graphite grid backdrop)
+ * used by the rule catalogue and per-rule pages. Replicates the structure +
+ * inline-token styling of the ported Cloud Design pages, minus the canvas-only
+ * `style-hover` attributes.
+ */
+interface Props {
+  /** Which nav link is the current page, so it renders in the accent colour. */
+  active?: 'docs' | 'rules' | 'pricing' | 'about';
+}
+const { active } = Astro.props;
+const year = new Date().getFullYear();
+const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--ol-text-muted)');
+---
+<div
+  style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;"
+>
+  <nav
+    style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);"
+  >
+    <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
+      <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
+      <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
+    </a>
+    <div style="flex:1;"></div>
+    <div style="display:flex; gap:var(--ol-space-6); align-items:center;">
+      <a href="/docs" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
+      <a href="/rules" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
+      <a href="/pricing" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('pricing')}; text-decoration:none;`}>pricing</a>
+      <a href="/about" style={`font-family:var(--ol-font-mono); font-size:12px; color:${navLink('about')}; text-decoration:none;`}>about</a>
+    </div>
+    <a href="https://github.com/Auspeo/oauthlint" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;">GitHub ↗</a>
+  </nav>
+
+  <slot />
+
+  <footer style="border-top:1px solid var(--ol-border); background:var(--ol-neutral-1000);">
+    <div style="max-width:1120px; margin:0 auto; padding:var(--ol-space-8) var(--ol-space-6); display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">© {year} OAuthLint · MIT</span>
+      <div style="display:flex; gap:var(--ol-space-5);">
+        <a href="/docs" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;">docs</a>
+        <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;">pricing</a>
+        <a href="https://github.com/Auspeo/oauthlint" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); text-decoration:none;">github ↗</a>
+      </div>
+    </div>
+  </footer>
+</div>
