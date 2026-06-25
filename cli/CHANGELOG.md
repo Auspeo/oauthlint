@@ -1,5 +1,14 @@
 # oauthlint
 
+## 0.2.2
+
+### Patch Changes
+
+- docs: rewrite the npm package README as a proper landing page (problem framing,
+  honest "why not just Semgrep?", coverage table, accurate CI recipe, absolute
+  URLs, corrected exit-code table). Docs-only republish so the improved page is
+  live on npm.
+
 ## 0.2.1
 
 ### Patch Changes
