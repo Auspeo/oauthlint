@@ -14,7 +14,8 @@
       "**/coverage/**",
       "**/examples/**/vulnerable.*",
       "**/examples/**/dist/**",
-      "rules/tests/fixtures/**"
+      "rules/tests/fixtures/**",
+      "benchmark/gen/**"
     ]
   },
   "formatter": {

@@ -1,0 +1,85 @@
+{
+  "prompts": 10,
+  "tools": [
+    {
+      "tool": "claude",
+      "total": 14,
+      "flagged": 6,
+      "high": 2
+    }
+  ],
+  "findings": {
+    "claude": [
+      {
+        "ruleId": "auth.flow.no-rate-limit",
+        "severity": "INFO",
+        "promptId": "01-express-jwt"
+      },
+      {
+        "ruleId": "auth.jwt.no-algorithms-allowlist",
+        "severity": "MEDIUM",
+        "promptId": "01-express-jwt"
+      },
+      {
+        "ruleId": "auth.jwt.no-audience",
+        "severity": "MEDIUM",
+        "promptId": "01-express-jwt"
+      },
+      {
+        "ruleId": "auth.jwt.no-issuer",
+        "severity": "INFO",
+        "promptId": "01-express-jwt"
+      },
+      {
+        "ruleId": "auth.oauth.no-nonce",
+        "severity": "MEDIUM",
+        "promptId": "02-nextjs-oauth"
+      },
+      {
+        "ruleId": "auth.oauth.no-pkce",
+        "severity": "MEDIUM",
+        "promptId": "02-nextjs-oauth"
+      },
+      {
+        "ruleId": "auth.oauth.no-state-validation",
+        "severity": "MEDIUM",
+        "promptId": "02-nextjs-oauth"
+      },
+      {
+        "ruleId": "auth.jwt.localstorage",
+        "severity": "MEDIUM",
+        "promptId": "03-react-token"
+      },
+      {
+        "ruleId": "auth.cors.reflect-origin",
+        "severity": "HIGH",
+        "promptId": "04-express-cors"
+      },
+      {
+        "ruleId": "auth.flow.no-rate-limit",
+        "severity": "INFO",
+        "promptId": "04-express-cors"
+      },
+      {
+        "ruleId": "auth.flow.timing-unsafe-compare",
+        "severity": "MEDIUM",
+        "promptId": "04-express-cors"
+      },
+      {
+        "ruleId": "auth.session.no-regeneration",
+        "severity": "MEDIUM",
+        "promptId": "04-express-cors"
+      },
+      {
+        "ruleId": "auth.py.flow.debug-enabled",
+        "severity": "MEDIUM",
+        "promptId": "06-flask-passwords"
+      },
+      {
+        "ruleId": "auth.java.web.csrf-disabled",
+        "severity": "HIGH",
+        "promptId": "09-spring-security"
+      }
+    ]
+  }
+}
