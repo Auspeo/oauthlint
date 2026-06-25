@@ -72,18 +72,16 @@ const jsonLd = {
       // Mark JS available before first paint so scroll-reveal styles only apply
       // when we can actually reveal them (no-JS = content visible, no flash).
       document.documentElement.classList.add('js');
-      // Forced dark for now: the light theme is a quick token remap and not yet
-      // production-quality (grid too loud on white, severity/contrast off). Cloud
-      // Design is producing a proper light theme — once its tokens land, restore
-      // the system-preference + localStorage logic below and un-hide the toggle
-      // (see global.css). The toggle button stays in the markup, just hidden.
-      document.documentElement.dataset.theme = 'dark';
-      // RESTORE WHEN LIGHT THEME IS READY:
-      // (() => { try {
-      //   const stored = localStorage.getItem('ol-theme');
-      //   document.documentElement.dataset.theme =
-      //     stored ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      // } catch { document.documentElement.dataset.theme = 'dark'; } })();
+      // Set the theme before first paint (no flash): a stored choice wins, else
+      // follow the OS, else dark (the brand default). Light is the designed second
+      // theme; the nav toggle flips and persists it.
+      try {
+        const stored = localStorage.getItem('ol-theme');
+        document.documentElement.dataset.theme =
+          stored ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      } catch {
+        document.documentElement.dataset.theme = 'dark';
+      }
     </script>
 
     <meta property="og:type" content="website" />
