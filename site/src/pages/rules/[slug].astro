@@ -1,0 +1,168 @@
+---
+import SiteChrome from '../../components/SiteChrome.astro';
+import Base from '../../layouts/Base.astro';
+import { type RuleView, type Severity, getRules } from '../../lib/rules';
+
+export function getStaticPaths() {
+  return getRules().map((rule) => ({ params: { slug: rule.slug }, props: { rule } }));
+}
+
+interface Props {
+  rule: RuleView;
+}
+const { rule } = Astro.props;
+
+// Severity token bundle keyed by design severity.
+const SEV: Record<
+  Severity,
+  { label: string; main: string; solid: string; bg: string; border: string }
+> = {
+  critical: {
+    label: 'CRITICAL',
+    main: 'var(--ol-sev-critical)',
+    solid: 'var(--ol-sev-critical-solid)',
+    bg: 'var(--ol-sev-critical-bg)',
+    border: 'var(--ol-sev-critical-border)',
+  },
+  high: {
+    label: 'HIGH',
+    main: 'var(--ol-sev-high)',
+    solid: 'var(--ol-sev-high-solid)',
+    bg: 'var(--ol-sev-high-bg)',
+    border: 'var(--ol-sev-high-border)',
+  },
+  medium: {
+    label: 'MEDIUM',
+    main: 'var(--ol-sev-medium)',
+    solid: 'var(--ol-sev-medium-solid)',
+    bg: 'var(--ol-sev-medium-bg)',
+    border: 'var(--ol-sev-medium-border)',
+  },
+  low: {
+    label: 'LOW',
+    main: 'var(--ol-sev-low)',
+    solid: 'var(--ol-sev-low-solid)',
+    bg: 'var(--ol-sev-low-bg)',
+    border: 'var(--ol-sev-low-border)',
+  },
+  info: {
+    label: 'INFO',
+    main: 'var(--ol-sev-info)',
+    solid: 'var(--ol-sev-info-solid)',
+    bg: 'var(--ol-sev-info-bg)',
+    border: 'var(--ol-sev-info-border)',
+  },
+};
+const sev = SEV[rule.severity];
+
+// The message: first line is the title (rendered in the masthead); the rest is
+// the "what / why" body. Split into paragraphs on blank lines.
+const messageLines = rule.message.split('\n');
+const bodyParagraphs = messageLines
+  .slice(1)
+  .join('\n')
+  .split(/\n\s*\n/)
+  .map((p) => p.trim())
+  .filter(Boolean);
+
+// Disable directive comment uses language-appropriate comment syntax.
+const isHashComment = rule.languages.some((l) => l === 'python' || l === 'rust');
+const commentPrefix = isHashComment ? '#' : '//';
+
+const codeFont =
+  'font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; white-space:pre; overflow-x:auto; margin:0;';
+
+const langBadge = rule.languages.join(' · ');
+---
+<Base
+  title={`${rule.id} — OAuthLint`}
+  description={`${rule.id} (${rule.cwe ?? 'auth'}): ${rule.title} Vulnerable and safe examples, how to suppress, and references.`}
+>
+  <SiteChrome active="rules">
+    <div style="max-width:1120px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:var(--ol-space-10); padding:var(--ol-space-10) var(--ol-space-6) var(--ol-space-20);">
+      <main style="min-width:0;">
+        <nav aria-label="Breadcrumb" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); margin-bottom:var(--ol-space-5);">
+          <a href="/rules" style="color:var(--ol-text-muted); text-decoration:none;">rules</a> / {rule.category} / {rule.slug}
+        </nav>
+
+        <!-- finding header as the page masthead -->
+        <div style="display:grid; grid-template-columns:3px 1fr; border:1px solid var(--ol-border); background:var(--ol-surface); margin-bottom:var(--ol-space-8);">
+          <div style={`background:${sev.main};`}></div>
+          <div style="padding:var(--ol-space-6);">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:var(--ol-space-4);">
+              <span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.08em; color:var(--ol-neutral-50); background:${sev.solid}; padding:4px 10px;`}>{sev.label}</span>
+              <span style="font-family:var(--ol-font-mono); font-size:16px; color:var(--ol-text);">{rule.id}</span>
+            </div>
+            <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); line-height:1.15;">{rule.title}</h1>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              {rule.cwe && <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{rule.cwe}</span>}
+              {rule.owasp && <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP {rule.owasp}</span>}
+              <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{langBadge}</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Why this matters</h2>
+        {bodyParagraphs.map((p) => (
+          <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-5); white-space:pre-wrap;">{p}</p>
+        ))}
+
+        {rule.vulnerable && (
+          <>
+            <div style="display:flex; align-items:center; gap:8px; margin:var(--ol-space-6) 0 var(--ol-space-3);">
+              <span style={`width:8px; height:8px; background:${sev.main};`}></span>
+              <span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:${sev.main};`}>VULNERABLE</span>
+            </div>
+            <div style={`background:var(--ol-neutral-1000); border:1px solid ${sev.border}; overflow:hidden; margin-bottom:var(--ol-space-6);`}>
+              <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.vulnerable.filename}</div>
+              <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.vulnerable.code}</code></pre>
+            </div>
+          </>
+        )}
+
+        {rule.safe && (
+          <>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:var(--ol-space-3);">
+              <span style="width:8px; height:8px; background:var(--ol-sev-pass);"></span>
+              <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--ol-sev-pass);">SAFE</span>
+            </div>
+            <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-sev-pass-border); overflow:hidden; margin-bottom:var(--ol-space-10);">
+              <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.safe.filename}</div>
+              <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.safe.code}</code></pre>
+            </div>
+          </>
+        )}
+
+        <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Suppressing this rule</h2>
+        <p style="font-size:var(--ol-text-body-m); line-height:1.75; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">If a finding is a genuine false positive, scope the suppression to the exact line and leave a reason — never disable the rule project-wide. Disable directives are line-scoped by design.</p>
+        <pre style={`background:var(--ol-neutral-1000); border:1px solid var(--ol-border); padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-faint); ${codeFont} margin-bottom:var(--ol-space-10);`}><code>{commentPrefix} oauthlint-disable-next-line {rule.id} -- &lt;reason&gt;</code></pre>
+
+        {rule.references.length > 0 && (
+          <>
+            <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-4);">References</h2>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              {rule.references.map((ref) => (
+                <a href={ref} rel="noopener noreferrer" target="_blank" style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-accent); text-decoration:none; word-break:break-all;">{ref} ↗</a>
+              ))}
+            </div>
+          </>
+        )}
+      </main>
+
+      <aside style="position:sticky; top:80px; align-self:start; height:fit-content; display:flex; flex-direction:column; gap:var(--ol-space-4);">
+        <div style="border:1px solid var(--ol-border);">
+          <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); padding:12px 16px; border-bottom:1px solid var(--ol-border);">METADATA</div>
+          <div style="padding:var(--ol-space-4); display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Severity</span><span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:${sev.main};`}>● {sev.label}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">OAuthLint id</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.ruleId}</span></div>
+            {rule.cwe && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">CWE</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.cwe}</span></div>}
+            {rule.owasp && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">OWASP</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.owasp}</span></div>}
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Category</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.category}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">LLM prevalence</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.llmPrevalence}</span></div>
+          </div>
+        </div>
+        <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;">← all rules</a>
+      </aside>
+    </div>
+  </SiteChrome>
+</Base>

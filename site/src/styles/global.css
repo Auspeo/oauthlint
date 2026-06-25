@@ -1,0 +1,122 @@
+/* Global base — ported verbatim from the OAuthLint design (shared <style>). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--ol-neutral-1000);
+  color: var(--ol-text);
+  font-family: var(--ol-font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--ol-accent-700);
+  color: var(--ol-neutral-50);
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--ol-focus-ring);
+  outline-offset: 2px;
+}
+
+@keyframes ol-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes ol-sweep {
+  0% {
+    transform: translateY(-110%);
+  }
+  100% {
+    transform: translateY(560%);
+  }
+}
+@keyframes ol-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-width: 920px) {
+  [data-hero-grid],
+  [data-proofgrid] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-proofcell] {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ol-border) !important;
+  }
+  [data-findgrid],
+  [data-howgrid],
+  [data-whygrid],
+  [data-intgrid] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-howcell],
+  [data-whycell],
+  [data-intcell] {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ol-border) !important;
+  }
+  [data-howcell]:last-child,
+  [data-whycell]:last-child,
+  [data-intcell]:last-child {
+    border-bottom: none !important;
+  }
+  [data-navlinks] {
+    display: none !important;
+  }
+}
+@media (max-width: 560px) {
+  [data-statgrid] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  [data-statcell]:nth-child(2) {
+    border-right: none !important;
+  }
+  [data-statcell] {
+    border-bottom: 1px solid var(--ol-border) !important;
+  }
+}
+@media print {
+  nav,
+  [data-sweep] {
+    display: none !important;
+  }
+  body,
+  [data-bg] {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}

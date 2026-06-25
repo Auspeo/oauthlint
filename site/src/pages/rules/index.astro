@@ -1,0 +1,183 @@
+---
+import SiteChrome from '../../components/SiteChrome.astro';
+import Base from '../../layouts/Base.astro';
+import { type Severity, getRules } from '../../lib/rules';
+
+const rules = getRules();
+
+// Derive every count + filter option from the data — nothing frozen in prose.
+const languageCount = new Set(rules.flatMap((r) => r.languages)).size;
+const langOptions = [...new Set(rules.flatMap((r) => r.languages))].sort();
+const catOptions = [...new Set(rules.map((r) => r.category))].sort();
+
+// Severity presentation: token names + label, keyed by design severity.
+const SEV: Record<Severity, { label: string; color: string }> = {
+  critical: { label: 'CRITICAL', color: 'var(--ol-sev-critical)' },
+  high: { label: 'HIGH', color: 'var(--ol-sev-high)' },
+  medium: { label: 'MEDIUM', color: 'var(--ol-sev-medium)' },
+  low: { label: 'LOW', color: 'var(--ol-sev-low)' },
+  info: { label: 'INFO', color: 'var(--ol-sev-info)' },
+};
+
+// Severity chips, only for severities actually present, in ramp order.
+const sevOrder: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
+const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
+---
+<Base
+  title="Rules — OAuthLint"
+  description="Browse the OAuthLint rule pack. Filter auth anti-pattern rules by language, category and severity. Every rule maps to a CWE and ships a vulnerable and a safe example."
+>
+  <SiteChrome active="rules">
+    <main style="max-width:1120px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6) var(--ol-space-20);">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);">
+        <span style="width:6px; height:6px; background:var(--ol-accent);"></span>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">RULES CATALOGUE</span>
+      </div>
+      <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Every rule earns its place.</h1>
+      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-6);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category or severity.</p>
+
+      <!-- live exact counts, derived from the data -->
+      <div style="display:inline-flex; align-items:stretch; border:1px solid var(--ol-border); margin-bottom:var(--ol-space-8);">
+        <div style="padding:10px 16px; border-right:1px solid var(--ol-border); display:flex; align-items:baseline; gap:8px;">
+          <span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-text);">{rules.length}</span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">rules in the pack · and counting</span>
+        </div>
+        <div style="padding:10px 16px; display:flex; align-items:baseline; gap:8px;">
+          <span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-accent);">{languageCount}</span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">languages supported</span>
+        </div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-bottom:var(--ol-space-5);">
+        <div style="display:flex; align-items:center; gap:10px; height:40px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); flex:1; min-width:200px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ol-text-muted)" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-5-5"></path></svg>
+          <input id="rule-search" type="search" placeholder="Search rule id or title…" aria-label="Search rules" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--ol-text); font-family:var(--ol-font-mono); font-size:13px;" />
+        </div>
+        <select id="rule-lang" aria-label="Filter by language" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+          <option value="all">All languages</option>
+          {langOptions.map((o) => <option value={o}>{o}</option>)}
+        </select>
+        <select id="rule-cat" aria-label="Filter by category" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+          <option value="all">All categories</option>
+          {catOptions.map((o) => <option value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      <!-- SEVERITY CHIPS -->
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:var(--ol-space-5);" role="group" aria-label="Filter by severity">
+        <button type="button" data-sev="all" aria-pressed="true" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer; color:var(--ol-accent-fg); background:var(--ol-accent); border:1px solid var(--ol-accent); transition:all var(--ol-dur-fast) var(--ol-ease-standard);">ALL</button>
+        {presentSevs.map((s) => (
+          <button
+            type="button"
+            data-sev={s}
+            aria-pressed="false"
+            style={`display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer; color:${SEV[s].color}; background:transparent; border:1px solid var(--ol-border-strong); transition:all var(--ol-dur-fast) var(--ol-ease-standard);`}
+          >
+            ● {SEV[s].label}
+          </button>
+        ))}
+      </div>
+
+      <div id="rule-count-label" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); margin-bottom:var(--ol-space-3);">{rules.length} rules</div>
+
+      <!-- TABLE -->
+      <div style="border:1px solid var(--ol-border);">
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:var(--ol-text-body-s); min-width:640px;">
+            <thead>
+              <tr style="background:var(--ol-surface);">
+                <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">RULE</th>
+                <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">SEVERITY</th>
+                <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">CATEGORY</th>
+                <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">LANG</th>
+              </tr>
+            </thead>
+            <tbody id="rule-rows">
+              {rules.map((r) => (
+                <tr
+                  data-row
+                  data-id={r.id}
+                  data-title={r.title.toLowerCase()}
+                  data-sev={r.severity}
+                  data-cat={r.category}
+                  data-langs={r.languages.join(' ')}
+                  style="transition:background var(--ol-dur-fast) var(--ol-ease-standard); cursor:pointer;"
+                  onclick={`location.href='/rules/${r.slug}'`}
+                >
+                  <td style={`padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); border-left:3px solid ${SEV[r.severity].color};`}>
+                    <a href={`/rules/${r.slug}`} style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-accent); text-decoration:none; display:block; margin-bottom:2px;">{r.id}</a>
+                    <div style="font-size:12.5px; color:var(--ol-text-secondary);">{r.title}</div>
+                  </td>
+                  <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); white-space:nowrap;">
+                    <span style={`font-family:var(--ol-font-mono); font-size:10px; font-weight:600; color:${SEV[r.severity].color};`}>● {SEV[r.severity].label}</span>
+                  </td>
+                  <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);">
+                    <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{r.category}</span>
+                  </td>
+                  <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);">
+                    <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{r.languages.join(' · ')}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p id="rule-empty" hidden style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); padding:24px 16px; margin:0;">No rules match these filters.</p>
+      </div>
+    </main>
+  </SiteChrome>
+
+  <script is:inline>
+    (() => {
+      const search = document.getElementById('rule-search');
+      const langSel = document.getElementById('rule-lang');
+      const catSel = document.getElementById('rule-cat');
+      const rows = Array.from(document.querySelectorAll('[data-row]'));
+      const countLabel = document.getElementById('rule-count-label');
+      const empty = document.getElementById('rule-empty');
+      const chips = Array.from(document.querySelectorAll('[data-sev]'));
+      let sev = 'all';
+
+      function apply() {
+        const q = (search.value || '').trim().toLowerCase();
+        const lang = langSel.value;
+        const cat = catSel.value;
+        let visible = 0;
+        for (const row of rows) {
+          const matchQ = !q || row.dataset.id.includes(q) || row.dataset.title.includes(q);
+          const matchLang = lang === 'all' || row.dataset.langs.split(' ').includes(lang);
+          const matchCat = cat === 'all' || row.dataset.cat === cat;
+          const matchSev = sev === 'all' || row.dataset.sev === sev;
+          const show = matchQ && matchLang && matchCat && matchSev;
+          row.hidden = !show;
+          if (show) visible++;
+        }
+        countLabel.textContent = visible + (visible === 1 ? ' rule' : ' rules');
+        empty.hidden = visible !== 0;
+      }
+
+      for (const chip of chips) {
+        chip.addEventListener('click', () => {
+          sev = chip.dataset.sev;
+          for (const c of chips) {
+            const active = c === chip;
+            c.setAttribute('aria-pressed', String(active));
+            c.style.background = active ? 'var(--ol-accent)' : 'transparent';
+            c.style.borderColor = active ? 'var(--ol-accent)' : 'var(--ol-border-strong)';
+            c.style.color = active
+              ? 'var(--ol-accent-fg)'
+              : c.dataset.sev === 'all'
+                ? 'var(--ol-text-secondary)'
+                : 'var(--ol-sev-' + c.dataset.sev + ')';
+          }
+          apply();
+        });
+      }
+
+      search.addEventListener('input', apply);
+      langSel.addEventListener('change', apply);
+      catSel.addEventListener('change', apply);
+    })();
+  </script>
+</Base>
