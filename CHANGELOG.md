@@ -5,6 +5,23 @@ All notable changes to oauthlint are recorded here. Per-package detail lives in
 The project follows [Semantic Versioning](https://semver.org); it is pre-1.0, so
 minor versions may still change behavior.
 
+## [0.2.1] — 2026-06-25
+
+### Fixed
+
+- Rules: eliminated two false positives surfaced by hand-verifying the
+  AI-codegen benchmark.
+  - `auth.oauth.no-state-validation` no longer fires when `state` is read into a
+    local variable and validated afterwards (only inline-`if` validation was
+    recognized before).
+  - `auth.cors.reflect-origin` no longer fires on an allowlist callback that
+    gates `cb(null, true)` behind an origin check — the safe shape the rule
+    itself recommends. It now flags only callbacks that ignore their origin
+    argument and allow unconditionally.
+- Rules: `auth.jwt.localstorage` now catches token-named *values*, not only
+  token-named string-literal keys — `localStorage.setItem(TOKEN_KEY, token)`,
+  where the key is a variable, was previously missed.
+
 ## [0.2.0] — 2026-06-25
 
 ### Added
@@ -55,6 +72,7 @@ minor versions may still change behavior.
 - Docker-based GitHub Action.
 - VS Code extension with inline diagnostics and Quick Fix suppressions.
 
+[0.2.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.0
 [0.1.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Auspeo/oauthlint/releases/tag/v0.1.1
