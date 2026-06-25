@@ -1,0 +1,107 @@
+---
+import Base from './Base.astro';
+import SiteChrome from '../components/SiteChrome.astro';
+
+interface Props {
+  frontmatter?: { title?: string; description?: string; active?: 'docs' | 'rules' | 'pricing' | 'about' };
+  title?: string;
+  description?: string;
+}
+// Markdown pages pass meta via `frontmatter`; .astro pages can pass props directly.
+const fm = Astro.props.frontmatter ?? {};
+const title = (Astro.props.title ?? fm.title ?? 'OAuthLint') + ' — OAuthLint';
+const description = Astro.props.description ?? fm.description;
+---
+
+<Base title={title} description={description}>
+  <SiteChrome active={fm.active}>
+    <main class="prose-wrap">
+      <article class="prose">
+        <slot />
+      </article>
+    </main>
+  </SiteChrome>
+</Base>
+
+<style is:global>
+  .prose-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--ol-space-16) var(--ol-space-6) var(--ol-space-24);
+  }
+  .prose {
+    color: var(--ol-text-secondary);
+    font-family: var(--ol-font-ui);
+    font-size: var(--ol-text-body-l);
+    line-height: var(--ol-leading-relaxed);
+  }
+  .prose h1 {
+    font-family: var(--ol-font-display);
+    font-size: var(--ol-text-display-m);
+    font-weight: var(--ol-weight-bold);
+    letter-spacing: var(--ol-tracking-tight);
+    line-height: var(--ol-leading-tight);
+    color: var(--ol-text);
+    margin: 0 0 var(--ol-space-6);
+  }
+  .prose h2 {
+    font-family: var(--ol-font-display);
+    font-size: var(--ol-text-heading-l);
+    font-weight: var(--ol-weight-semibold);
+    letter-spacing: var(--ol-tracking-snug);
+    color: var(--ol-text);
+    margin: var(--ol-space-12) 0 var(--ol-space-4);
+    padding-top: var(--ol-space-4);
+    border-top: 1px solid var(--ol-border-subtle);
+  }
+  .prose h3 {
+    font-size: var(--ol-text-heading-m);
+    font-weight: var(--ol-weight-semibold);
+    color: var(--ol-text);
+    margin: var(--ol-space-8) 0 var(--ol-space-3);
+  }
+  .prose p,
+  .prose li { margin: 0 0 var(--ol-space-3); }
+  .prose ul,
+  .prose ol { padding-left: var(--ol-space-6); margin: 0 0 var(--ol-space-4); }
+  .prose a { color: var(--ol-accent); text-decoration: none; }
+  .prose a:hover { text-decoration: underline; }
+  .prose strong { color: var(--ol-text); font-weight: var(--ol-weight-semibold); }
+  .prose code {
+    font-family: var(--ol-font-mono);
+    font-size: var(--ol-text-code);
+    background: var(--ol-surface);
+    border: 1px solid var(--ol-border-subtle);
+    border-radius: var(--ol-radius-xs);
+    padding: 1px 5px;
+    color: var(--ol-text);
+  }
+  .prose pre {
+    background: var(--ol-surface);
+    border: 1px solid var(--ol-border);
+    border-radius: var(--ol-radius-md);
+    padding: var(--ol-space-4);
+    overflow-x: auto;
+  }
+  .prose pre code { background: none; border: none; padding: 0; }
+  .prose blockquote {
+    margin: 0 0 var(--ol-space-4);
+    padding: var(--ol-space-2) var(--ol-space-4);
+    border-left: 2px solid var(--ol-accent-border);
+    color: var(--ol-text-muted);
+    background: var(--ol-surface);
+  }
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 var(--ol-space-4);
+    font-size: var(--ol-text-body-m);
+  }
+  .prose th,
+  .prose td {
+    text-align: left;
+    padding: var(--ol-space-2) var(--ol-space-3);
+    border: 1px solid var(--ol-border);
+  }
+  .prose th { color: var(--ol-text); font-family: var(--ol-font-mono); font-size: var(--ol-text-label); }
+</style>
