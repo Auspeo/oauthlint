@@ -57,42 +57,10 @@ nav a[href]:hover {
   }
 }
 
-/* Hero scan sequence — on load the panel plays out a real scan: the offending
-   line flags red, the finding card streams in, then the suggested fix appears.
-   The three beats are timed so they never transform-overlap (the fix is nested
-   in the finding card). Pure CSS, fill-mode both holds each beat hidden until
-   its turn; under reduced motion this whole block is inert and the inline styles
-   render the final state immediately. */
-@keyframes ol-scan-flag {
-  from {
-    background: transparent;
-  }
-  to {
-    background: var(--ol-sev-critical-bg);
-  }
-}
-@keyframes ol-scan-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  /* fill-mode `both` (in the shorthand) holds each beat at its 0% state through
-     the delay, so nothing flashes visible-then-hidden before its turn. */
-  [data-scan="line"] {
-    animation: ol-scan-flag 0.4s var(--ol-ease-out) 0.5s both;
-  }
-  [data-scan="finding"] {
-    animation: ol-scan-in 0.5s var(--ol-ease-out) 0.95s both;
-  }
-  [data-scan="fix"] {
-    animation: ol-scan-in 0.5s var(--ol-ease-out) 1.55s both;
-  }
+/* Hero terminal: blinking caret on the typed command (the scan animation itself
+   is driven by JS in Base.astro — typing, spinner, then findings reveal). */
+[data-term-caret] {
+  animation: ol-blink 1s step-end infinite;
 }
 
 /* Baseline interactive hovers for the captured marketing pages (index/docs/
