@@ -5,6 +5,15 @@ All notable changes to oauthlint are recorded here. Per-package detail lives in
 The project follows [Semantic Versioning](https://semver.org); it is pre-1.0, so
 minor versions may still change behavior.
 
+## [0.2.4] — 2026-06-25
+
+### Changed
+
+- The repository is now **public** (open source, MIT). The npm README restores
+  the demo GIF and CI badge now that `raw.githubusercontent.com` / Actions URLs
+  resolve. The logo stays on the GitHub README only (npm doesn't reliably render
+  raw SVGs).
+
 ## [0.2.3] — 2026-06-25
 
 ### Changed
@@ -97,6 +106,7 @@ minor versions may still change behavior.
 - Docker-based GitHub Action.
 - VS Code extension with inline diagnostics and Quick Fix suppressions.
 
+[0.2.4]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.4
 [0.2.3]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.3
 [0.2.2]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.2
 [0.2.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.1
