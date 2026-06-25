@@ -1,7 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { SEVERITIES, type Severity, getRules, toDesignSeverity } from '../src/lib/rules';
 
 const rules = getRules();
+
+const catalogueSource = readFileSync(
+  fileURLToPath(new URL('../src/pages/rules/index.astro', import.meta.url)),
+  'utf8',
+);
 
 describe('getRules()', () => {
   it('loads the full rule pack', () => {
@@ -50,6 +57,19 @@ describe('getRules()', () => {
   it('is sorted by id', () => {
     const ids = rules.map((r) => r.id);
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe('rules catalogue pagination', () => {
+  it('paginates at 12 rules per page', () => {
+    expect(catalogueSource).toMatch(/PAGE_SIZE\s*=\s*12/);
+  });
+
+  it('renders the pager control markup', () => {
+    expect(catalogueSource).toContain('id="rule-pager"');
+    expect(catalogueSource).toContain('id="rule-prev"');
+    expect(catalogueSource).toContain('id="rule-next"');
+    expect(catalogueSource).toContain('id="rule-page-indicator"');
   });
 });
 
