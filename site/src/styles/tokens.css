@@ -91,7 +91,7 @@
   --ol-accent-border: var(--ol-accent-700);
   --ol-focus-ring: var(--ol-accent-400);
 
-  /* ---- Pro tier (OAuthHound) — deepened accent + signal ---- */
+  /* ---- Pro tier (pro) — deepened accent + signal ---- */
   --ol-pro: oklch(0.7 0.135 268);
   --ol-pro-strong: oklch(0.62 0.14 268);
   --ol-pro-bg: oklch(0.27 0.06 268);

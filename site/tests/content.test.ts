@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const htmlDir = join(__dirname, '..', 'src', 'html');
 
-// Marketing pages owned by the content fixes (rules.html / rule.html excluded —
-// owned by another agent).
-const OWNED_PAGES = ['index.html', 'docs.html', 'pricing.html', 'about.html', 'notfound.html'];
+// Marketing pages (rules catalogue is data-driven; pricing was removed with the
+// OAuthHound teaser to keep the public site employer-safe).
+const OWNED_PAGES = ['index.html', 'docs.html', 'about.html', 'notfound.html'];
 
 function read(page: string): string {
   return readFileSync(join(htmlDir, page), 'utf8');
@@ -38,6 +38,10 @@ describe('marketing page content is evergreen', () => {
 
       it('does not hardcode a GitHub star count', () => {
         expect(html).not.toContain('8.2k');
+      });
+
+      it('does not reference OAuthHound (employer-safe)', () => {
+        expect(html.toLowerCase()).not.toContain('oauthhound');
       });
     });
   }
