@@ -15,6 +15,10 @@ minor versions may still change behavior.
   languages") in prose — wording is now evergreen ("a curated, multi-language
   rule pack", "and growing") and exact counts live only in the always-current
   rule catalogue, so the copy doesn't go stale as coverage grows.
+- npm README: removed the logo, demo GIF, and CI badge — they pointed at
+  `raw.githubusercontent.com` / Actions on the private repo and rendered broken
+  on npm. Kept the public badges (npm, downloads, license, docs). The images
+  return once they're hosted on a public location.
 
 ## [0.2.2] — 2026-06-25
 
