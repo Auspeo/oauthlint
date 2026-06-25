@@ -56,10 +56,6 @@ Thumbs.db
 validation-report.json
 validation-report.md
 
-# Generated docs site (oauthlint.dev) — VitePress
-docs/.vitepress/dist/
-docs/.vitepress/cache/
-
 # VS Code extension build artifact
 *.vsix
 
