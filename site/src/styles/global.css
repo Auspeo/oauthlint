@@ -35,6 +35,12 @@ nav a[href]:hover {
   color: var(--ol-text) !important;
 }
 
+/* Theme toggle is hidden until the designed light theme lands (see the forced-
+   dark note in Base.astro). Remove this rule + restore the init logic to re-enable. */
+[aria-label='Toggle colour theme'] {
+  display: none !important;
+}
+
 /* Baseline interactive hovers for the captured marketing pages (index/docs/
    about/notfound). Those were headless-rendered and lost the design's
    `style-hover` interactions; only nav-link hover was restored above. These
