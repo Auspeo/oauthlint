@@ -57,6 +57,12 @@ nav a[href]:hover {
   }
 }
 
+/* Hero terminal: blinking caret on the typed command (the scan animation itself
+   is driven by JS in Base.astro — typing, spinner, then findings reveal). */
+[data-term-caret] {
+  animation: ol-blink 1s step-end infinite;
+}
+
 /* Baseline interactive hovers for the captured marketing pages (index/docs/
    about/notfound). Those were headless-rendered and lost the design's
    `style-hover` interactions; only nav-link hover was restored above. These
