@@ -37,7 +37,7 @@ nav a[href]:hover {
 
 /* Theme toggle is hidden until the designed light theme lands (see the forced-
    dark note in Base.astro). Remove this rule + restore the init logic to re-enable. */
-[aria-label='Toggle colour theme'] {
+[aria-label="Toggle colour theme"] {
   display: none !important;
 }
 
