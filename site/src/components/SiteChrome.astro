@@ -11,8 +11,7 @@ interface Props {
 }
 const { active } = Astro.props;
 const year = new Date().getFullYear();
-const navLink = (key: string) =>
-  active === key ? 'var(--ol-accent)' : 'var(--ol-text-muted)';
+const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--ol-text-muted)');
 ---
 <div
   style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;"

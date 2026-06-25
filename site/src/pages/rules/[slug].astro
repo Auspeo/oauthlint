@@ -13,7 +13,10 @@ interface Props {
 const { rule } = Astro.props;
 
 // Severity token bundle keyed by design severity.
-const SEV: Record<Severity, { label: string; main: string; solid: string; bg: string; border: string }> = {
+const SEV: Record<
+  Severity,
+  { label: string; main: string; solid: string; bg: string; border: string }
+> = {
   critical: {
     label: 'CRITICAL',
     main: 'var(--ol-sev-critical)',

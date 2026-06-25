@@ -15,7 +15,11 @@
       "**/examples/**/vulnerable.*",
       "**/examples/**/dist/**",
       "rules/tests/fixtures/**",
-      "benchmark/gen/**"
+      "benchmark/gen/**",
+      "site/.astro/**",
+      "site/dist/**",
+      "site/src/html/**",
+      "design/_export/**"
     ]
   },
   "formatter": {

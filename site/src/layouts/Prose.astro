@@ -1,15 +1,19 @@
 ---
-import Base from './Base.astro';
 import SiteChrome from '../components/SiteChrome.astro';
+import Base from './Base.astro';
 
 interface Props {
-  frontmatter?: { title?: string; description?: string; active?: 'docs' | 'rules' | 'pricing' | 'about' };
+  frontmatter?: {
+    title?: string;
+    description?: string;
+    active?: 'docs' | 'rules' | 'pricing' | 'about';
+  };
   title?: string;
   description?: string;
 }
 // Markdown pages pass meta via `frontmatter`; .astro pages can pass props directly.
 const fm = Astro.props.frontmatter ?? {};
-const title = (Astro.props.title ?? fm.title ?? 'OAuthLint') + ' — OAuthLint';
+const title = `${Astro.props.title ?? fm.title ?? 'OAuthLint'} — OAuthLint`;
 const description = Astro.props.description ?? fm.description;
 ---
 
