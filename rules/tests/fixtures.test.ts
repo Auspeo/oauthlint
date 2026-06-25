@@ -106,13 +106,15 @@ beforeAll(async () => {
       if (existsSync(file)) jobs.push({ key: `${dir}/${kind}`, ruleFile, file });
     }
   }
-  const concurrency = 8;
+  const concurrency = 12;
   for (let i = 0; i < jobs.length; i += concurrency) {
     const batch = jobs.slice(i, i + concurrency);
     const counts = await Promise.all(batch.map((j) => scanCount(j.ruleFile, j.file)));
     batch.forEach((j, idx) => actual.set(j.key, counts[idx]));
   }
-}, 180_000);
+  // ~180 Semgrep invocations (90 rules x 2 fixtures); the budget scales with the
+  // pack size, so this is generous headroom over a typical ~60-90s warm run.
+}, 300_000);
 
 describe.skipIf(!semgrepAvailable)('rule fixtures fire as annotated', () => {
   for (const dir of fixtureDirs) {
