@@ -149,10 +149,10 @@ pnpm test:run     # full suite: rule pack + CLI + Action + VS Code + scripts
 pnpm lint
 pnpm build
 pnpm typecheck
-pnpm docs:dev     # preview the docs site locally
+pnpm --filter oauthlint-site dev     # preview the docs site locally
 ```
 
-**Adding a rule:** drop a YAML file in `rules/rules/<category>/`, add `vulnerable.ts` + `safe.ts` fixtures, and the schema-driven tests pick it up automatically. Run `pnpm docs:rules` to refresh the generated docs.
+**Adding a rule:** drop a YAML file in `rules/rules/<category>/`, add `vulnerable.ts` + `safe.ts` fixtures, and the schema-driven tests pick it up automatically. The docs site (`site/`) generates its rule pages straight from the rule pack, so no separate docs-refresh step is needed.
 
 ### Commits & releases
 
