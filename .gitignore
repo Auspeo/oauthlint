@@ -66,3 +66,4 @@ site/
 # VS Code extension build artifact
 *.vsix
 POSITIONING.local.md
+AIBENCH.local.md
