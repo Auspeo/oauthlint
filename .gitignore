@@ -67,3 +67,4 @@ site/
 *.vsix
 POSITIONING.local.md
 AIBENCH.local.md
+design/design-prompts.local.md
