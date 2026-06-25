@@ -10,20 +10,14 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
-# Allow the GITHUB_TOKEN to deploy to GitHub Pages.
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 # Single in-flight deployment; don't cancel a running one (let it finish).
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build static site
+  deploy:
+    name: Build & deploy to Cloudflare Pages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,19 +32,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build docs site (VitePress)
         run: pnpm docs:build
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: docs/.vitepress/dist
-
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v5
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/.vitepress/dist --project-name=oauthlint --branch=main
