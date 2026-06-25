@@ -13,24 +13,46 @@ rules:
       Compare the received `state` to the value you stored before
       redirecting (session, signed cookie, or Redis). Reject the callback
       if it's missing or doesn't match.
-    # Suppress when the received `state` is referenced inside ANY `if`
-    # condition — that's the validation. The deep-expression operator
-    # `<... state ...>` makes this order-agnostic and helper-aware, so
-    # `if (req.query.state !== stored)`, `if (stored === req.query.state)`, and
-    # `if (!verifyState(req.query.state))` are all treated as safe (the previous
-    # exact-shape patterns only matched one operand order → false positives).
+    # Suppress when the received `state` is validated. Two shapes count as
+    # validation:
+    #   1. The read appears directly inside an `if` condition, e.g.
+    #      `if (req.query.state !== stored)`. The deep-expression operator
+    #      `<... state ...>` makes this order-agnostic and helper-aware, so
+    #      `if (stored === req.query.state)` and `if (!verifyState(req.query.state))`
+    #      are all safe (the previous exact-shape patterns only matched one
+    #      operand order → false positives).
+    #   2. The read is captured into a variable that is later compared, e.g.
+    #      `const state = url.searchParams.get("state"); ...; if (state !== stored)`.
+    #      This is the most common real-world shape (the callback reads state
+    #      once, then validates the local) and the inline-`if` suppressors alone
+    #      miss it. The sequence patterns below match the read assigned to `$S`
+    #      followed (after any statements) by an `if` that references `$S`.
     pattern-either:
       - patterns:
           - pattern-either:
               - pattern: '$REQ.query.state'
               - pattern: '$REQ.body.state'
               - pattern: '$URL.searchParams.get("state")'
+          # (1) read used directly inside an `if` condition
           - pattern-not-inside: |
               if (<... $REQ.query.state ...>) { ... }
           - pattern-not-inside: |
               if (<... $REQ.body.state ...>) { ... }
           - pattern-not-inside: |
               if (<... $URL.searchParams.get("state") ...>) { ... }
+          # (2) read captured into a local that is later validated in an `if`
+          - pattern-not-inside: |
+              $S = $REQ.query.state;
+              ...
+              if (<... $S ...>) { ... }
+          - pattern-not-inside: |
+              $S = $REQ.body.state;
+              ...
+              if (<... $S ...>) { ... }
+          - pattern-not-inside: |
+              $S = $URL.searchParams.get("state");
+              ...
+              if (<... $S ...>) { ... }
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-007
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state-validation

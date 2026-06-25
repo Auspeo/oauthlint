@@ -3,9 +3,9 @@
   "tools": [
     {
       "tool": "claude",
-      "total": 14,
+      "total": 12,
       "flagged": 6,
-      "high": 2
+      "high": 1
     }
   ],
   "findings": {
@@ -41,19 +41,9 @@
         "promptId": "02-nextjs-oauth"
       },
       {
-        "ruleId": "auth.oauth.no-state-validation",
-        "severity": "MEDIUM",
-        "promptId": "02-nextjs-oauth"
-      },
-      {
         "ruleId": "auth.jwt.localstorage",
         "severity": "MEDIUM",
         "promptId": "03-react-token"
-      },
-      {
-        "ruleId": "auth.cors.reflect-origin",
-        "severity": "HIGH",
-        "promptId": "04-express-cors"
       },
       {
         "ruleId": "auth.flow.no-rate-limit",

@@ -76,6 +76,24 @@ export function goodCallbackHelper(req: Req) {
   }
   return true;
 }
+
+// ok: auth.oauth.no-state-validation -- state captured into a local, then validated
+export function goodCallbackViaLocal(req: Req) {
+  const state = req.query.state;
+  if (req.session.oauth_state !== state) {
+    throw new Error('CSRF: state mismatch');
+  }
+  return true;
+}
+
+// ok: auth.oauth.no-state-validation -- searchParams read into a local, then validated
+export function goodCallbackSearchParams(url: URL, stored?: string) {
+  const state = url.searchParams.get('state');
+  if (!stored || stored !== state) {
+    throw new Error('CSRF: state mismatch');
+  }
+  return true;
+}
 ```
 
 ## Suppressing this rule (when you really must)
