@@ -1,5 +1,14 @@
 # oauthlint
 
+## 0.2.4
+
+### Patch Changes
+
+- docs: restore the demo GIF and CI badge in the npm README now that the
+  repository is public (the `raw.githubusercontent.com` / Actions URLs resolve).
+  The logo stays on the GitHub README only, since npm does not reliably render
+  raw SVGs.
+
 ## 0.2.3
 
 ### Patch Changes

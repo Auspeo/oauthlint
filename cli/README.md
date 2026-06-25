@@ -8,6 +8,7 @@ A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Java · 
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
+[![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
 
@@ -40,6 +41,12 @@ OAuth/JWT mistakes across every project they touch:
 oauthlint is the layer between generic SAST and an enterprise IAM program:
 **free, focused, developer-first.** Every finding names the rule, the exact
 `file:line`, *why* it's dangerous, and *how* to fix it — with CWE/OWASP mappings.
+
+<div align="center">
+
+![oauthlint scanning a project and flagging JWT auth issues](https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/public/demo.gif)
+
+</div>
 
 ## Why oauthlint, and not just Semgrep?
 
