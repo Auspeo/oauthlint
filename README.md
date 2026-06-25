@@ -43,6 +43,19 @@ LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) 
 
 oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): **free, focused, developer-first.** Every finding links to a page explaining *why it matters* and *how to fix it*.
 
+## Why OAuthLint and not just Semgrep?
+
+Honest answer: nothing stops you from writing these rules yourself. Semgrep is open source, it's the engine we run, and a capable engineer could reproduce a lot of this. We don't have a technical moat, and we won't pretend otherwise.
+
+What we have is the work most people never do:
+
+- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more — and anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the invisible, tedious work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): 90 rules × ~9,400 files, zero false positives on the clean auth libraries.)
+- **One coherent product across five languages.** Same concept, same ID scheme, same docs — `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go. Not a patchwork of community rules with mismatched styles.
+- **Every finding teaches.** All 90 rules link to a fix page with CWE and OWASP mappings. It's a lesson, not a grep hit.
+- **The angle the registry doesn't have:** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat — encoded in each rule's `llm-prevalence` metadata.
+
+Use OAuthLint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
+
 ## What it looks like
 
 ![oauthlint scanning a project and flagging JWT auth issues](docs/public/demo.gif)
