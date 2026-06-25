@@ -14,8 +14,44 @@ const {
   ogImage = '/og.png',
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://oauthlint.dev').href;
-const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
+const site = Astro.site?.href ?? 'https://oauthlint.dev/';
+const canonical = new URL(Astro.url.pathname, site).href;
+const ogUrl = new URL(ogImage, site).href;
+
+// Site-wide structured data (Organization + WebSite + the tool as SoftwareApplication).
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${site}#org`,
+      name: 'Auspeo',
+      url: site,
+      logo: new URL('/og.png', site).href,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site}#website`,
+      url: site,
+      name: 'OAuthLint',
+      description:
+        'A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns AI coding tools generate.',
+      publisher: { '@id': `${site}#org` },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'OAuthLint',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Cross-platform',
+      url: site,
+      description:
+        'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java and Rust.',
+      license: 'https://opensource.org/licenses/MIT',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      publisher: { '@id': `${site}#org` },
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -28,10 +64,14 @@ const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#0E1113" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
 
     <!-- Set the colour theme BEFORE first paint to avoid a flash. Dark is the
          brand default when there's no stored choice or OS-preference signal. -->
     <script is:inline>
+      // Mark JS available before first paint so scroll-reveal styles only apply
+      // when we can actually reveal them (no-JS = content visible, no flash).
+      document.documentElement.classList.add('js');
       // Forced dark for now: the light theme is a quick token remap and not yet
       // production-quality (grid too loud on white, severity/contrast off). Cloud
       // Design is producing a proper light theme — once its tokens land, restore
@@ -124,6 +164,38 @@ const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
       }
       syncIcon();
       window.addEventListener('pageshow', syncIcon);
+    </script>
+
+    <!-- Scroll reveal: sections fade up as they enter the viewport. One restrained
+         motion idea, not scattered effects. Gated on prefers-reduced-motion and on
+         IntersectionObserver; the `html.js section` CSS only hides when JS is on, so
+         no-JS renders everything visible. Above-the-fold sections reveal on load. -->
+    <script>
+      const sections = document.querySelectorAll('section');
+      const motionOk = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+      const revealAll = () => {
+        for (const s of sections) s.classList.add('is-visible');
+      };
+      if (motionOk && 'IntersectionObserver' in window && sections.length) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-visible');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          // threshold 0 reveals as soon as any pixel enters the viewport, so a
+          // section can never get stuck hidden (a negative bottom margin could).
+          { threshold: 0 },
+        );
+        for (const s of sections) io.observe(s);
+        // Failsafe: nothing should ever stay invisible if the observer misfires.
+        window.addEventListener('load', () => setTimeout(revealAll, 2500));
+      } else {
+        revealAll();
+      }
     </script>
   </body>
 </html>
