@@ -5,8 +5,7 @@ import { type Severity, getRules } from '../../lib/rules';
 
 const rules = getRules();
 
-// Derive every count + filter option from the data — nothing frozen in prose.
-const languageCount = new Set(rules.flatMap((r) => r.languages)).size;
+// Derive filter options from the data — nothing frozen in prose.
 const langOptions = [...new Set(rules.flatMap((r) => r.languages))].sort();
 const catOptions = [...new Set(rules.map((r) => r.category))].sort();
 
@@ -34,19 +33,7 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
         <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">RULES CATALOGUE</span>
       </div>
       <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Every rule earns its place.</h1>
-      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-6);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category or severity.</p>
-
-      <!-- live exact counts, derived from the data -->
-      <div style="display:inline-flex; align-items:stretch; border:1px solid var(--ol-border); margin-bottom:var(--ol-space-8);">
-        <div style="padding:10px 16px; border-right:1px solid var(--ol-border); display:flex; align-items:baseline; gap:8px;">
-          <span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-text);">{rules.length}</span>
-          <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">rules in the pack · and counting</span>
-        </div>
-        <div style="padding:10px 16px; display:flex; align-items:baseline; gap:8px;">
-          <span style="font-family:var(--ol-font-display); font-weight:700; font-size:18px; color:var(--ol-accent);">{languageCount}</span>
-          <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">languages supported</span>
-        </div>
-      </div>
+      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-8);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category or severity.</p>
 
       <!-- FILTER BAR -->
       <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-bottom:var(--ol-space-5);">
