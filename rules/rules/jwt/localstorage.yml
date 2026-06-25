@@ -21,10 +21,22 @@ rules:
     # NOT match the bare words `auth`/`access`/`refresh`/`session` because they
     # appear as substrings of innocuous keys (author_filter, auto_refresh,
     # access_count, sidebar_session) and produced false positives.
+    # A write to web storage (`setItem(k, v)` or `store[k] = v`) is flagged when
+    # EITHER the key is a token-named string literal OR the value is a token-named
+    # identifier. The latter catches `localStorage.setItem(TOKEN_KEY, token)`,
+    # where the key is a variable — the most common real-world shape. We match
+    # only the strong words `token`/`jwt`/`bearer`/`credential`/`api_key` (never
+    # bare `auth`/`access`/`refresh`/`session`, which appear in innocuous keys
+    # like `author_filter`, `auto_refresh`, `access_count`).
     pattern-either:
+      # `setItem(key, value)` where a strong token word appears in EITHER the key
+      # or the value. Matching the whole call as one range (rather than separate
+      # key/value patterns) catches `setItem(TOKEN_KEY, token)` — the common shape
+      # where the key is a variable — without double-counting literal-key lines.
       - patterns:
           - pattern-regex: |-
-              (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\.setItem\(\s*['"][^'"]*(?i:token|jwt|bearer|credential|api[_-]?key)[^'"]*['"]
+              (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\.setItem\([^)]*?(?i:token|jwt|bearer|credential|api[_-]?key)
+      # Bracket assignment with a token-named string-literal key.
       - patterns:
           - pattern-regex: |-
               (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\[\s*['"][^'"]*(?i:token|jwt|bearer|credential|api[_-]?key)[^'"]*['"]\s*\]\s*=
