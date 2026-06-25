@@ -1,98 +1,97 @@
-<div style="min-height:100vh; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
+<div><div style="min-height: 100vh; background-color: var(--ol-neutral-1000); background-image: linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size: 32px 32px;">
 
-  <nav style="position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; background:color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--ol-border);">
-    <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
-      <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
-      <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
+  <nav style="position: sticky; top: 0px; z-index: 50; display: flex; align-items: center; gap: var(--ol-space-6); padding: 0 var(--ol-space-6); height: 56px; background: color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--ol-border);">
+    <a href="/" aria-label="OAuthLint home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ol-text);">
+      <div style="width: 24px; height: 24px; border: 1.5px solid var(--ol-accent); display: grid; place-items: center;"><div style="width: 6px; height: 6px; background: var(--ol-accent);"></div></div>
+      <span style="font-family: var(--ol-font-display); font-weight: 700; font-size: 15px; letter-spacing: -0.02em;">OAuthLint</span>
     </a>
-    <div style="flex:1;"></div>
-    <div style="display:flex; gap:var(--ol-space-6); align-items:center;" data-navlinks>
-      <a href="/docs" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">docs</a>
-      <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">rules</a>
-      <a href="/pricing" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">pricing</a>
-      <a href="/about" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">about</a>
+    <div style="flex: 1 1 0%;"></div>
+    <div data-navlinks="" style="display: flex; gap: var(--ol-space-6); align-items: center;">
+      <a href="/docs" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-accent); text-decoration: none;">docs</a>
+      <a href="/rules" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">rules</a>
+      <a href="/pricing" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">pricing</a>
+      <a href="/about" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">about</a>
     </div>
-    <a href="#" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);">GitHub ↗</a>
+    <a href="#" class="scp1" style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0px 12px; background: var(--ol-surface); border: 1px solid var(--ol-border-strong); font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-secondary); text-decoration: none;">GitHub ↗</a>
   </nav>
 
-  <div style="max-width:1280px; margin:0 auto; display:grid; grid-template-columns:240px minmax(0,1fr) 200px; gap:var(--ol-space-10); padding:var(--ol-space-8) var(--ol-space-6);" data-docgrid>
+  <div data-docgrid="" style="max-width: 1280px; margin: 0px auto; display: grid; grid-template-columns: 240px minmax(0px, 1fr) 200px; gap: var(--ol-space-10); padding: var(--ol-space-8) var(--ol-space-6);">
 
-    <aside style="position:sticky; top:80px; align-self:start; height:fit-content;" data-leftnav>
-      <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); margin-bottom:var(--ol-space-3);">GET STARTED</div>
-      <nav style="display:flex; flex-direction:column; margin-bottom:var(--ol-space-6); border-left:1px solid var(--ol-border);">
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-accent); text-decoration:none; padding:6px 12px; border-left:2px solid var(--ol-accent); margin-left:-1px; background:var(--ol-accent-subtle);">Getting started</a>
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">CLI reference</a>
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">Configuration</a>
+    <aside data-leftnav="" style="position: sticky; top: 80px; align-self: start; height: fit-content;">
+      <div style="font-family: var(--ol-font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ol-text-faint); margin-bottom: var(--ol-space-3);">GET STARTED</div>
+      <nav style="display: flex; flex-direction: column; margin-bottom: var(--ol-space-6); border-left: 1px solid var(--ol-border);">
+        <a href="#" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-accent); text-decoration: none; padding: 6px 12px; border-left: 2px solid var(--ol-accent); margin-left: -1px; background: var(--ol-accent-subtle);">Getting started</a>
+        <a href="#" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">CLI reference</a>
+        <a href="#" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">Configuration</a>
       </nav>
-      <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); margin-bottom:var(--ol-space-3);">INTEGRATIONS</div>
-      <nav style="display:flex; flex-direction:column; margin-bottom:var(--ol-space-6); border-left:1px solid var(--ol-border);">
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">GitHub Action</a>
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">VS Code extension</a>
+      <div style="font-family: var(--ol-font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ol-text-faint); margin-bottom: var(--ol-space-3);">INTEGRATIONS</div>
+      <nav style="display: flex; flex-direction: column; margin-bottom: var(--ol-space-6); border-left: 1px solid var(--ol-border);">
+        <a href="#" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">GitHub Action</a>
+        <a href="#" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">VS Code extension</a>
       </nav>
-      <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); margin-bottom:var(--ol-space-3);">RULES</div>
-      <nav style="display:flex; flex-direction:column; border-left:1px solid var(--ol-border);">
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">Suppressing rules</a>
-        <a href="/rules" style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-text-muted); text-decoration:none; padding:6px 12px; border-left:2px solid transparent; margin-left:-1px;" style-hover="color:var(--ol-text);">Rules index</a>
+      <div style="font-family: var(--ol-font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ol-text-faint); margin-bottom: var(--ol-space-3);">RULES</div>
+      <nav style="display: flex; flex-direction: column; border-left: 1px solid var(--ol-border);">
+        <a href="#" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">Suppressing rules</a>
+        <a href="/rules" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted); text-decoration: none; padding: 6px 12px; border-left: 2px solid transparent; margin-left: -1px;">Rules index</a>
       </nav>
     </aside>
 
-    <main style="min-width:0;">
-      <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); margin-bottom:var(--ol-space-3);">docs / get started / getting started</div>
-      <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3);">Getting started</h1>
-      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0 0 var(--ol-space-10);">OAuthLint runs anywhere Node runs. There is nothing to install and no account to create — <code style="font-family:var(--ol-font-mono); font-size:0.85em; color:var(--ol-accent); background:var(--ol-accent-subtle); border:1px solid var(--ol-accent-border); padding:1px 6px;">npx</code> fetches the latest release and scans your source in one step.</p>
+    <main style="min-width: 0px;">
+      <div style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-muted); margin-bottom: var(--ol-space-3);">docs / get started / getting started</div>
+      <h1 style="font-family: var(--ol-font-display); font-weight: 700; font-size: var(--ol-text-display-m); letter-spacing: -0.02em; margin: 0 0 var(--ol-space-3);">Getting started</h1>
+      <p style="font-size: var(--ol-text-body-l); line-height: var(--ol-leading-relaxed); color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-10);">OAuthLint runs anywhere Node runs. There is nothing to install and no account to create — <code style="font-family: var(--ol-font-mono); font-size: 0.85em; color: var(--ol-accent); background: var(--ol-accent-subtle); border: 1px solid var(--ol-accent-border); padding: 1px 6px;">npx</code> fetches the latest release and scans your source in one step.</p>
 
-      <h2 id="install" style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3); scroll-margin-top:80px;">Install &amp; run</h2>
-      <p style="font-size:var(--ol-text-body-m); line-height:1.7; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Point it at a directory. The first run downloads the rulepack and caches it.</p>
-      <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-border); overflow:hidden; margin-bottom:var(--ol-space-8);">
-        <div style="display:flex; align-items:center; padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border);"><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">terminal</span><button onClick="{{ copyRun }}" aria-label="Copy command" style="margin-left:auto; font-family:var(--ol-font-mono); font-size:11px; background:none; border:1px solid var(--ol-border-strong); color:var(--ol-text-muted); padding:3px 9px; cursor:pointer;" style-hover="border-color:var(--ol-accent-border); color:var(--ol-accent);">{{ runLabel }}</button></div>
-        <div style="padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9;">
-          <div><span style="color:var(--ol-accent);">$</span> <span style="color:var(--ol-text);">npx oauthlint scan ./src</span></div>
-          <div style="color:var(--ol-text-muted);"># scan a single file</div>
-          <div><span style="color:var(--ol-accent);">$</span> <span style="color:var(--ol-text);">npx oauthlint scan ./src/auth/session.ts</span></div>
+      <h2 id="install" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-3); scroll-margin-top: 80px;">Install &amp; run</h2>
+      <p style="font-size: var(--ol-text-body-m); line-height: 1.7; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Point it at a directory. The first run downloads the rulepack and caches it.</p>
+      <div style="background: var(--ol-neutral-1000); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
+        <div style="display: flex; align-items: center; padding: 8px 14px; background: var(--ol-surface); border-bottom: 1px solid var(--ol-border);"><span style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-muted);">terminal</span><button aria-label="Copy command" class="scp2" style="margin-left: auto; font-family: var(--ol-font-mono); font-size: 11px; background: none; border: 1px solid var(--ol-border-strong); color: var(--ol-text-muted); padding: 3px 9px; cursor: pointer;"><span class="sc-interp">copy</span></button></div>
+        <div style="padding: var(--ol-space-4) var(--ol-space-5); font-family: var(--ol-font-mono); font-size: var(--ol-text-code); line-height: 1.9;">
+          <div><span style="color: var(--ol-accent);">$</span> <span style="color: var(--ol-text);">npx oauthlint scan ./src</span></div>
+          <div style="color: var(--ol-text-muted);"># scan a single file</div>
+          <div><span style="color: var(--ol-accent);">$</span> <span style="color: var(--ol-text);">npx oauthlint scan ./src/auth/session.ts</span></div>
         </div>
       </div>
 
-      <h2 id="ci" style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3); scroll-margin-top:80px;">Add to CI</h2>
-      <p style="font-size:var(--ol-text-body-m); line-height:1.7; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Drop the action into any workflow. Use <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">fail-on</code> to set the severity that blocks a merge, and <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">sarif: true</code> to surface findings in GitHub code scanning.</p>
-      <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-border); overflow:hidden; margin-bottom:var(--ol-space-8);">
-        <div style="display:flex; align-items:center; padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border);"><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">.github/workflows/auth.yml</span></div>
-        <div style="padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; overflow-x:auto; white-space:nowrap;">
-          <div><span style="color:var(--ol-sev-low);">- name</span>: <span style="color:var(--ol-text);">OAuthLint</span></div>
-          <div><span style="color:var(--ol-sev-low);">&nbsp;&nbsp;uses</span>: <span style="color:var(--ol-text);">oauthlint/scan-action@v1</span></div>
-          <div><span style="color:var(--ol-sev-low);">&nbsp;&nbsp;with</span>:</div>
-          <div><span style="color:var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;paths</span>: <span style="color:var(--ol-sev-pass);">./src</span></div>
-          <div><span style="color:var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;fail-on</span>: <span style="color:var(--ol-sev-pass);">high</span></div>
-          <div><span style="color:var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;sarif</span>: <span style="color:var(--ol-sev-medium);">true</span></div>
+      <h2 id="ci" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-3); scroll-margin-top: 80px;">Add to CI</h2>
+      <p style="font-size: var(--ol-text-body-m); line-height: 1.7; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Drop the action into any workflow. Use <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">fail-on</code> to set the severity that blocks a merge, and <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">sarif: true</code> to surface findings in GitHub code scanning.</p>
+      <div style="background: var(--ol-neutral-1000); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
+        <div style="display: flex; align-items: center; padding: 8px 14px; background: var(--ol-surface); border-bottom: 1px solid var(--ol-border);"><span style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-muted);">.github/workflows/auth.yml</span></div>
+        <div style="padding: var(--ol-space-4) var(--ol-space-5); font-family: var(--ol-font-mono); font-size: var(--ol-text-code); line-height: 1.9; overflow-x: auto; white-space: nowrap;">
+          <div><span style="color: var(--ol-sev-low);">- name</span>: <span style="color: var(--ol-text);">OAuthLint</span></div>
+          <div><span style="color: var(--ol-sev-low);">&nbsp;&nbsp;uses</span>: <span style="color: var(--ol-text);">oauthlint/scan-action@v1</span></div>
+          <div><span style="color: var(--ol-sev-low);">&nbsp;&nbsp;with</span>:</div>
+          <div><span style="color: var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;paths</span>: <span style="color: var(--ol-sev-pass);">./src</span></div>
+          <div><span style="color: var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;fail-on</span>: <span style="color: var(--ol-sev-pass);">high</span></div>
+          <div><span style="color: var(--ol-sev-low);">&nbsp;&nbsp;&nbsp;&nbsp;sarif</span>: <span style="color: var(--ol-sev-medium);">true</span></div>
         </div>
       </div>
 
-      <h2 id="output" style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3); scroll-margin-top:80px;">Reading the output</h2>
-      <p style="font-size:var(--ol-text-body-m); line-height:1.7; color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4);">Every finding carries a severity, a rule id, the CWE it maps to, and the exact <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">file:line:col</code>. Because precision is the whole point, a critical means a real, reachable bypass — treat it as a blocker.</p>
-      <div style="display:grid; grid-template-columns:3px 1fr; border:1px solid var(--ol-border); background:var(--ol-surface); margin-bottom:var(--ol-space-8);">
-        <div style="background:var(--ol-sev-info);"></div>
-        <div style="padding:var(--ol-space-4) var(--ol-space-5);"><div style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--ol-sev-info); margin-bottom:6px;">TIP</div><div style="font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-secondary);">Run <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">oauthlint scan --format json</code> to pipe findings into your own tooling, or <code style="font-family:var(--ol-font-mono); color:var(--ol-text);">--format sarif</code> for any SARIF-aware viewer.</div></div>
+      <h2 id="output" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-3); scroll-margin-top: 80px;">Reading the output</h2>
+      <p style="font-size: var(--ol-text-body-m); line-height: 1.7; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Every finding carries a severity, a rule id, the CWE it maps to, and the exact <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">file:line:col</code>. Because precision is the whole point, a critical means a real, reachable bypass — treat it as a blocker.</p>
+      <div style="display: grid; grid-template-columns: 3px 1fr; border: 1px solid var(--ol-border); background: var(--ol-surface); margin-bottom: var(--ol-space-8);">
+        <div style="background: var(--ol-sev-info);"></div>
+        <div style="padding: var(--ol-space-4) var(--ol-space-5);"><div style="font-family: var(--ol-font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--ol-sev-info); margin-bottom: 6px;">TIP</div><div style="font-size: var(--ol-text-body-s); line-height: 1.6; color: var(--ol-text-secondary);">Run <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">oauthlint scan --format json</code> to pipe findings into your own tooling, or <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">--format sarif</code> for any SARIF-aware viewer.</div></div>
       </div>
 
-      <h2 id="next" style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-4); scroll-margin-top:80px;">Next steps</h2>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); border:1px solid var(--ol-border); margin-bottom:var(--ol-space-10);">
-        <a href="/rules" style="text-decoration:none; padding:var(--ol-space-5); border-right:1px solid var(--ol-border); transition:background var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="background:var(--ol-surface);"><div style="font-family:var(--ol-font-ui); font-weight:600; font-size:14px; color:var(--ol-text); margin-bottom:4px;">Browse the rules →</div><div style="font-family:var(--ol-font-mono); font-size:11.5px; color:var(--ol-text-muted);">every rule, with examples</div></a>
-        <a href="#" style="text-decoration:none; padding:var(--ol-space-5); transition:background var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="background:var(--ol-surface);"><div style="font-family:var(--ol-font-ui); font-weight:600; font-size:14px; color:var(--ol-text); margin-bottom:4px;">Configure →</div><div style="font-family:var(--ol-font-mono); font-size:11.5px; color:var(--ol-text-muted);">.oauthlintrc.yml options</div></a>
+      <h2 id="next" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-4); scroll-margin-top: 80px;">Next steps</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); border: 1px solid var(--ol-border); margin-bottom: var(--ol-space-10);">
+        <a href="/rules" class="scp3" style="text-decoration: none; padding: var(--ol-space-5); border-right: 1px solid var(--ol-border); transition: background var(--ol-dur-fast) var(--ol-ease-standard);"><div style="font-family: var(--ol-font-ui); font-weight: 600; font-size: 14px; color: var(--ol-text); margin-bottom: 4px;">Browse the rules →</div><div style="font-family: var(--ol-font-mono); font-size: 11.5px; color: var(--ol-text-muted);">every rule, with examples</div></a>
+        <a href="#" class="scp3" style="text-decoration: none; padding: var(--ol-space-5); transition: background var(--ol-dur-fast) var(--ol-ease-standard);"><div style="font-family: var(--ol-font-ui); font-weight: 600; font-size: 14px; color: var(--ol-text); margin-bottom: 4px;">Configure →</div><div style="font-family: var(--ol-font-mono); font-size: 11.5px; color: var(--ol-text-muted);">.oauthlintrc.yml options</div></a>
       </div>
 
-      <div style="display:flex; justify-content:space-between; padding-top:var(--ol-space-6); border-top:1px solid var(--ol-border);">
-        <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">Edit this page on GitHub</span>
-        <a href="#" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">CLI reference →</a>
+      <div style="display: flex; justify-content: space-between; padding-top: var(--ol-space-6); border-top: 1px solid var(--ol-border);">
+        <span style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-faint);">Edit this page on GitHub</span>
+        <a href="#" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-accent); text-decoration: none;">CLI reference →</a>
       </div>
     </main>
 
-    <aside style="position:sticky; top:80px; align-self:start; height:fit-content;" data-toc>
-      <div style="font-family:var(--ol-font-mono); font-size:10px; letter-spacing:0.1em; color:var(--ol-text-faint); margin-bottom:var(--ol-space-3);">ON THIS PAGE</div>
-      <nav style="display:flex; flex-direction:column; gap:8px; border-left:1px solid var(--ol-border); padding-left:var(--ol-space-4);">
-        <a href="#install" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">Install &amp; run</a>
-        <a href="#ci" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">Add to CI</a>
-        <a href="#output" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">Reading the output</a>
-        <a href="#next" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); text-decoration:none;" style-hover="color:var(--ol-text);">Next steps</a>
+    <aside data-toc="" style="position: sticky; top: 80px; align-self: start; height: fit-content;">
+      <div style="font-family: var(--ol-font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ol-text-faint); margin-bottom: var(--ol-space-3);">ON THIS PAGE</div>
+      <nav style="display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--ol-border); padding-left: var(--ol-space-4);">
+        <a href="#install" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-accent); text-decoration: none;">Install &amp; run</a>
+        <a href="#ci" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">Add to CI</a>
+        <a href="#output" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">Reading the output</a>
+        <a href="#next" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">Next steps</a>
       </nav>
     </aside>
-  </div>
-</div>
+  </div></div></div>

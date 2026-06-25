@@ -29,6 +29,12 @@ a {
   outline-offset: 2px;
 }
 
+/* Nav-link hover. The headless-rendered pages lost the design's JS-applied
+   style-hover, so restore a baseline hover here (overrides the inline color). */
+nav a[href]:hover {
+  color: var(--ol-text) !important;
+}
+
 @keyframes ol-blink {
   0%,
   49% {
