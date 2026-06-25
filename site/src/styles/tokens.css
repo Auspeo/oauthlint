@@ -6,7 +6,8 @@
    Dark is the primary theme (:root). Light is [data-theme="light"].
    ============================================================ */
 
-:root {
+:root,
+[data-theme="dark"] {
   /* ---- Neutral ramp (cool graphite, hue 245, very low chroma) ---- */
   --ol-neutral-0: oklch(1 0 0);
   --ol-neutral-50: oklch(0.965 0.004 245);
@@ -81,6 +82,14 @@
   --ol-text-muted: var(--ol-neutral-400);
   --ol-text-faint: var(--ol-neutral-500);
 
+  /* ---- Theme-flipping primitives (page chrome / grid / code / heatmap) ---- */
+  --ol-page: var(--ol-neutral-1000); /* full-bleed page background */
+  --ol-grid-line: oklch(0.345 0.012 245 / 0.14); /* blueprint grid line */
+  --ol-code-bg: oklch(0.115 0.006 245); /* code / terminal / finding code surface */
+  --ol-code-border: var(--ol-border); /* border around code surfaces */
+  --ol-syntax-kw: var(--ol-accent-300); /* code keyword (const, import…) */
+  --ol-heat-text: var(--ol-neutral-50); /* benchmark heatmap cell value */
+
   /* ---- Semantic accent ---- */
   --ol-accent: var(--ol-accent-400);
   --ol-accent-strong: var(--ol-accent-300);
@@ -91,11 +100,11 @@
   --ol-accent-border: var(--ol-accent-700);
   --ol-focus-ring: var(--ol-accent-400);
 
-  /* ---- Pro tier (pro) — deepened accent + signal ---- */
-  --ol-pro: oklch(0.7 0.135 268);
-  --ol-pro-strong: oklch(0.62 0.14 268);
-  --ol-pro-bg: oklch(0.27 0.06 268);
-  --ol-pro-border: oklch(0.43 0.095 268);
+  /* ---- Pro tier (pro) — deepened accent + signal
+  --ol-pro:        oklch(0.700 0.135 268);
+  --ol-pro-strong: oklch(0.620 0.140 268);
+  --ol-pro-bg:     oklch(0.270 0.060 268);
+  --ol-pro-border: oklch(0.430 0.095 268);
 
   /* ---- Typography ---- */
   --ol-font-display: "Sora", "Hanken Grotesk", system-ui, sans-serif;
@@ -180,60 +189,78 @@
    LIGHT THEME — second theme, intentionally remapped (not inverted)
    ============================================================ */
 [data-theme="light"] {
-  --ol-canvas: oklch(0.985 0.003 245);
-  --ol-surface: oklch(1 0 0);
-  --ol-surface-raised: oklch(0.978 0.004 245);
-  --ol-overlay: oklch(0.962 0.005 245);
-  --ol-border-subtle: oklch(0.925 0.006 245);
-  --ol-border: oklch(0.88 0.008 245);
-  --ol-border-strong: oklch(0.8 0.01 245);
-  --ol-text: oklch(0.215 0.012 245);
-  --ol-text-secondary: oklch(0.4 0.013 245);
-  --ol-text-muted: oklch(0.52 0.012 245);
-  --ol-text-faint: oklch(0.62 0.011 245);
+  /* ---- Surfaces: off-white page, white cards, hairline borders ---- */
+  --ol-canvas: oklch(0.98 0.003 245); /* app canvas */
+  --ol-surface: oklch(1 0 0); /* raised white card */
+  --ol-surface-raised: oklch(0.972 0.004 245); /* recessed fill (chips, table head) */
+  --ol-overlay: oklch(0.948 0.005 245); /* hover fill */
+  --ol-border-subtle: oklch(0.93 0.005 245); /* inner hairlines */
+  --ol-border: oklch(0.89 0.007 245); /* default hairline */
+  --ol-border-strong: oklch(0.815 0.01 245); /* inputs / emphasis */
+  /* ---- Text: every tier AA on canvas/white ---- */
+  --ol-text: oklch(0.235 0.014 245); /* ~13:1  primary */
+  --ol-text-secondary: oklch(0.39 0.014 245); /* ~8:1   secondary */
+  --ol-text-muted: oklch(0.5 0.013 245); /* ~5.3:1 muted */
+  --ol-text-faint: oklch(0.56 0.012 245); /* ~4.6:1 faint (still AA) */
 
-  --ol-accent: var(--ol-accent-700);
+  /* ---- Theme-flipping primitives ---- */
+  --ol-page: oklch(0.975 0.003 245); /* soft off-white, lifts white cards */
+  --ol-grid-line: oklch(0.64 0.01 245 / 0.05); /* barely-there blueprint texture */
+  --ol-code-bg: oklch(0.972 0.004 245); /* light code surface */
+  --ol-code-border: var(--ol-border);
+  --ol-syntax-kw: oklch(0.5 0.11 245); /* readable keyword on light code */
+  --ol-heat-text: oklch(0.235 0.014 245); /* dark heatmap value on pale cells */
+
+  /* ---- Accent: darker step for contrast on white ---- */
+  --ol-accent: var(--ol-accent-700); /* 0.54L cyan ~4.6:1 on white */
   --ol-accent-strong: var(--ol-accent-800);
-  --ol-accent-hover: var(--ol-accent-600);
-  --ol-accent-press: var(--ol-accent-800);
+  --ol-accent-hover: var(--ol-accent-800);
+  --ol-accent-press: var(--ol-accent-900);
   --ol-accent-fg: oklch(1 0 0);
-  --ol-accent-subtle: oklch(0.955 0.03 208);
+  --ol-accent-subtle: oklch(0.96 0.03 208);
   --ol-accent-border: var(--ol-accent-300);
   --ol-focus-ring: var(--ol-accent-600);
 
-  /* severity remapped: darker fg, pale bg, mid border */
+  /* ---- Severity, re-tuned per channel for light ----
+     fg  : AA text on page (L ~0.50-0.53)
+     solid: matched to its FIXED on-color (white text -> L<=0.58, dark text -> L>=0.72)
+     bg  : clean pale tint (L ~0.95-0.965)
+     border: soft mid tint (L ~0.83-0.87) */
   --ol-sev-critical: oklch(0.52 0.2 25);
-  --ol-sev-critical-solid: oklch(0.56 0.22 25);
-  --ol-sev-critical-bg: oklch(0.955 0.03 25);
-  --ol-sev-critical-border: oklch(0.83 0.09 25);
-  --ol-sev-high: oklch(0.56 0.15 50);
-  --ol-sev-high-solid: oklch(0.64 0.165 50);
-  --ol-sev-high-bg: oklch(0.96 0.035 60);
-  --ol-sev-high-border: oklch(0.84 0.09 55);
-  --ol-sev-medium: oklch(0.58 0.12 80);
-  --ol-sev-medium-solid: oklch(0.76 0.15 85);
-  --ol-sev-medium-bg: oklch(0.965 0.045 88);
-  --ol-sev-medium-border: oklch(0.85 0.08 85);
-  --ol-sev-low: oklch(0.54 0.13 255);
-  --ol-sev-low-solid: oklch(0.56 0.14 255);
-  --ol-sev-low-bg: oklch(0.96 0.025 255);
-  --ol-sev-low-border: oklch(0.85 0.06 255);
-  --ol-sev-info: oklch(0.5 0.02 245);
-  --ol-sev-info-solid: oklch(0.56 0.03 245);
-  --ol-sev-info-bg: oklch(0.955 0.004 245);
-  --ol-sev-info-border: oklch(0.87 0.01 245);
-  --ol-sev-pass: oklch(0.5 0.14 155);
-  --ol-sev-pass-solid: oklch(0.56 0.15 155);
-  --ol-sev-pass-bg: oklch(0.955 0.045 155);
-  --ol-sev-pass-border: oklch(0.84 0.08 155);
+  --ol-sev-critical-solid: oklch(0.545 0.215 27); /* white text */
+  --ol-sev-critical-bg: oklch(0.958 0.028 28);
+  --ol-sev-critical-border: oklch(0.84 0.085 30);
+  --ol-sev-high: oklch(0.53 0.15 52);
+  --ol-sev-high-solid: oklch(0.76 0.165 62); /* dark text */
+  --ol-sev-high-bg: oklch(0.962 0.04 65);
+  --ol-sev-high-border: oklch(0.85 0.085 60);
+  --ol-sev-medium: oklch(0.53 0.11 78);
+  --ol-sev-medium-solid: oklch(0.82 0.15 88); /* dark text */
+  --ol-sev-medium-bg: oklch(0.966 0.052 90);
+  --ol-sev-medium-border: oklch(0.86 0.08 88);
+  --ol-sev-low: oklch(0.51 0.15 255);
+  --ol-sev-low-solid: oklch(0.545 0.15 255); /* white text */
+  --ol-sev-low-bg: oklch(0.958 0.03 255);
+  --ol-sev-low-border: oklch(0.85 0.065 255);
+  --ol-sev-info: oklch(0.49 0.018 245);
+  --ol-sev-info-solid: oklch(0.54 0.022 245); /* white text */
+  --ol-sev-info-bg: oklch(0.953 0.005 245);
+  --ol-sev-info-border: oklch(0.875 0.008 245);
+  --ol-sev-pass: oklch(0.48 0.13 156);
+  --ol-sev-pass-solid: oklch(0.73 0.15 156); /* dark text */
+  --ol-sev-pass-bg: oklch(0.958 0.048 156);
+  --ol-sev-pass-border: oklch(0.84 0.085 156);
 
-  --ol-pro: oklch(0.52 0.15 268);
-  --ol-pro-strong: oklch(0.46 0.15 268);
-  --ol-pro-bg: oklch(0.955 0.035 268);
-  --ol-pro-border: oklch(0.84 0.09 268);
+  /* ---- Pro tier ---- */
+  --ol-pro: oklch(0.5 0.155 268);
+  --ol-pro-strong: oklch(0.45 0.15 268); /* white text on solid */
+  --ol-pro-bg: oklch(0.958 0.035 268);
+  --ol-pro-border: oklch(0.85 0.085 268);
 
-  --ol-elev-1: 0 1px 2px 0 rgba(16, 20, 28, 0.06);
-  --ol-elev-2: 0 2px 8px -1px rgba(16, 20, 28, 0.1), 0 1px 2px rgba(16, 20, 28, 0.06);
-  --ol-elev-3: 0 14px 32px -8px rgba(16, 20, 28, 0.18);
-  --ol-glow-accent: 0 0 0 1px var(--ol-accent-300), 0 0 18px -8px var(--ol-accent-500);
+  /* ---- Elevation: soft, ink-tinted ---- */
+  --ol-elev-0: none;
+  --ol-elev-1: 0 1px 2px 0 rgba(18, 22, 30, 0.05);
+  --ol-elev-2: 0 2px 8px -1px rgba(18, 22, 30, 0.08), 0 1px 2px rgba(18, 22, 30, 0.05);
+  --ol-elev-3: 0 16px 36px -10px rgba(18, 22, 30, 0.16);
+  --ol-glow-accent: 0 0 0 1px var(--ol-accent-300), 0 0 16px -8px var(--ol-accent-500);
 }

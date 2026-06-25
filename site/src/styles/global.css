@@ -35,12 +35,6 @@ nav a[href]:hover {
   color: var(--ol-text) !important;
 }
 
-/* Theme toggle is hidden until the designed light theme lands (see the forced-
-   dark note in Base.astro). Remove this rule + restore the init logic to re-enable. */
-[aria-label="Toggle colour theme"] {
-  display: none !important;
-}
-
 /* Scroll reveal — sections fade up as they enter view (wired in Base.astro).
    Only active when JS is on (html.js) and motion is allowed, so no-JS / reduced
    motion shows everything immediately. */
