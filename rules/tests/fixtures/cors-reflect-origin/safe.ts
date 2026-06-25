@@ -27,6 +27,27 @@ export const checkedOrigin = cors({
   credentials: true,
 });
 
+// ok: auth.cors.reflect-origin -- block callback gates cb(null, true) behind an allowlist
+export const checkedOriginBlock = cors({
+  origin: (origin: string, cb: (e: Error | null, ok?: boolean) => void) => {
+    if (!origin) return cb(null, true);
+    if (allow.has(origin)) return cb(null, true);
+    return cb(new Error(`Origin ${origin} not allowed`));
+  },
+  credentials: true,
+});
+
+// ok: auth.cors.reflect-origin -- function-form callback gated by an allowlist check
+export const checkedOriginFn = cors({
+  origin: function (origin: string, cb: (e: Error | null, ok?: boolean) => void) {
+    if (allow.has(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error('not allowed'));
+  },
+  credentials: true,
+});
+
 // ok: auth.cors.reflect-origin -- static, explicit header value
 export function manualStatic() {
   res.setHeader('Access-Control-Allow-Origin', 'https://app.example.com');
