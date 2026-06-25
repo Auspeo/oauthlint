@@ -125,11 +125,19 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
         </div>
         <p id="rule-empty" hidden style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-muted); padding:24px 16px; margin:0;">No rules match these filters.</p>
       </div>
+
+      <!-- PAGINATION -->
+      <div id="rule-pager" hidden style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:var(--ol-space-5);" role="navigation" aria-label="Rule pages">
+        <button id="rule-prev" type="button" aria-label="Previous page" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer; color:var(--ol-text-secondary); background:transparent; border:1px solid var(--ol-border-strong); transition:all var(--ol-dur-fast) var(--ol-ease-standard);">« PREV</button>
+        <span id="rule-page-indicator" aria-live="polite" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted); min-width:90px; text-align:center;">Page 1 / 1</span>
+        <button id="rule-next" type="button" aria-label="Next page" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; padding:6px 12px; cursor:pointer; color:var(--ol-text-secondary); background:transparent; border:1px solid var(--ol-border-strong); transition:all var(--ol-dur-fast) var(--ol-ease-standard);">NEXT »</button>
+      </div>
     </main>
   </SiteChrome>
 
   <script is:inline>
     (() => {
+      const PAGE_SIZE = 12;
       const search = document.getElementById('rule-search');
       const langSel = document.getElementById('rule-lang');
       const catSel = document.getElementById('rule-cat');
@@ -137,24 +145,57 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
       const countLabel = document.getElementById('rule-count-label');
       const empty = document.getElementById('rule-empty');
       const chips = Array.from(document.querySelectorAll('[data-sev]'));
+      const pager = document.getElementById('rule-pager');
+      const prevBtn = document.getElementById('rule-prev');
+      const nextBtn = document.getElementById('rule-next');
+      const pageIndicator = document.getElementById('rule-page-indicator');
       let sev = 'all';
+      let page = 1;
 
-      function apply() {
+      function matches(row) {
         const q = (search.value || '').trim().toLowerCase();
         const lang = langSel.value;
         const cat = catSel.value;
-        let visible = 0;
-        for (const row of rows) {
-          const matchQ = !q || row.dataset.id.includes(q) || row.dataset.title.includes(q);
-          const matchLang = lang === 'all' || row.dataset.langs.split(' ').includes(lang);
-          const matchCat = cat === 'all' || row.dataset.cat === cat;
-          const matchSev = sev === 'all' || row.dataset.sev === sev;
-          const show = matchQ && matchLang && matchCat && matchSev;
-          row.hidden = !show;
-          if (show) visible++;
-        }
-        countLabel.textContent = visible + (visible === 1 ? ' rule' : ' rules');
-        empty.hidden = visible !== 0;
+        const matchQ = !q || row.dataset.id.includes(q) || row.dataset.title.includes(q);
+        const matchLang = lang === 'all' || row.dataset.langs.split(' ').includes(lang);
+        const matchCat = cat === 'all' || row.dataset.cat === cat;
+        const matchSev = sev === 'all' || row.dataset.sev === sev;
+        return matchQ && matchLang && matchCat && matchSev;
+      }
+
+      function setDisabled(btn, disabled) {
+        btn.disabled = disabled;
+        btn.setAttribute('aria-disabled', String(disabled));
+        btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+        btn.style.opacity = disabled ? '0.4' : '1';
+      }
+
+      // Filter, then paginate the filtered subset (12 per page).
+      function render() {
+        const filtered = rows.filter(matches);
+        const total = filtered.length;
+        const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (page > pageCount) page = pageCount;
+        if (page < 1) page = 1;
+        const start = (page - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+
+        // Hide everything, then reveal only this page's slice of the filtered rows.
+        for (const row of rows) row.hidden = true;
+        for (let i = start; i < end && i < total; i++) filtered[i].hidden = false;
+
+        countLabel.textContent = total + (total === 1 ? ' rule' : ' rules');
+        empty.hidden = total !== 0;
+        pager.hidden = total === 0;
+        pageIndicator.textContent = 'Page ' + page + ' / ' + pageCount;
+        setDisabled(prevBtn, page <= 1);
+        setDisabled(nextBtn, page >= pageCount);
+      }
+
+      // Any filter change resets to page 1.
+      function onFilterChange() {
+        page = 1;
+        render();
       }
 
       for (const chip of chips) {
@@ -171,13 +212,26 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
                 ? 'var(--ol-text-secondary)'
                 : 'var(--ol-sev-' + c.dataset.sev + ')';
           }
-          apply();
+          onFilterChange();
         });
       }
 
-      search.addEventListener('input', apply);
-      langSel.addEventListener('change', apply);
-      catSel.addEventListener('change', apply);
+      prevBtn.addEventListener('click', () => {
+        if (page > 1) {
+          page--;
+          render();
+        }
+      });
+      nextBtn.addEventListener('click', () => {
+        page++;
+        render();
+      });
+
+      search.addEventListener('input', onFilterChange);
+      langSel.addEventListener('change', onFilterChange);
+      catSel.addEventListener('change', onFilterChange);
+
+      render();
     })();
   </script>
 </Base>
