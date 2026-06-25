@@ -197,5 +197,119 @@ const jsonLd = {
         revealAll();
       }
     </script>
+
+    <!-- Hero terminal scan demo: types the command, spins, then streams the
+         findings — looping while it's in view. Ported from the original docs
+         ScanDemo. Lives in the layout because the hero is a set:html partial
+         whose own scripts don't run. Pauses off-screen; under reduced motion (or
+         no IntersectionObserver) it just shows the finished output. -->
+    <script>
+      (() => {
+        const term = document.querySelector('[data-term]');
+        if (!term) return;
+        const CMD = 'npx oauthlint scan ./src';
+        const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+        const cmd = term.querySelector('[data-term-cmd]');
+        const caret = term.querySelector('[data-term-caret]');
+        const status = term.querySelector('[data-term-status]');
+        const spin = term.querySelector('[data-term-spin]');
+        const finds = [...term.querySelectorAll('[data-term-find]')];
+        const sum = term.querySelector('[data-term-sum]');
+
+        const showFinal = () => {
+          cmd.textContent = CMD;
+          caret.style.display = 'none';
+          status.style.opacity = '0';
+          for (const f of finds) {
+            f.style.opacity = '1';
+            f.style.transform = 'none';
+          }
+          sum.style.opacity = '1';
+        };
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce || !('IntersectionObserver' in window)) {
+          showFinal();
+          return;
+        }
+
+        let gen = 0;
+        let running = false;
+        let spinTimer = null;
+        const timers = new Set();
+        const wait = (ms) =>
+          new Promise((res) => {
+            const t = setTimeout(() => {
+              timers.delete(t);
+              res();
+            }, ms);
+            timers.add(t);
+          });
+        const reset = () => {
+          cmd.textContent = '';
+          caret.style.display = '';
+          status.style.opacity = '0';
+          sum.style.opacity = '0';
+          for (const f of finds) {
+            f.style.opacity = '0';
+            f.style.transform = 'translateY(4px)';
+          }
+        };
+
+        async function loop(my) {
+          while (running && my === gen) {
+            reset();
+            await wait(550);
+            for (let i = 1; i <= CMD.length && my === gen; i++) {
+              cmd.textContent = CMD.slice(0, i);
+              await wait(32);
+            }
+            if (my !== gen) return;
+            await wait(320);
+            status.style.opacity = '1';
+            spinTimer = setInterval(() => {
+              const next = (SPIN.indexOf(spin.textContent) + 1) % SPIN.length;
+              spin.textContent = SPIN[next];
+            }, 80);
+            await wait(1150);
+            clearInterval(spinTimer);
+            spinTimer = null;
+            status.style.opacity = '0';
+            if (my !== gen) return;
+            for (let i = 0; i < finds.length && my === gen; i++) {
+              finds[i].style.opacity = '1';
+              finds[i].style.transform = 'none';
+              await wait(340);
+            }
+            if (my !== gen) return;
+            await wait(160);
+            sum.style.opacity = '1';
+            caret.style.display = 'none';
+            await wait(4800);
+          }
+        }
+        const start = () => {
+          if (running) return;
+          running = true;
+          gen += 1;
+          loop(gen);
+        };
+        const stop = () => {
+          running = false;
+          gen += 1;
+          if (spinTimer) {
+            clearInterval(spinTimer);
+            spinTimer = null;
+          }
+          for (const t of timers) clearTimeout(t);
+          timers.clear();
+        };
+        new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) (e.isIntersecting ? start() : stop());
+          },
+          { threshold: 0.3 },
+        ).observe(term);
+      })();
+    </script>
   </body>
 </html>

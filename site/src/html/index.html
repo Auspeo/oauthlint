@@ -38,48 +38,39 @@
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: var(--ol-space-3); align-items: center;">
           <a href="/docs" class="scp3" style="display: inline-flex; align-items: center; gap: 8px; font-family: var(--ol-font-ui); font-weight: 600; font-size: 15px; color: var(--ol-accent-fg); background: var(--ol-accent); height: 40px; padding: 0px 18px; text-decoration: none; transition: background var(--ol-dur-fast) var(--ol-ease-standard);">Read the docs</a>
-          <a href="https://github.com/Auspeo/oauthlint" class="scp1" style="display: inline-flex; align-items: center; gap: 8px; font-family: var(--ol-font-mono); font-weight: 500; font-size: 15px; color: var(--ol-text-secondary); background: transparent; border: 1px solid var(--ol-border-strong); height: 40px; padding: 0px 16px; text-decoration: none; transition: border-color var(--ol-dur-fast) var(--ol-ease-standard);" target="_blank" rel="noopener noreferrer">View source ↗</a>
+          <a href="https://github.com/Auspeo/oauthlint" class="scp1" style="display: inline-flex; align-items: center; gap: 8px; font-family: var(--ol-font-ui); font-weight: 600; font-size: 15px; color: var(--ol-text-secondary); background: transparent; border: 1px solid var(--ol-border-strong); height: 40px; padding: 0px 16px; text-decoration: none; transition: border-color var(--ol-dur-fast) var(--ol-ease-standard);" target="_blank" rel="noopener noreferrer">View source ↗</a>
         </div>
       </div>
 
       
-      <div style="min-width: 0px; position: relative; background: var(--ol-canvas); border: 1px solid var(--ol-border-strong); overflow: hidden;">
-        <div style="display: flex; align-items: center; gap: 8px; padding: 0px 14px; height: 38px; background: var(--ol-surface); border-bottom: 1px solid var(--ol-border);">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--ol-neutral-700);"></span>
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--ol-neutral-700);"></span>
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--ol-neutral-700);"></span>
-          <span style="margin-left: 8px; font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-secondary);">auth/session.ts</span>
-          <span style="margin-left: auto; display: flex; align-items: center; gap: 7px; font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--ol-accent); animation: 1.4s steps(1) 0s infinite normal none running ol-blink;"></span>oauthlint · watching</span>
-        </div>
-        <div style="position: relative;">
-          <div data-sweep="" style="position: absolute; left: 0px; right: 0px; top: 0px; height: 46px; background: linear-gradient(180deg, transparent, color-mix(in oklch, var(--ol-accent) 11%, transparent), transparent); pointer-events: none; animation: ol-sweep 4.5s var(--ol-ease-standard) infinite;"></div>
-          <div style="font-family: var(--ol-font-mono); font-size: 14px; line-height: 1.95; padding: var(--ol-space-4) 0; position: relative;">
-            <div style="display: flex; padding: 0px 16px;"><span style="width: 26px; color: var(--ol-text-faint); flex-shrink: 0; user-select: none;">40</span><span style="color: var(--ol-accent-300);">export async function </span><span style="color: var(--ol-text);">getUser</span>(req) {</div>
-            <div style="display: flex; padding: 0px 16px;"><span style="width: 26px; color: var(--ol-text-faint); flex-shrink: 0; user-select: none;">41</span><span><span style="color: var(--ol-accent-300);">const</span> token = <span style="color: var(--ol-sev-medium);">bearer</span>(req.headers)</span></div>
-            <div style="display: flex; padding: 0px 16px; background: var(--ol-sev-critical-bg);"><span style="width: 24px; color: var(--ol-sev-critical); flex-shrink: 0; user-select: none; border-left: 2px solid var(--ol-sev-critical); margin-left: -2px;">42</span><span><span style="color: var(--ol-accent-300);">const</span> claims = jwt.<span style="color: var(--ol-sev-critical); text-decoration: underline wavy var(--ol-sev-critical); text-underline-offset: 3px;">decode</span>(token)</span></div>
-            <div style="display: flex; padding: 0px 16px;"><span style="width: 26px; color: var(--ol-text-faint); flex-shrink: 0; user-select: none;">43</span><span><span style="color: var(--ol-accent-300);">return</span> db.users.<span style="color: var(--ol-sev-medium);">find</span>(claims.sub)</span></div>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: 3px 1fr; border-top: 1px solid var(--ol-border);">
-          <div style="background: var(--ol-sev-critical);"></div>
-          <div style="padding: var(--ol-space-4) var(--ol-space-5);">
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
-              <span style="font-family: var(--ol-font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: var(--ol-neutral-50); background: var(--ol-sev-critical-solid); padding: 3px 8px;">CRITICAL</span>
-              <span style="font-family: var(--ol-font-mono); font-size: 14px; color: var(--ol-text);">jwt-no-verification</span>
-              <span style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-muted);">CWE-347</span>
-              <span style="margin-left: auto; font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-faint);">session.ts:42:18</span>
-            </div>
-            <p style="font-size: var(--ol-text-body-s); line-height: 1.55; color: var(--ol-text-secondary); margin: 0px 0px 12px;">Decoding a JWT does not verify its signature. Any attacker can forge <span style="font-family: var(--ol-font-mono); color: var(--ol-text); font-size: 0.92em;">claims.sub</span> and become any user.</p>
-            <div style="display: grid; grid-template-columns: 3px 1fr; border: 1px solid var(--ol-sev-pass-border); background: var(--ol-sev-pass-bg);">
-              <div style="background: var(--ol-sev-pass);"></div>
-              <div style="padding: 10px 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ol-sev-pass)" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg><span style="font-family: var(--ol-font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: var(--ol-sev-pass);">SUGGESTED FIX</span></div>
-                <div style="font-family: var(--ol-font-mono); font-size: 13px; line-height: 1.7; color: var(--ol-text); overflow-x: auto; white-space: nowrap;"><span style="color: var(--ol-accent-300);">const</span> claims = jwt.<span style="color: var(--ol-sev-pass);">verify</span>(token, key, { algorithms: [<span style="color: var(--ol-sev-pass);">'RS256'</span>] })</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div data-term role="img" aria-label="oauthlint scan output: a critical jwt-no-verification, a high token-in-localstorage, and a medium cookie-no-secure across three files; three issues found in 1.7 seconds" style="border: 1px solid var(--ol-border-strong); background: var(--ol-surface); overflow: hidden; box-shadow: 0 24px 50px -18px rgba(0,0,0,0.55); font-family: var(--ol-font-mono);">
+  <div aria-hidden="true" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--ol-neutral-900); border-bottom: 1px solid var(--ol-border);">
+    <span style="width: 11px; height: 11px; border-radius: 50%; background: #ff5f57;"></span>
+    <span style="width: 11px; height: 11px; border-radius: 50%; background: #febc2e;"></span>
+    <span style="width: 11px; height: 11px; border-radius: 50%; background: #28c840;"></span>
+    <span style="margin-left: 10px; color: var(--ol-text-faint); font-size: 12.5px;">~/app — oauthlint</span>
+  </div>
+  <div style="padding: 22px 20px; font-size: 13.5px; line-height: 1.65; color: var(--ol-text-secondary); min-height: 288px;">
+    <p style="margin: 0 0 16px; color: var(--ol-text); white-space: pre-wrap; word-break: break-word;"><span style="color: var(--ol-accent); font-weight: 700; margin-right: 12px;">$</span><span data-term-cmd></span><span data-term-caret style="color: var(--ol-accent);">▋</span></p>
+    <p data-term-status style="margin: 0 0 14px; color: var(--ol-text-muted); opacity: 0; transition: opacity 0.25s var(--ol-ease-standard);"><span data-term-spin>⠋</span> scanning 47 files…</p>
+    <p data-term-find style="margin: 0 0 11px; opacity: 0; transform: translateY(4px); transition: opacity 0.3s var(--ol-ease-out), transform 0.3s var(--ol-ease-out); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;">
+      <span style="flex: none; width: 78px; text-align: center; padding: 2px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: var(--ol-sev-critical-bg); color: var(--ol-sev-critical-solid);">CRITICAL</span>
+      <span style="color: var(--ol-text);">jwt-no-verification</span>
+      <span style="color: var(--ol-text-faint);">src/auth/session.ts:42</span>
+    </p>
+    <p data-term-find style="margin: 0 0 11px; opacity: 0; transform: translateY(4px); transition: opacity 0.3s var(--ol-ease-out), transform 0.3s var(--ol-ease-out); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;">
+      <span style="flex: none; width: 78px; text-align: center; padding: 2px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: var(--ol-sev-high-bg); color: var(--ol-sev-high-solid);">HIGH</span>
+      <span style="color: var(--ol-text);">token-in-localstorage</span>
+      <span style="color: var(--ol-text-faint);">src/login.tsx:18</span>
+    </p>
+    <p data-term-find style="margin: 0 0 11px; opacity: 0; transform: translateY(4px); transition: opacity 0.3s var(--ol-ease-out), transform 0.3s var(--ol-ease-out); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;">
+      <span style="flex: none; width: 78px; text-align: center; padding: 2px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: var(--ol-sev-medium-bg); color: var(--ol-sev-medium-solid);">MEDIUM</span>
+      <span style="color: var(--ol-text);">cookie-no-secure</span>
+      <span style="color: var(--ol-text-faint);">src/server.ts:37</span>
+    </p>
+    <p data-term-sum style="margin: 16px 0 0; opacity: 0; transition: opacity 0.3s var(--ol-ease-out); color: var(--ol-text);"><span style="color: var(--ol-sev-pass-solid); font-weight: 700;">✔</span> 3 issues · 1 critical · 1 high · scanned in 1.7s</p>
+  </div>
+</div>
     </div>
 
     
