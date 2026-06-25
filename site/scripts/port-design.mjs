@@ -11,11 +11,13 @@ const SITE = join(HERE, '..');
 const SRC = join(SITE, '..', 'design', '_export');
 
 // dc file -> { route, out: astro page path, partial name }
+// NOTE: the Rules catalogue and single-Rule pages are NOT ported as static
+// partials — they are generated data-driven from the rule pack
+// (src/pages/rules/index.astro + [slug].astro, see src/lib/rules.ts). Only the
+// marketing/content pages are ported here.
 const PAGES = [
   { dc: 'Landing.dc.html', page: 'src/pages/index.astro', partial: 'index', depth: 1 },
   { dc: 'Docs.dc.html', page: 'src/pages/docs.astro', partial: 'docs', depth: 1 },
-  { dc: 'Rules.dc.html', page: 'src/pages/rules.astro', partial: 'rules', depth: 1 },
-  { dc: 'Rule.dc.html', page: 'src/pages/rules/sample.astro', partial: 'rule', depth: 2 },
   { dc: 'Pricing.dc.html', page: 'src/pages/pricing.astro', partial: 'pricing', depth: 1 },
   { dc: 'About.dc.html', page: 'src/pages/about.astro', partial: 'about', depth: 1 },
   { dc: '404.dc.html', page: 'src/pages/404.astro', partial: 'notfound', depth: 1 },
@@ -26,7 +28,7 @@ const HREF_MAP = {
   'Landing.dc.html': '/',
   'Docs.dc.html': '/docs',
   'Rules.dc.html': '/rules',
-  'Rule.dc.html': '/rules/sample',
+  'Rule.dc.html': '/rules',
   'Pricing.dc.html': '/pricing',
   'About.dc.html': '/about',
   '404.dc.html': '/404',

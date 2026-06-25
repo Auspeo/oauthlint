@@ -45,5 +45,25 @@ const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
   </head>
   <body>
     <slot />
+
+    <!-- Progressive enhancement: the ported design uses `style-hover="…"` (a
+         Cloud Design canvas attribute that isn't real CSS). Replicate it as a
+         real hover/focus interaction. No JS = no hover, but fully functional. -->
+    <script>
+      for (const el of document.querySelectorAll<HTMLElement>('[style-hover]')) {
+        const base = el.getAttribute('style') ?? '';
+        const hover = el.getAttribute('style-hover') ?? '';
+        const on = () => {
+          el.style.cssText = base + ';' + hover;
+        };
+        const off = () => {
+          el.style.cssText = base;
+        };
+        el.addEventListener('mouseenter', on);
+        el.addEventListener('mouseleave', off);
+        el.addEventListener('focusin', on);
+        el.addEventListener('focusout', off);
+      }
+    </script>
   </body>
 </html>
