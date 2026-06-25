@@ -65,3 +65,4 @@ docs/.vitepress/cache/
 POSITIONING.local.md
 AIBENCH.local.md
 design/design-prompts.local.md
+.claude/
