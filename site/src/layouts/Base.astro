@@ -29,6 +29,22 @@ const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
     <meta name="theme-color" content="#0E1113" />
     <link rel="icon" type="image/png" href="/favicon.png" />
 
+    <!-- Set the colour theme BEFORE first paint to avoid a flash. Dark is the
+         brand default when there's no stored choice or OS-preference signal. -->
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem('ol-theme');
+          const theme =
+            stored ??
+            (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          document.documentElement.dataset.theme = theme;
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -74,6 +90,39 @@ const ogUrl = new URL(ogImage, Astro.site ?? 'https://oauthlint.dev').href;
       // Navigation can skip mouseleave; clear any stuck hover on bfcache events.
       window.addEventListener('pageshow', reset);
       window.addEventListener('pagehide', reset);
+    </script>
+
+    <!-- Theme toggle. The nav markup (SiteChrome + the captured partials) ships
+         a `[data-theme-toggle]` button with a `[data-theme-icon]` glyph. The
+         pre-paint inline script in <head> already set the theme; here we just
+         sync the icon and wire the click. Lives in the layout so it runs on
+         every page, including the `set:html` partials whose own scripts don't
+         execute. -->
+    <script>
+      const ICON = { dark: '◐', light: '◑' };
+      const apply = (theme: string) => {
+        document.documentElement.dataset.theme = theme;
+        for (const icon of document.querySelectorAll<HTMLElement>('[data-theme-icon]')) {
+          icon.textContent = ICON[theme as keyof typeof ICON] ?? ICON.dark;
+        }
+        for (const btn of document.querySelectorAll<HTMLElement>('[data-theme-toggle]')) {
+          btn.setAttribute('aria-pressed', String(theme === 'light'));
+        }
+      };
+      const syncIcon = () => apply(document.documentElement.dataset.theme || 'dark');
+      for (const btn of document.querySelectorAll<HTMLElement>('[data-theme-toggle]')) {
+        btn.addEventListener('click', () => {
+          const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+          try {
+            localStorage.setItem('ol-theme', next);
+          } catch {
+            /* private mode: still toggle for the session */
+          }
+          apply(next);
+        });
+      }
+      syncIcon();
+      window.addEventListener('pageshow', syncIcon);
     </script>
   </body>
 </html>
