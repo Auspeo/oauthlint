@@ -1,17 +1,18 @@
-<div><div style="min-height: 100vh; background-color: var(--ol-neutral-1000); background-image: linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size: 32px 32px;">
+<div><div style="min-height: 100vh; background-color: var(--ol-canvas); background-image: linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size: 32px 32px;">
 
-  <nav style="position: sticky; top: 0px; z-index: 50; display: flex; align-items: center; gap: var(--ol-space-6); padding: 0 var(--ol-space-6); height: 56px; background: color-mix(in oklch, var(--ol-neutral-1000) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--ol-border);">
+  <nav style="position: sticky; top: 0px; z-index: 50; display: flex; align-items: center; gap: var(--ol-space-6); padding: 0 var(--ol-space-6); height: 56px; background: color-mix(in oklch, var(--ol-canvas) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--ol-border);">
     <a href="/" aria-label="OAuthLint home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ol-text);">
       <div style="width: 24px; height: 24px; border: 1.5px solid var(--ol-accent); display: grid; place-items: center;"><div style="width: 6px; height: 6px; background: var(--ol-accent);"></div></div>
       <span style="font-family: var(--ol-font-display); font-weight: 700; font-size: 15px; letter-spacing: -0.02em;">OAuthLint</span>
     </a>
     <div style="flex: 1 1 0%;"></div>
     <div data-navlinks="" style="display: flex; gap: var(--ol-space-6); align-items: center;">
-      <a href="/docs" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-accent); text-decoration: none;">docs</a>
-      <a href="/rules" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">rules</a>
-      
-      <a href="/about" class="scp0" style="font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-muted); text-decoration: none;">about</a>
+      <a href="/docs" style="font-family: var(--ol-font-ui); font-size: 13px; color: var(--ol-accent); text-decoration: none;">docs</a>
+      <a href="/rules" class="scp0" style="font-family: var(--ol-font-ui); font-size: 13px; color: var(--ol-text-muted); text-decoration: none;">rules</a>
+
+      <a href="/about" class="scp0" style="font-family: var(--ol-font-ui); font-size: 13px; color: var(--ol-text-muted); text-decoration: none;">about</a>
     </div>
+    <button type="button" data-theme-toggle aria-label="Toggle colour theme" class="scp1" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0px; background: var(--ol-surface); border: 1px solid var(--ol-border-strong); color: var(--ol-text-secondary); cursor: pointer; transition: border-color var(--ol-dur-fast) var(--ol-ease-standard);"><span data-theme-icon aria-hidden="true" style="font-family: var(--ol-font-mono); font-size: 14px; line-height: 1;">◐</span></button>
     <a href="https://github.com/Auspeo/oauthlint" class="scp1" style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0px 12px; background: var(--ol-surface); border: 1px solid var(--ol-border-strong); font-family: var(--ol-font-mono); font-size: 12px; color: var(--ol-text-secondary); text-decoration: none;" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
   </nav>
 
@@ -43,7 +44,7 @@
 
       <h2 id="install" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-3); scroll-margin-top: 80px;">Install &amp; run</h2>
       <p style="font-size: var(--ol-text-body-m); line-height: 1.7; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Point it at a directory. The first run downloads the rulepack and caches it.</p>
-      <div style="background: var(--ol-neutral-1000); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
+      <div style="background: var(--ol-canvas); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
         <div style="display: flex; align-items: center; padding: 8px 14px; background: var(--ol-surface); border-bottom: 1px solid var(--ol-border);"><span style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-muted);">terminal</span><button aria-label="Copy command" class="scp2" style="margin-left: auto; font-family: var(--ol-font-mono); font-size: 11px; background: none; border: 1px solid var(--ol-border-strong); color: var(--ol-text-muted); padding: 3px 9px; cursor: pointer;"><span class="sc-interp">copy</span></button></div>
         <div style="padding: var(--ol-space-4) var(--ol-space-5); font-family: var(--ol-font-mono); font-size: var(--ol-text-code); line-height: 1.9;">
           <div><span style="color: var(--ol-accent);">$</span> <span style="color: var(--ol-text);">npx oauthlint scan ./src</span></div>
@@ -54,7 +55,7 @@
 
       <h2 id="ci" style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-l); margin: 0 0 var(--ol-space-3); scroll-margin-top: 80px;">Add to CI</h2>
       <p style="font-size: var(--ol-text-body-m); line-height: 1.7; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Drop the action into any workflow. Use <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">fail-on</code> to set the severity that blocks a merge, and <code style="font-family: var(--ol-font-mono); color: var(--ol-text);">sarif: true</code> to surface findings in GitHub code scanning.</p>
-      <div style="background: var(--ol-neutral-1000); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
+      <div style="background: var(--ol-canvas); border: 1px solid var(--ol-border); overflow: hidden; margin-bottom: var(--ol-space-8);">
         <div style="display: flex; align-items: center; padding: 8px 14px; background: var(--ol-surface); border-bottom: 1px solid var(--ol-border);"><span style="font-family: var(--ol-font-mono); font-size: 11px; color: var(--ol-text-muted);">.github/workflows/auth.yml</span></div>
         <div style="padding: var(--ol-space-4) var(--ol-space-5); font-family: var(--ol-font-mono); font-size: var(--ol-text-code); line-height: 1.9; overflow-x: auto; white-space: nowrap;">
           <div><span style="color: var(--ol-sev-low);">- name</span>: <span style="color: var(--ol-text);">OAuthLint</span></div>

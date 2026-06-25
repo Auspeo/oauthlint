@@ -1,9 +1,11 @@
-<div style="min-height:100vh; display:flex; flex-direction:column; background-color:var(--ol-neutral-1000); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
+<div style="min-height:100vh; display:flex; flex-direction:column; background-color:var(--ol-canvas); background-image:linear-gradient(to right, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--ol-neutral-700) 14%, transparent) 1px, transparent 1px); background-size:32px 32px;">
   <nav style="display:flex; align-items:center; gap:var(--ol-space-6); padding:0 var(--ol-space-6); height:56px; border-bottom:1px solid var(--ol-border);">
     <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ol-text);" aria-label="OAuthLint home">
       <div style="width:24px; height:24px; border:1.5px solid var(--ol-accent); display:grid; place-items:center;"><div style="width:6px; height:6px; background:var(--ol-accent);"></div></div>
       <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
     </a>
+    <div style="flex:1;"></div>
+    <button type="button" data-theme-toggle aria-label="Toggle colour theme" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:var(--ol-surface); border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); cursor:pointer; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);" style-hover="border-color:var(--ol-accent-border); color:var(--ol-text);"><span data-theme-icon aria-hidden="true" style="font-family:var(--ol-font-mono); font-size:14px; line-height:1;">◐</span></button>
   </nav>
 
   <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:var(--ol-space-12) var(--ol-space-6);">
@@ -11,7 +13,7 @@
     <h1 style="font-family:var(--ol-font-display); font-weight:600; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3);">No match found.</h1>
     <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:46ch; margin:0 0 var(--ol-space-8);">We scanned for that page and came back clean — which, ironically, is the one time a zero-result scan is bad news.</p>
 
-    <div style="background:var(--ol-neutral-1000); border:1px solid var(--ol-border-strong); padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; text-align:left; max-width:420px; width:100%; margin-bottom:var(--ol-space-8);">
+    <div style="background:var(--ol-canvas); border:1px solid var(--ol-border-strong); padding:var(--ol-space-4) var(--ol-space-5); font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; text-align:left; max-width:420px; width:100%; margin-bottom:var(--ol-space-8);">
       <div><span style="color:var(--ol-accent);">$</span> oauthlint open <span style="color:var(--ol-text-muted);">$REQUESTED_PAGE</span></div>
       <div><span style="color:var(--ol-sev-info);">●</span> <span style="color:var(--ol-text-secondary);">info</span> <span style="color:var(--ol-text-faint);">route resolved 0 matches</span></div>
       <div><span style="color:var(--ol-accent);">$</span> <span style="display:inline-block; width:8px; height:14px; background:var(--ol-accent); vertical-align:-2px; animation:ol-blink 1.1s steps(1) infinite;"></span></div>

@@ -15,10 +15,6 @@
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r exec rm -rf dist node_modules .turbo",
     "scan:self": "node cli/bin/oauthlint.js scan ./examples",
-    "docs:rules": "pnpm --filter oauthlint-rules build && tsx scripts/generate-rule-docs.ts",
-    "docs:dev": "pnpm docs:rules && vitepress dev docs",
-    "docs:build": "pnpm docs:rules && vitepress build docs",
-    "docs:preview": "vitepress preview docs",
     "validate": "tsx scripts/validate-rules.ts",
     "bench": "tsx benchmark/run.ts",
     "prepare": "husky",
@@ -42,7 +38,6 @@
     "oauthlint-rules": "workspace:*",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
-    "vitepress": "1.6.3",
     "vitest": "2.1.9",
     "yaml": "2.9.0"
   },
@@ -59,10 +54,5 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
-  },
-  "dependencies": {
-    "@fontsource-variable/hanken-grotesk": "5.2.8",
-    "@fontsource-variable/martian-mono": "5.2.7",
-    "@fontsource-variable/sora": "5.2.8"
   }
 }
