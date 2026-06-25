@@ -41,6 +41,22 @@ nav a[href]:hover {
   display: none !important;
 }
 
+/* Scroll reveal — sections fade up as they enter view (wired in Base.astro).
+   Only active when JS is on (html.js) and motion is allowed, so no-JS / reduced
+   motion shows everything immediately. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js section {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s var(--ol-ease-out), transform 0.6s var(--ol-ease-out);
+    will-change: opacity, transform;
+  }
+  html.js section.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Baseline interactive hovers for the captured marketing pages (index/docs/
    about/notfound). Those were headless-rendered and lost the design's
    `style-hover` interactions; only nav-link hover was restored above. These
