@@ -55,6 +55,12 @@ export function storeBad5(token: string) {
   // ruleid: auth.jwt.localstorage -- sessionStorage is no safer against XSS
   sessionStorage.setItem('access_token', token);
 }
+
+const TOKEN_STORAGE_KEY = 'app.session';
+export function storeBad6(token: string) {
+  // ruleid: auth.jwt.localstorage -- key is a variable, but the value is the token
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+}
 ```
 
 ## ✅ Safe

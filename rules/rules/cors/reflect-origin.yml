@@ -43,16 +43,26 @@ rules:
       # express cors() middleware: a callback that unconditionally allows
       # every origin (cb(null, true) regardless of the origin argument).
       - pattern: 'cors({ ..., origin: ($O, $CB) => $CB(null, true), ... })'
+      # A block-body callback that returns `cb(null, true)` is only dangerous
+      # when it does so UNCONDITIONALLY — i.e. it ignores its origin argument.
+      # A callback that inspects `$O` inside an `if` (e.g. `if (allow.has(origin))
+      # return cb(null, true)`) is the allowlist pattern this rule recommends, so
+      # the `pattern-not` below suppresses it. Without that guard the rule flagged
+      # the exact safe shape its own message tells you to use.
       - patterns:
           - pattern: |
               cors({ ..., origin: ($O, $CB) => { ... }, ... })
           - pattern-inside: |
               cors({ ..., origin: ($O, $CB) => { ... return $CB(null, true); }, ... })
+          - pattern-not: |
+              cors({ ..., origin: ($O, $CB) => { ... if (<... $O ...>) { ... } ... }, ... })
       - patterns:
           - pattern: |
               cors({ ..., origin: function ($O, $CB) { ... }, ... })
           - pattern-inside: |
               cors({ ..., origin: function ($O, $CB) { ... return $CB(null, true); }, ... })
+          - pattern-not: |
+              cors({ ..., origin: function ($O, $CB) { ... if (<... $O ...>) { ... } ... }, ... })
     metadata:
       oauthlint-rule-id: AUTH-CORS-002
       oauthlint-doc-url: https://oauthlint.dev/rules/cors-reflect-origin

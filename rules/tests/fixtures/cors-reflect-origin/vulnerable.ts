@@ -29,3 +29,11 @@ export const allowAllCors = cors({
   origin: (_origin: string, cb: (e: null, ok: boolean) => void) => cb(null, true),
   credentials: true,
 });
+
+// ruleid: auth.cors.reflect-origin -- block callback that ignores origin and allows all
+export const allowAllBlock = cors({
+  origin: (_origin: string, cb: (e: null, ok: boolean) => void) => {
+    return cb(null, true);
+  },
+  credentials: true,
+});

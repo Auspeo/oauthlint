@@ -40,6 +40,27 @@ automatically and adds it to the scoreboard.
 Drop a `prompts/<id>.md` with the same frontmatter shape, regenerate code for it
 across tools, and re-run.
 
+## Findings are hand-verified
+
+Every finding in the `gen/claude/` baseline was manually reviewed against the
+generated code — a linter benchmark is only worth citing if its own findings
+hold up. That review found and fixed **two false positives** in the rule pack:
+
+- `auth.oauth.no-state-validation` fired on a callback that *did* validate
+  `state` — it read `state` into a local and compared the local two lines later,
+  which the rule couldn't see. Fixed to recognize the captured-variable shape.
+- `auth.cors.reflect-origin` (HIGH) fired on an allowlist callback —
+  `if (allowed.includes(origin)) cb(null, true)` — i.e. the exact safe pattern
+  the rule's own message recommends. Fixed to only flag callbacks that ignore
+  their origin argument and allow unconditionally.
+
+After those fixes the remaining findings are true positives. One is
+context-dependent and called out as such: `auth.java.web.csrf-disabled` on
+`09-spring-security` correctly detects that CSRF is disabled — defensible for a
+*stateless* bearer-token API, but flagged because it is a frequent and often
+wrong AI default. (Like the localStorage false-negative this harness surfaced
+earlier, the FPs are a feature of running the benchmark, not a strike against it.)
+
 ## Honest caveats (read before citing)
 
 - The default `gen/claude/` baseline is **one vendor under one framing** — a
@@ -49,6 +70,8 @@ across tools, and re-run.
 - "Findings" includes best-practice gaps (missing PKCE, JWT `algorithms`
   pinning, rate limiting), not only critical bugs. Read `RESULTS.md`, don't just
   quote the headline number.
+- Scored by OAuthLint's own rules — the baseline is hand-verified (above), but
+  cross-tool comparisons inherit whatever the pack does and doesn't cover.
 
 ## Why this exists
 
