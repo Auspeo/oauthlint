@@ -137,6 +137,10 @@ importers:
       astro:
         specifier: 5.14.1
         version: 5.14.1(@types/node@22.10.5)(jiti@2.6.1)(rollup@4.60.4)(tsx@4.19.2)(typescript@5.7.3)(yaml@2.9.0)
+    devDependencies:
+      vitest:
+        specifier: 2.1.9
+        version: 2.1.9(@types/node@22.10.5)
 
   vscode:
     devDependencies:
