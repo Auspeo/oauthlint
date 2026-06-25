@@ -81,6 +81,13 @@ nav a[href]:hover {
 .scp3:hover {
   background: var(--ol-surface) !important;
 }
+/* The `.scp3` marker is reused for both the dark docs cards (surface hover above)
+   and the primary accent button ("Read the docs"). On the accent button the
+   surface hover turned it near-black; brighten the accent instead and keep its
+   dark foreground. Higher specificity than `.scp3:hover`, so it wins. */
+.scp3[style*="background: var(--ol-accent)"]:hover {
+  background: var(--ol-accent-hover) !important;
+}
 /* Standalone footer/content links (the `.scp4` export marker) warm to the
    accent on hover, matching the design's link affordance. */
 .scp4:hover {
