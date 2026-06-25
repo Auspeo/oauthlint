@@ -20,6 +20,7 @@
     "docs:build": "pnpm docs:rules && vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "validate": "tsx scripts/validate-rules.ts",
+    "bench": "tsx benchmark/run.ts",
     "prepare": "husky",
     "changeset": "changeset",
     "version-packages": "changeset version",
