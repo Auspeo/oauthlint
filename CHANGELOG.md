@@ -5,6 +5,16 @@ All notable changes to oauthlint are recorded here. Per-package detail lives in
 The project follows [Semantic Versioning](https://semver.org); it is pre-1.0, so
 minor versions may still change behavior.
 
+## [0.2.2] — 2026-06-25
+
+### Changed
+
+- Docs: the npm package page (`oauthlint` README) is rewritten as a proper
+  landing page — problem framing, honest "why not just Semgrep?", coverage
+  table, an accurate CI recipe (CLI + SARIF upload to GitHub Code Scanning),
+  absolute URLs, and a corrected exit-code table. CLI-only republish; no
+  behavior change.
+
 ## [0.2.1] — 2026-06-25
 
 ### Fixed
@@ -72,6 +82,7 @@ minor versions may still change behavior.
 - Docker-based GitHub Action.
 - VS Code extension with inline diagnostics and Quick Fix suppressions.
 
+[0.2.2]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.2
 [0.2.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.1
 [0.2.0]: https://github.com/Auspeo/oauthlint/releases/tag/v0.2.0
 [0.1.1]: https://github.com/Auspeo/oauthlint/releases/tag/v0.1.1
