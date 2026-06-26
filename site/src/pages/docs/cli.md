@@ -17,7 +17,7 @@ Scan a directory for auth misconfigurations.
 npx oauthlint scan [path]
 ```
 
-The `path` argument is the directory (or file) to scan. It is optional and defaults to `.` (the current directory).
+The `path` argument is the directory (or file) to scan. It is optional and defaults to `.` (the current directory). You can pass **several paths/files** at once.
 
 ```bash
 # scan the current directory
@@ -25,6 +25,13 @@ npx oauthlint scan
 
 # scan a specific path
 npx oauthlint scan ./src
+
+# scan several files (e.g. from a pre-commit hook)
+npx oauthlint scan src/auth.ts src/server.ts
+
+# scan only what changed (fast CI + pre-commit)
+npx oauthlint scan --diff          # files changed vs the default branch
+npx oauthlint scan --staged        # git-staged files only
 ```
 
 ### Flags
@@ -37,6 +44,8 @@ npx oauthlint scan ./src
 | `--fail-on <level>` | `INFO` \| `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` \| `off` | `HIGH` | Exit non-zero when any finding meets or exceeds this severity. `off` never fails the build. Falls back to `failOn` in your config, then `HIGH`. Case-insensitive. |
 | `--rules-dir <path>` | filesystem path | bundled rules | Override the bundled rule pack with a custom rules directory. |
 | `--fix` | — | off | Apply auto-fixes, rewriting source in place where a rule ships a fix template (currently the `auth.cookie.*` rules). |
+| `--diff [<ref>]` | git ref | merge-base with the default branch | Scan only files changed versus `<ref>`. Great for CI on large repos — only new code is scanned. Outside a git repo, errors clearly. |
+| `--staged` | — | off | Scan only git-staged files. Used by the [pre-commit hook](/docs/pre-commit). |
 
 A few details worth knowing:
 
