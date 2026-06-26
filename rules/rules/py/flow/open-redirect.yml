@@ -1,0 +1,82 @@
+rules:
+  - id: auth.py.flow.open-redirect
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request data flows into a Flask `redirect(...)` without
+      validation — an open redirect (CWE-601). An attacker can craft a link
+      to your trusted domain that bounces the victim to an attacker-controlled
+      site, enabling phishing and OAuth redirect/authorization-code abuse (the
+      victim trusts your URL, then lands on the attacker's page).
+
+      Never redirect to a raw `request.args`/`request.form`/`request.values`/
+      `request.cookies`/`request.headers` value. Build the destination with
+      `url_for(...)` (safe by construction), or validate the target against an
+      explicit allow-list / an `is_safe_url(...)`-style same-host check before
+      redirecting.
+    # Taint mode so indirection (dest = request.args['url']; return redirect(dest))
+    # and `.get(...)` accessors are caught, not just the direct form. Passing the
+    # value through url_for(...) or an is_safe_url(...)/allow-list check clears the
+    # taint. The sink focuses the redirect target argument (and a Location header).
+    mode: taint
+    pattern-sources:
+      - pattern: flask.request.args
+      - pattern: flask.request.form
+      - pattern: flask.request.values
+      - pattern: flask.request.cookies
+      - pattern: flask.request.headers
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.args.get(...)
+      - pattern: request.form.get(...)
+      - pattern: request.values.get(...)
+      - pattern: request.cookies.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.args[$K]
+      - pattern: request.form[$K]
+      - pattern: request.values[$K]
+      - pattern: request.cookies[$K]
+      - pattern: request.headers[$K]
+    pattern-sanitizers:
+      # `url_for(...)` builds the URL from a known endpoint — safe by construction.
+      - pattern: url_for(...)
+      - pattern: flask.url_for(...)
+      # Allow-list / same-host validators used as a guard:
+      #   if is_safe_url(target): return redirect(target)
+      # A value used inside such an `if` body is treated as validated, so the
+      # guarded redirect does not fire.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if is_safe_url($V):
+                  ...
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if url_has_allowed_host_and_scheme($V, ...):
+                  ...
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: redirect($SINK)
+              - pattern: redirect($SINK, ...)
+              - pattern: flask.redirect($SINK)
+              - pattern: flask.redirect($SINK, ...)
+              - pattern: 'Response(..., headers={..., "Location": $SINK, ...}, ...)'
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - flask
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
