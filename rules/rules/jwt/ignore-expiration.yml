@@ -1,0 +1,43 @@
+rules:
+  - id: auth.jwt.ignore-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.verify(token, key, { ignoreExpiration: true })` from `jsonwebtoken`
+      disables the `exp` (expiry) claim check, so an expired token is accepted
+      as valid forever. A stolen or long-old token then never stops working,
+      defeating the whole point of short-lived access tokens.
+
+      Remove `ignoreExpiration: true` so the `exp` claim is enforced, and set a
+      sane `expiresIn` when signing (`jwt.sign(payload, key, { expiresIn: '15m'
+      })`). See CWE-613 (Insufficient Session Expiration).
+    # Scoped to the `jsonwebtoken` library via the common alias `jwt`, mirroring
+    # decode-without-verify.yml. We only flag `verify(...)` calls that explicitly
+    # pass `ignoreExpiration: true`; `verify(...)` without that option, and
+    # `ignoreExpiration: false`, are never matched. We also support the
+    # destructured import `import { verify } from 'jsonwebtoken'`, scoped to that
+    # import so an unrelated `verify()` is safe. The options object is matched
+    # with `{ ..., ignoreExpiration: true, ... }` so the flag is caught
+    # regardless of which other options (algorithms, maxAge, audience, ...)
+    # appear alongside it.
+    pattern-either:
+      - pattern: 'jwt.verify($T, $K, { ..., ignoreExpiration: true, ... })'
+      - patterns:
+          - pattern-inside: |
+              import { ..., verify, ... } from 'jsonwebtoken'
+              ...
+          - pattern: 'verify($T, $K, { ..., ignoreExpiration: true, ... })'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-011
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-ignore-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - jsonwebtoken
+      references:
+        - https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
+        - https://cwe.mitre.org/data/definitions/613.html
