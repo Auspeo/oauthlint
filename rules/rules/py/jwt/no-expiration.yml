@@ -1,0 +1,36 @@
+rules:
+  - id: auth.py.jwt.no-expiration
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A JWT is decoded with `options={"verify_exp": False}`, which turns off
+      PyJWT's `exp` (expiration) check. With expiry verification disabled, an
+      expired — or stolen and long-since-revoked — token is still accepted, so
+      tokens effectively never expire.
+
+      Remove the `"verify_exp": False` option; PyJWT verifies `exp` by default,
+      e.g. `jwt.decode(token, key, algorithms=["RS256"])`. If a token legitimately
+      carries no `exp`, prefer `options={"require": ["exp"]}` to mandate one.
+    # Scoped to PyJWT's `jwt.decode(...)`. Matches the `options` dict containing
+    # `"verify_exp": False`, covering both `jwt.decode(...)` and a destructured
+    # `from jwt import decode` -> `decode(..., options=...)` call shape.
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - pattern: decode(..., options=$OPTS, ...)
+      - metavariable-pattern:
+          metavariable: $OPTS
+          pattern: '{..., "verify_exp": False, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - PyJWT
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/613.html

@@ -1,0 +1,42 @@
+rules:
+  - id: auth.tls.reject-unauthorized
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Disabling TLS certificate validation (`rejectUnauthorized: false` or
+      `NODE_TLS_REJECT_UNAUTHORIZED=0`) makes the connection accept ANY
+      certificate, including self-signed or attacker-supplied ones. This
+      removes the protection TLS provides against man-in-the-middle attacks:
+      anyone able to intercept the network path can present a forged
+      certificate, then read and modify the traffic (credentials, tokens, data).
+
+      Keep certificate validation enabled. If the server uses a private or
+      self-signed CA, supply that CA explicitly instead of turning validation
+      off — e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
+      CWE-295 and the Node.js TLS docs.
+    # Matches an options object literal that contains `rejectUnauthorized: false`,
+    # wherever it appears (https.request, new https.Agent, tls.connect, axios
+    # `httpsAgent`, node-fetch `agent`, etc.). `rejectUnauthorized` is a
+    # TLS-specific key, so matching the literal directly is very low FP. We also
+    # flag setting the global escape hatch `NODE_TLS_REJECT_UNAUTHORIZED` to "0".
+    # `rejectUnauthorized: true` and objects without the key are never matched.
+    pattern-either:
+      - pattern: '{..., rejectUnauthorized: false, ...}'
+      - pattern: 'process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"'
+      - pattern: "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'"
+    metadata:
+      oauthlint-rule-id: AUTH-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/tls-reject-unauthorized
+      category: security
+      cwe: CWE-295
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - node
+        - https
+        - axios
+      references:
+        - https://nodejs.org/api/tls.html#tlsconnectoptions-callback
+        - https://cwe.mitre.org/data/definitions/295.html

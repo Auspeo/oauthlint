@@ -1,0 +1,50 @@
+rules:
+  - id: auth.cookie.samesite-none-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A cookie is being set with `SameSite=None` but WITHOUT `Secure`.
+      `SameSite=None` *requires* `Secure`: modern browsers reject a
+      `SameSite=None` cookie that is not also `Secure`, so the cookie is
+      silently dropped. Worse, if anything does accept it, the cookie is a
+      cross-site cookie travelling over plaintext — it can be sent over plain
+      HTTP and offers no CSRF protection at all.
+
+      Fix: add `secure: true`, and only use `SameSite=None` when you genuinely
+      need the cookie sent on cross-site requests; otherwise prefer
+      `SameSite=Strict` or `Lax`. See CWE-1275.
+    pattern-either:
+      # An options object that sets sameSite: 'none' (any casing) but does NOT
+      # also set secure: true. The `pattern-not` requires the ABSENCE of
+      # `secure: true`, which covers both "secure omitted entirely" and the
+      # explicit `secure: false` case — neither satisfies the negation.
+      - patterns:
+          - pattern-either:
+              - pattern: "{..., sameSite: 'none', ...}"
+              - pattern: '{..., sameSite: "none", ...}'
+              - pattern: "{..., sameSite: 'None', ...}"
+              - pattern: '{..., sameSite: "None", ...}'
+          - pattern-not: '{..., secure: true, ...}'
+      # Raw Set-Cookie header string carrying SameSite=None with no Secure
+      # attribute. We match the whole quoted/backtick cookie string so the
+      # Secure check spans the *entire* string (Secure may legitimately appear
+      # before OR after SameSite=None) rather than the narrow `SameSite=None`
+      # span. The negative lookahead `(?!...secure)` is anchored at the opening
+      # quote, so it fails the match if a `secure` attribute appears anywhere
+      # inside the literal — leaving only SameSite=None strings that lack it.
+      - pattern-regex: '(?i)(["''`])(?![^"''`\n]*\bsecure\b)[^"''`\n]*\bsamesite\s*=\s*none\b[^"''`\n]*\1'
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-samesite-none-insecure
+      category: security
+      cwe: CWE-1275
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+        - cookie
+      references:
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#samesitenone_requires_secure
+        - https://cwe.mitre.org/data/definitions/1275.html
