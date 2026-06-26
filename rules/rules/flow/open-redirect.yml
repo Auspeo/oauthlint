@@ -1,0 +1,76 @@
+rules:
+  - id: auth.flow.open-redirect
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into a redirect destination. Because the
+      target URL is attacker-controlled, this is an open redirect (CWE-601):
+      an attacker can craft a link to your trusted host that bounces the victim
+      to an arbitrary external site. That fuels phishing, and in OAuth flows it
+      can be chained to steal authorization codes or access tokens by sending
+      the victim (and their callback) to a server you do not control.
+
+      Never redirect to a raw `req.query` / `req.body` / `req.params` /
+      `req.cookies` / `req.headers` value. Validate the destination against an
+      explicit allow-list of hosts or route names, or only allow relative paths
+      you control (reject anything containing a scheme or `//`).
+    # Taint mode so indirection is caught — `const dest = req.body.url;
+    # res.redirect(dest)` flags, not just the direct `res.redirect(req.query.x)`
+    # form. Passing the value through an allow-list / validation call
+    # (isAllowedUrl, allowlist.includes, Set.has) clears the taint, so a
+    # genuinely validated redirect does not fire.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.cookies.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.cookies[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sanitizers:
+      # Routing the value through an allow-list / validation helper clears the
+      # taint: only the vetted result (not the raw request input) reaches the
+      # sink. Matched by a conventional validation-helper call, or by an
+      # allow-list membership test (`Set.has` / `Array.includes`) that the
+      # value is passed through.
+      - pattern: isAllowedUrl(...)
+      - pattern: validateRedirect(...)
+      - pattern: sanitizeRedirect(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($SINK)
+              - pattern: $RES.redirect($CODE, $SINK)
+              - pattern: $RES.location($SINK)
+              - pattern: "$RES.set('Location', $SINK)"
+              - pattern: '$RES.set("Location", $SINK)'
+              - pattern: "$RES.setHeader('Location', $SINK)"
+              - pattern: '$RES.setHeader("Location", $SINK)'
+              - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - express
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
