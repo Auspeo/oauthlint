@@ -37,6 +37,7 @@ describe('action.yml', () => {
       'output',
       'sarif',
       'sarif-file',
+      'annotations',
     ]) {
       expect(inputNames, `missing input: ${expected}`).toContain(expected);
     }
@@ -46,6 +47,11 @@ describe('action.yml', () => {
     const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
     expect(yml.inputs?.sarif?.default).toBe('false');
     expect(yml.inputs?.['sarif-file']?.default).toBe('oauthlint.sarif');
+  });
+
+  it('defaults annotations ON (opt-out, not opt-in)', async () => {
+    const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
+    expect(yml.inputs?.annotations?.default).toBe('true');
   });
 
   it('declares findings, highest-severity, and sarif-file as outputs', async () => {
@@ -65,6 +71,7 @@ describe('action.yml', () => {
       '${{ inputs.output }}',
       '${{ inputs.sarif }}',
       '${{ inputs.sarif-file }}',
+      '${{ inputs.annotations }}',
     ]);
   });
 });
@@ -79,6 +86,21 @@ describe('entrypoint.sh', () => {
     expect(sh).toMatch(/OUTPUT_PATH="\$\{5:-/);
     expect(sh).toMatch(/EMIT_SARIF="\$\{6:-/);
     expect(sh).toMatch(/SARIF_PATH="\$\{7:-/);
+    expect(sh).toMatch(/EMIT_ANNOTATIONS="\$\{8:-/);
+  });
+
+  it('runs the annotate helper only when annotations are enabled', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    expect(sh).toMatch(/if\s+\[\[\s+"\$EMIT_ANNOTATIONS"\s+==\s+"true"\s+\]\]/);
+    expect(sh).toMatch(/node "\$SCRIPT_DIR\/annotate\.mjs"/);
+  });
+
+  it('never lets the annotation pass gate the job (fail-on off, swallowed exit)', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    // The dedicated annotation scan uses --fail-on off so it can't fail the job.
+    expect(sh).toMatch(/ANN_ARGS=\(\s*scan "\$PATH_TO_SCAN" --json --fail-on off/);
+    // The final exit code is still the gating scan's, untouched by annotations.
+    expect(sh).toMatch(/exit "\$EXIT_CODE"/);
   });
 
   it('writes GITHUB_OUTPUT for both declared outputs', async () => {

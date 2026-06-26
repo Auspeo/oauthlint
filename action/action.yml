@@ -34,6 +34,10 @@ inputs:
     description: 'Path to write the SARIF report (only used when sarif=true).'
     required: false
     default: 'oauthlint.sarif'
+  annotations:
+    description: 'Emit inline PR annotations + a Markdown job summary for each finding. Set to "false" to opt out.'
+    required: false
+    default: 'true'
 
 outputs:
   findings:
@@ -57,3 +61,4 @@ runs:
     - ${{ inputs.output }}
     - ${{ inputs.sarif }}
     - ${{ inputs.sarif-file }}
+    - ${{ inputs.annotations }}

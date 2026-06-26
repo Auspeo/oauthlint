@@ -7,6 +7,11 @@ suppress a line and a link to the explanation for every rule.
 ## What it does
 
 - **Inline diagnostics** on save and on open, for JavaScript and TypeScript.
+- **Status bar item** showing the OAuthLint finding count for the active file
+  (`$(shield) OAuthLint: 3`). It spins while a scan is running
+  (`$(sync~spin) OAuthLint: scanning…`), turns into a `$(warning)` warning when
+  the CLI can't be run (with a tooltip pointing at `oauthlint.cliPath`), and
+  re-scans the current file when clicked. It hides for non-JS/TS files.
 - **Quick Fix** to insert an `// oauthlint-disable-next-line` directive when a
   finding is a deliberate, reviewed choice.
 - **Open rule docs** straight from a finding (each links to oauthlint.dev).

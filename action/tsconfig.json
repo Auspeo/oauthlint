@@ -2,8 +2,10 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "allowJs": true,
+    "checkJs": false
   },
-  "include": ["tests/**/*"],
+  "include": ["tests/**/*", "annotate.mjs"],
   "exclude": ["node_modules"]
 }
