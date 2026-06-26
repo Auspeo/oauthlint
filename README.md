@@ -38,7 +38,7 @@ LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) 
 - `/login` POST without rate limiting
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
-- …and 22 more
+- …and 100+ more, across JS/TS · Python · Go · Java · Rust
 
 oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): **free, focused, developer-first.** Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -81,6 +81,14 @@ npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
 # auto-apply safe fixes (e.g. cookie flags)
 npx oauthlint scan ./src --fix
+
+# incremental: scan only what changed (fast; great for pre-commit hooks)
+npx oauthlint scan --diff       # vs the default branch
+npx oauthlint scan --staged     # only git-staged files
+
+# adopt on an existing codebase: snapshot today's findings, then alert on NEW ones only
+npx oauthlint baseline ./src
+npx oauthlint scan ./src --baseline --fail-on HIGH
 ```
 
 Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a config), `oauthlint doctor` (check your setup).
@@ -135,7 +143,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Package | What it does |
 |---------|--------------|
 | [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
-| [`cli/`](cli) | `scan`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
+| [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
 | [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |
 | [`examples/`](examples) | Deliberately-vulnerable demo apps used for dogfooding |
