@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import pc from 'picocolors';
 
 const TEMPLATE = `# OAuthLint config
-# Documentation: https://oauthlint.dev/docs/config
+# Documentation: https://oauthlint.dev/docs/configuration
 version: 1
 
 # Files to scan
