@@ -9,6 +9,7 @@
 #   $5  output      — JSON output path (when json=true)
 #   $6  sarif       — "true" to also write a SARIF 2.1.0 report
 #   $7  sarif-file  — SARIF output path (when sarif=true)
+#   $8  annotations — "true" to emit inline PR annotations + a job summary
 set -euo pipefail
 
 PATH_TO_SCAN="${1:-.}"
@@ -18,6 +19,10 @@ EMIT_JSON="${4:-false}"
 OUTPUT_PATH="${5:-oauthlint-report.json}"
 EMIT_SARIF="${6:-false}"
 SARIF_PATH="${7:-oauthlint.sarif}"
+EMIT_ANNOTATIONS="${8:-true}"
+
+# Directory of this script, so we can locate the annotate helper regardless of cwd.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "${GITHUB_WORKSPACE:-/github/workspace}"
 
@@ -76,6 +81,34 @@ if [[ "$EMIT_SARIF" == "true" ]]; then
   set -e
   echo "SARIF report written to $SARIF_PATH"
   echo "sarif-file=$SARIF_PATH" >> "$GITHUB_OUTPUT"
+  echo "::endgroup::"
+fi
+
+if [[ "$EMIT_ANNOTATIONS" == "true" ]]; then
+  echo "::group::Emitting annotations + job summary"
+  # Reuse the JSON report when json=true; otherwise produce one in a temp file
+  # so we never touch the user's workspace or alter the json/output contract.
+  ANNOTATE_JSON="$OUTPUT_PATH"
+  CLEANUP_JSON=""
+  if [[ "$EMIT_JSON" != "true" ]]; then
+    ANNOTATE_JSON="$(mktemp -t oauthlint-annotate.XXXXXX.json)"
+    CLEANUP_JSON="$ANNOTATE_JSON"
+    # --fail-on off + swallow the exit code: annotations must never fail the job.
+    ANN_ARGS=( scan "$PATH_TO_SCAN" --json --fail-on off )
+    if [[ -n "$SEVERITY" ]]; then
+      ANN_ARGS+=( --severity "$SEVERITY" )
+    fi
+    set +e
+    npx --yes oauthlint "${ANN_ARGS[@]}" > "$ANNOTATE_JSON"
+    set -e
+  fi
+  # The helper prints annotation workflow-commands to stdout and appends the
+  # Markdown summary to $GITHUB_STEP_SUMMARY. It is defensive about a missing or
+  # malformed report and never exits non-zero, so it can't gate the job.
+  set +e
+  node "$SCRIPT_DIR/annotate.mjs" "$ANNOTATE_JSON"
+  set -e
+  [[ -n "$CLEANUP_JSON" ]] && rm -f "$CLEANUP_JSON"
   echo "::endgroup::"
 fi
 
