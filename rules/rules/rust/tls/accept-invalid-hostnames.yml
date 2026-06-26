@@ -18,6 +18,11 @@ rules:
     # Matches only the literal `true`. `danger_accept_invalid_hostnames(false)`
     # and the method's absence are not flagged. `$B` is any builder expression.
     pattern: $B.danger_accept_invalid_hostnames(true)
+    # Safe, deterministic autofix: flip the boolean literal to `false`, which is
+    # the secure default and fully resolves the finding. `$B` (the builder
+    # expression) is preserved verbatim, so the surrounding chain is untouched —
+    # only `true` -> `false` changes.
+    fix: $B.danger_accept_invalid_hostnames(false)
     metadata:
       oauthlint-rule-id: AUTH-RUST-TLS-002
       oauthlint-doc-url: https://oauthlint.dev/rules/rust-tls-accept-invalid-hostnames
