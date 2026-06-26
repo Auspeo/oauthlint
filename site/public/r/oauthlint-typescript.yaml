@@ -1,0 +1,2116 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# typescript subset — 47 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.cookie.long-lived
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      An auth-looking cookie is being set with a `maxAge` greater than
+      30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+      milliseconds). Long-lived session cookies expand the blast radius
+      of any single token theft and bypass server-side revocation if
+      the application doesn't validate freshness on every request.
+
+      Prefer short-lived access cookies (15-60 min) paired with a
+      separate refresh token rotation flow. If you really need a "remember
+      me" cookie, scope it tightly (`SameSite=Strict`, dedicated path) and
+      back it with a server-side allowlist you can revoke.
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-long-lived
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+      technology:
+        - express
+        - fastify
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access|remember)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern: "{..., maxAge: $MS, ...}"
+                - metavariable-comparison:
+                    metavariable: $MS
+                    comparison: $MS > 2592000000
+  - id: auth.cookie.no-httponly
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A session/auth cookie is being set WITHOUT the `HttpOnly` flag.
+      Any XSS that lands on a page in the same origin will be able to
+      read this cookie via `document.cookie` and exfiltrate the session.
+
+      Set `{ httpOnly: true }` on every authentication cookie. If a
+      front-end framework genuinely needs to read it from JS, that is a
+      design problem — server-side state is the right answer.
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-httponly
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.6
+      technology:
+        - express
+        - fastify
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., httpOnly: true, ...}"
+                - pattern-not: "{..., httpOnly: $X, ...}"
+                - pattern: "{...}"
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: "{..., httpOnly: false, ...}"
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, httpOnly: true })"
+  - id: auth.cookie.no-samesite
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      A session/auth cookie is being set WITHOUT the `SameSite`
+      attribute. Modern browsers default to `Lax`, but explicit is
+      better — and APIs that legitimately need cross-site usage should
+      consciously opt into `None` (with `Secure`), not silently inherit
+      whatever the browser does today.
+
+      For most auth flows, `SameSite=Strict` is the right answer; for
+      OAuth callbacks, `SameSite=Lax` is required.
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-samesite
+      category: security
+      cwe: CWE-1275
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-13#section-4.1.2.7
+      technology:
+        - express
+        - fastify
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., sameSite: ..., ...}"
+                - pattern-not: '{..., "sameSite": ..., ...}'
+                - pattern: "{...}"
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: "{..., sameSite: 'none', ...}"
+                    - pattern: '{..., sameSite: "none", ...}'
+                    - pattern: "{..., sameSite: 'None', ...}"
+                    - pattern: '{..., sameSite: "None", ...}'
+                - pattern-not: "{..., secure: true, ...}"
+    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, sameSite: 'strict' })"
+  - id: auth.cookie.no-secure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A cookie that looks like a session or auth cookie is being set WITHOUT
+      the `Secure` flag. The browser will happily send it over plain HTTP,
+      which means a network attacker (open Wi-Fi, malicious proxy, downgrade
+      attack) can capture it.
+
+      Add `{ secure: true }` to the cookie options. If you absolutely need
+      to set Secure-less cookies in dev, gate it on `NODE_ENV !== 'production'`.
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-secure
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.5
+      technology:
+        - express
+        - fastify
+    pattern-either:
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., secure: true, ...}"
+                - pattern-not: "{..., secure: $X, ...}"
+                - pattern: "{...}"
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: "{..., secure: false, ...}"
+      - patterns:
+          - pattern: $RES.cookie($NAME, $VAL)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, secure: true })"
+  - id: auth.cookie.samesite-none-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A cookie is being set with `SameSite=None` but WITHOUT `Secure`.
+      `SameSite=None` *requires* `Secure`: modern browsers reject a
+      `SameSite=None` cookie that is not also `Secure`, so the cookie is
+      silently dropped. Worse, if anything does accept it, the cookie is a
+      cross-site cookie travelling over plaintext — it can be sent over plain
+      HTTP and offers no CSRF protection at all.
+
+      Fix: add `secure: true`, and only use `SameSite=None` when you genuinely
+      need the cookie sent on cross-site requests; otherwise prefer
+      `SameSite=Strict` or `Lax`. See CWE-1275.
+    metadata:
+      oauthlint-rule-id: AUTH-COOKIE-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/cookie-samesite-none-insecure
+      category: security
+      cwe: CWE-1275
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#samesitenone_requires_secure
+        - https://cwe.mitre.org/data/definitions/1275.html
+      technology:
+        - express
+        - cookie
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: "{..., sameSite: 'none', ...}"
+              - pattern: '{..., sameSite: "none", ...}'
+              - pattern: "{..., sameSite: 'None', ...}"
+              - pattern: '{..., sameSite: "None", ...}'
+          - pattern-not: "{..., secure: true, ...}"
+      - pattern-regex: (?i)(["'`])(?![^"'`\n]*\bsecure\b)[^"'`\n]*\bsamesite\s*=\s*none\b[^"'`\n]*\1
+  - id: auth.cors.null-origin
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      CORS is configured to allow the literal origin `'null'`. Sandboxed
+      iframes, documents loaded from `file://`, and certain cross-origin
+      redirects send `Origin: null`. Adding the string `'null'` to your
+      CORS policy therefore grants cross-origin access to ANY such context
+      — including an attacker's sandboxed iframe — which defeats the
+      same-origin policy. Combined with credentials this becomes a
+      CSRF / data-exfiltration primitive.
+
+      The `'null'` origin is not a safe sentinel and cannot be trusted:
+      it is not bound to any host. Remove it from the allowlist entirely.
+
+      Use an explicit allowlist of real, trusted origins instead:
+       - `cors({ origin: 'https://app.example.com', credentials: true })`
+       - `cors({ origin: ['https://app.example.com', 'https://admin.example.com'] })`
+
+      Never set `Access-Control-Allow-Origin` to the string `'null'` and
+      never include `'null'` in a CORS origin allowlist.
+    metadata:
+      oauthlint-rule-id: AUTH-CORS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/cors-null-origin
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://portswigger.net/web-security/cors
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+      technology:
+        - cors
+        - express
+    pattern-either:
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", "null")
+      - pattern: $RES.header("Access-Control-Allow-Origin", "null")
+      - pattern: $RES.set("Access-Control-Allow-Origin", "null")
+      - pattern: 'cors({ ..., origin: "null", ... })'
+      - pattern: 'cors({ ..., origin: [..., "null", ...], ... })'
+      - patterns:
+          - pattern: "cors({ ..., origin: $ALLOWED, ... })"
+          - pattern-inside: |
+              $ALLOWED = [..., "null", ...];
+              ...
+  - id: auth.cors.reflect-origin
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      CORS is configured to echo the request's `Origin` back as
+      `Access-Control-Allow-Origin`. Reflecting the incoming origin is
+      functionally identical to allowing EVERY origin: any site can make
+      cross-origin requests and read the responses. Combined with
+      credentials this becomes a CSRF / account-takeover primitive, because
+      the browser will attach the victim's cookies to the attacker-controlled
+      request.
+
+      This is distinct from a literal `*` wildcard — here the origin is
+      reflected dynamically, which silently defeats the same-origin policy
+      while looking "scoped" in code review.
+
+      Use an explicit allowlist of trusted origins instead:
+       - `cors({ origin: 'https://app.example.com', credentials: true })`
+       - `cors({ origin: ['https://app.example.com', 'https://admin.example.com'] })`
+       - a callback that validates against an allowlist before calling
+         `cb(null, true)`.
+
+      Never set `Access-Control-Allow-Origin` to `req.headers.origin`, never
+      use `origin: true`, and never write a callback that unconditionally
+      returns `cb(null, true)`.
+    metadata:
+      oauthlint-rule-id: AUTH-CORS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/cors-reflect-origin
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://portswigger.net/web-security/cors
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+      technology:
+        - cors
+        - express
+    pattern-either:
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.headers.origin)
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.header("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.set("Access-Control-Allow-Origin", $REQ.headers["origin"])
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.header("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("origin"))
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", $REQ.get("Origin"))
+      - pattern: "cors({ ..., origin: true, ... })"
+      - pattern: "cors({ ..., origin: ($O, $CB) => $CB(null, true), ... })"
+      - patterns:
+          - pattern: |
+              cors({ ..., origin: ($O, $CB) => { ... }, ... })
+          - pattern-inside: |
+              cors({ ..., origin: ($O, $CB) => { ... return $CB(null, true); }, ... })
+          - pattern-not: |
+              cors({ ..., origin: ($O, $CB) => { ... if (<... $O ...>) { ... } ... }, ... })
+      - patterns:
+          - pattern: |
+              cors({ ..., origin: function ($O, $CB) { ... }, ... })
+          - pattern-inside: |
+              cors({ ..., origin: function ($O, $CB) { ... return $CB(null, true); }, ... })
+          - pattern-not: |
+              cors({ ..., origin: function ($O, $CB) { ... if (<... $O ...>) { ... } ... }, ... })
+  - id: auth.cors.wildcard-with-credentials
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      CORS is configured with `Access-Control-Allow-Origin: *` and
+      `Access-Control-Allow-Credentials: true` at the same time. The
+      spec forbids this combination — browsers will block it — but
+      developers regularly try to "fix" the resulting error by switching
+      to `origin: true` (which echoes the requesting origin back),
+      effectively turning the policy into "allow credentials from
+      ANYWHERE". That's a CSRF-on-steroids primitive.
+
+      Decide which one you actually need:
+       - Public API, no cookies/auth headers needed cross-site →
+         `origin: '*'`, `credentials: false` (default).
+       - Authenticated API for a known frontend → enumerate the exact
+         origins, `credentials: true`.
+
+      Never combine wildcard origins with credentials enabled.
+    metadata:
+      oauthlint-rule-id: AUTH-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/cors-wildcard-with-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+        - https://portswigger.net/web-security/cors
+      technology:
+        - express
+        - cors
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: 'cors({ ..., origin: "*", ..., credentials: true, ... })'
+              - pattern: 'cors({ ..., credentials: true, ..., origin: "*", ... })'
+              - pattern: "cors({ ..., origin: true, ..., credentials: true, ... })"
+              - pattern: "cors({ ..., credentials: true, ..., origin: true, ... })"
+              - pattern: "cors({ ..., origin: $REQ.headers.origin, ..., credentials: true, ... })"
+              - pattern: "cors({ ..., credentials: true, ..., origin: $REQ.headers.origin, ... })"
+              - pattern: "cors({ ..., origin: ($O, $CB) => $CB(null, true), ..., credentials: true, ... })"
+              - pattern: "cors({ ..., credentials: true, ..., origin: ($O, $CB) => $CB(null, true), ... })"
+      - pattern-regex: Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"][\s\S]{0,200}Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"]
+      - pattern-regex: Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"][\s\S]{0,200}Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"]
+  - id: auth.flow.credentials-in-url
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A secret credential is placed in a URL query string. URLs leak into
+      server access logs, reverse-proxy logs, browser history, and the
+      `Referer` header (sent to every third-party CDN, analytics, and ad
+      script on the destination page) — so any of `password`, `client_secret`,
+      `api_key`, `apikey`, or `secret` in the query is a leaked credential.
+
+      Send credentials in the POST request body or in the `Authorization`
+      header. Never in the URL.
+
+      OWASP ASVS V3.2 / CWE-598 explicitly forbid credentials in URL
+      parameters.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-credentials-in-url
+      category: security
+      cwe: CWE-598
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://owasp.org/www-project-application-security-verification-standard/
+    pattern-either:
+      - pattern-regex: "[?&](?:password|client_secret|api_key|apikey|secret)="
+      - pattern-regex: \.(?:set|append)\s*\(\s*['"`](?:password|client_secret|api_key|apikey|secret)['"`]
+  - id: auth.flow.insecure-random
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `Math.random()` is being assigned to (or used to compute) a value
+      whose name indicates it is security-sensitive — a token, a CSRF
+      value, an OAuth `state`, a session id, a nonce, or a verification
+      code. `Math.random()` is NOT cryptographically secure and is
+      predictable enough for an attacker with enough samples to recover
+      the seed.
+
+      Use `crypto.randomBytes(N)` (Node) or `crypto.getRandomValues()`
+      (browser) and base64url-encode the result.
+
+      OWASP ASVS V2.5: all security-sensitive random values must come
+      from a CSPRNG.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-insecure-random
+      category: security
+      cwe: CWE-338
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/338.html
+    pattern-either:
+      - patterns:
+          - pattern: const $NAME = <... Math.random() ...>
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
+      - patterns:
+          - pattern: let $NAME = <... Math.random() ...>
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
+      - patterns:
+          - pattern: var $NAME = <... Math.random() ...>
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
+      - patterns:
+          - pattern: $OBJ.$NAME = <... Math.random() ...>
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?:[a-z][a-z0-9_]*)?(?:token|secret|csrf|nonce|sessionid|otp|verificationcode|verifycode|resetcode|apikey|password|salt)[a-z0-9_]*$
+  - id: auth.flow.no-rate-limit
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      A `/login`, `/signin`, `/auth`, or `/reset-password` POST handler is
+      registered without any rate-limit middleware in scope. Without a
+      rate limit, credential-stuffing and brute-force attacks are
+      essentially free for the attacker.
+
+      Add `express-rate-limit`, `@fastify/rate-limit`, or a gateway-level
+      WAF rule. Per-IP + per-account is the typical pairing.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-no-rate-limit
+      category: security
+      cwe: CWE-307
+      owasp: API4:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+      technology:
+        - express
+        - fastify
+    patterns:
+      - pattern: $APP.post($PATH, $HANDLER)
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ^['"][^'"]*\/(?:login|signin|sign-in|signup|sign-up|authenticate|auth|reset-password|forgot-password)(?![a-z-])[^'"]*['"]$
+  - id: auth.flow.password-min-length
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A password validation schema is enforcing a minimum length of less
+      than 8 characters. NIST SP 800-63B recommends ≥ 8 characters for
+      user-chosen passwords (with NO mandatory complexity rules — length
+      is the dominant strength factor). OWASP ASVS V2.1.1 requires ≥ 12
+      for high-assurance applications.
+
+      Common LLM-generated mistake: `password: z.string().min(6)` because
+      "6 looks reasonable" — it isn't. Bump the floor to 8 minimum, 12
+      preferred.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-password-min-length
+      category: security
+      cwe: CWE-521
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://pages.nist.gov/800-63-3/sp800-63b.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+      technology:
+        - zod
+        - joi
+        - yup
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $Z.string().min($N)
+              - pattern: $Z.string().min($N, ...)
+          - metavariable-comparison:
+              metavariable: $N
+              comparison: $N < 8
+          - pattern-inside: |
+              { ..., password: ..., ... }
+      - patterns:
+          - pattern-regex: \b(?:password|pwd)\s*\.\s*length\s*[<≤]=?\s*[1-7]\b
+  - id: auth.flow.password-plaintext
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A user-supplied password is being persisted WITHOUT being hashed first.
+      Storing plaintext passwords means any database read (backup, SQL injection,
+      misconfigured backup, contractor with read-only access) leaks every
+      credential in one shot.
+
+      Hash with argon2id (recommended), bcrypt, or scrypt before persisting.
+      Never use plain SHA-256, MD5, or any unsalted hash for passwords.
+
+      OWASP ASVS V2.4 mandates an adaptive, salted hash. Every modern stack
+      ships one — there is no reason to roll your own.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/password-plaintext
+      category: security
+      cwe: CWE-256
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/256.html
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: "$DB.$MODEL.create({..., password: $PWD, ...})"
+              - pattern: "$DB.$MODEL.insert({..., password: $PWD, ...})"
+              - pattern: "$DB.$MODEL.insertOne({..., password: $PWD, ...})"
+              - pattern: "$DB.$MODEL.save({..., password: $PWD, ...})"
+              - pattern: "$MODEL.create({..., password: $PWD, ...})"
+              - pattern: "$MODEL.insert({..., password: $PWD, ...})"
+              - pattern: "$MODEL.save({..., password: $PWD, ...})"
+              - pattern: "new $MODEL({..., password: $PWD, ...})"
+          - metavariable-regex:
+              metavariable: $MODEL
+              regex: (?i)user
+          - metavariable-pattern:
+              metavariable: $PWD
+              patterns:
+                - pattern-not: $X.hash(...)
+                - pattern-not: hash($X, ...)
+                - pattern-not: bcrypt.$Y(...)
+                - pattern-not: argon2.$Y(...)
+                - pattern-not: scrypt.$Y(...)
+                - pattern-not: crypto.scrypt(...)
+                - pattern-not: await $X.hash(...)
+                - pattern-not: await hash($X, ...)
+          - metavariable-regex:
+              metavariable: $PWD
+              regex: (?i)^(?!.*hash).*$
+      - patterns:
+          - pattern-either:
+              - pattern: "$DB.$MODEL.create({..., data: {..., password: $PWD, ...}, ...})"
+              - pattern: "$DB.$MODEL.update({..., data: {..., password: $PWD, ...}, ...})"
+          - metavariable-regex:
+              metavariable: $MODEL
+              regex: (?i)user
+          - metavariable-pattern:
+              metavariable: $PWD
+              patterns:
+                - pattern-not: $X.hash(...)
+                - pattern-not: hash($X, ...)
+                - pattern-not: bcrypt.$Y(...)
+                - pattern-not: argon2.$Y(...)
+                - pattern-not: scrypt.$Y(...)
+                - pattern-not: crypto.scrypt(...)
+                - pattern-not: await $X.hash(...)
+                - pattern-not: await hash($X, ...)
+          - metavariable-regex:
+              metavariable: $PWD
+              regex: (?i)^(?!.*hash).*$
+  - id: auth.flow.secret-in-log
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
+      `accessToken`, `refreshToken`, `privateKey`, `clientSecret`, …) is
+      being passed to a logging call (`console.*` or `logger.*`). Logs are
+      routinely written to files, shipped to aggregators (Datadog, Splunk,
+      CloudWatch) and read by people who should never see the raw secret —
+      this is a textbook credential leak.
+
+      Never log secrets. Redact or mask them before logging
+      (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
+      (a user id, a key id), or drop the field entirely.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-secret-in-log
+      category: security
+      cwe: CWE-532
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/532.html
+        - https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: console.log($...A, $SECRET, $...B)
+              - pattern: console.info($...A, $SECRET, $...B)
+              - pattern: console.debug($...A, $SECRET, $...B)
+              - pattern: console.warn($...A, $SECRET, $...B)
+              - pattern: console.error($...A, $SECRET, $...B)
+          - metavariable-pattern:
+              metavariable: $SECRET
+              pattern-regex: ^[A-Za-z_$][A-Za-z0-9_$]*$
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: (?i)^(?:password|passwd|pwd|secret|token|apikey|api_key|accesstoken|refreshtoken|privatekey|clientsecret)$
+      - patterns:
+          - pattern: $LOG.$LEVEL($...A, $SECRET, $...B)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^.*log(?:ger)?$
+          - metavariable-regex:
+              metavariable: $LEVEL
+              regex: ^(?:log|info|debug|warn|warning|error|trace|fatal|verbose|silly)$
+          - metavariable-pattern:
+              metavariable: $SECRET
+              pattern-regex: ^[A-Za-z_$][A-Za-z0-9_$]*$
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: (?i)^(?:password|passwd|pwd|secret|token|apikey|api_key|accesstoken|refreshtoken|privatekey|clientsecret)$
+      - patterns:
+          - pattern-either:
+              - pattern: console.log(`...${$SECRET}...`)
+              - pattern: console.info(`...${$SECRET}...`)
+              - pattern: console.debug(`...${$SECRET}...`)
+              - pattern: console.warn(`...${$SECRET}...`)
+              - pattern: console.error(`...${$SECRET}...`)
+          - metavariable-pattern:
+              metavariable: $SECRET
+              pattern-regex: ^[A-Za-z_$][A-Za-z0-9_$]*$
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: (?i)^(?:password|passwd|pwd|secret|token|apikey|api_key|accesstoken|refreshtoken|privatekey|clientsecret)$
+      - patterns:
+          - pattern: $LOG.$LEVEL(`...${$SECRET}...`)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^.*log(?:ger)?$
+          - metavariable-regex:
+              metavariable: $LEVEL
+              regex: ^(?:log|info|debug|warn|warning|error|trace|fatal|verbose|silly)$
+          - metavariable-pattern:
+              metavariable: $SECRET
+              pattern-regex: ^[A-Za-z_$][A-Za-z0-9_$]*$
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: (?i)^(?:password|passwd|pwd|secret|token|apikey|api_key|accesstoken|refreshtoken|privatekey|clientsecret)$
+  - id: auth.flow.timing-unsafe-compare
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
+      `csrf`, `hmac`) is being compared with `===` / `!==` /
+      `string1 == string2`. JavaScript's equality operators short-circuit
+      on the first differing byte, which leaks the matching prefix
+      length over the wire — a classic timing-attack vector.
+
+      Use `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` (both
+      buffers must be the same length, so hash first if needed). For
+      password verification, use `argon2.verify`, `bcrypt.compare`, or
+      `scrypt` — they handle constant-time comparison for you.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-timing-unsafe-compare
+      category: security
+      cwe: CWE-208
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+        - https://nodejs.org/api/crypto.html#cryptotimingsafeequala-b
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $A === $B
+              - pattern: $A !== $B
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $A
+              regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          - pattern-not: typeof $X === $Y
+          - pattern-not: typeof $X !== $Y
+          - pattern-not: typeof $X == $Y
+          - pattern-not: typeof $X != $Y
+          - pattern-not: $X === "..."
+          - pattern-not: $X !== "..."
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." === $X'
+          - pattern-not: '"..." !== $X'
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X === true
+          - pattern-not: $X !== true
+          - pattern-not: $X == true
+          - pattern-not: $X != true
+          - pattern-not: $X === false
+          - pattern-not: $X !== false
+          - pattern-not: $X == false
+          - pattern-not: $X != false
+          - pattern-not: true === $X
+          - pattern-not: true !== $X
+          - pattern-not: true == $X
+          - pattern-not: true != $X
+          - pattern-not: false === $X
+          - pattern-not: false !== $X
+          - pattern-not: false == $X
+          - pattern-not: false != $X
+          - pattern-not: $X.length === $N
+          - pattern-not: $X.length !== $N
+          - pattern-not: $X.length == $N
+          - pattern-not: $X.length != $N
+          - pattern-not: $X === null
+          - pattern-not: $X !== null
+          - pattern-not: $X == null
+          - pattern-not: $X != null
+          - pattern-not: $X === undefined
+          - pattern-not: $X !== undefined
+          - pattern-not: $X == undefined
+          - pattern-not: $X != undefined
+      - patterns:
+          - pattern-either:
+              - pattern: $A === $B
+              - pattern: $A !== $B
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $B
+              regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          - pattern-not: typeof $X === $Y
+          - pattern-not: typeof $X !== $Y
+          - pattern-not: typeof $X == $Y
+          - pattern-not: typeof $X != $Y
+          - pattern-not: $X === "..."
+          - pattern-not: $X !== "..."
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." === $X'
+          - pattern-not: '"..." !== $X'
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X === true
+          - pattern-not: $X !== true
+          - pattern-not: $X == true
+          - pattern-not: $X != true
+          - pattern-not: $X === false
+          - pattern-not: $X !== false
+          - pattern-not: $X == false
+          - pattern-not: $X != false
+          - pattern-not: true === $X
+          - pattern-not: true !== $X
+          - pattern-not: true == $X
+          - pattern-not: true != $X
+          - pattern-not: false === $X
+          - pattern-not: false !== $X
+          - pattern-not: false == $X
+          - pattern-not: false != $X
+          - pattern-not: $X.length === $N
+          - pattern-not: $X.length !== $N
+          - pattern-not: $X.length == $N
+          - pattern-not: $X.length != $N
+          - pattern-not: $X === null
+          - pattern-not: $X !== null
+          - pattern-not: $X == null
+          - pattern-not: $X != null
+          - pattern-not: $X === undefined
+          - pattern-not: $X !== undefined
+          - pattern-not: $X == undefined
+          - pattern-not: $X != undefined
+  - id: auth.flow.weak-bcrypt-rounds
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A bcrypt cost factor below 10 was used. A low work factor makes the
+      hash cheap to compute, which lets an attacker brute-force stolen
+      password hashes far too quickly. OWASP recommends a bcrypt cost of at
+      least 10, and ≥ 12 for new applications, tuned so a single hash takes
+      roughly 250ms on your hardware.
+
+      Common LLM-generated mistake: `bcrypt.hash(pw, 8)` or
+      `bcrypt.genSalt(5)` because the literal "looks fast enough". Raise the
+      cost factor to 12 or higher.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-weak-bcrypt-rounds
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+      technology:
+        - bcrypt
+        - bcryptjs
+    patterns:
+      - pattern-either:
+          - pattern: bcrypt.hash($PW, $N)
+          - pattern: bcrypt.hash($PW, $N, ...)
+          - pattern: bcrypt.hashSync($PW, $N)
+          - pattern: bcrypt.hashSync($PW, $N, ...)
+          - pattern: bcrypt.genSalt($N)
+          - pattern: bcrypt.genSalt($N, ...)
+          - pattern: bcrypt.genSaltSync($N)
+          - pattern: bcrypt.genSaltSync($N, ...)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 10
+  - id: auth.flow.weak-password-hash
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A password is being hashed with a fast, general-purpose hash
+      (MD5/SHA-1/SHA-256/SHA-512 via `crypto.createHash`). These functions
+      are designed to be FAST, so an attacker who steals the database can
+      brute-force billions of candidate passwords per second on commodity
+      GPUs. Salting alone does not fix this.
+
+      Use a dedicated, deliberately-slow password hashing function instead:
+      `bcrypt`, `argon2` (argon2id), or `scrypt` (`crypto.scrypt`). These add
+      a tunable work factor that makes large-scale brute-forcing infeasible.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/916.html
+      technology:
+        - node:crypto
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: crypto.createHash($ALGO).update($PW).digest(...)
+              - pattern: createHash($ALGO).update($PW).digest(...)
+              - pattern: crypto.createHash($ALGO).update($PW, ...).digest(...)
+              - pattern: createHash($ALGO).update($PW, ...).digest(...)
+          - metavariable-regex:
+              metavariable: $ALGO
+              regex: ^(["'])(?i)(md5|sha1|sha-1|sha224|sha256|sha-256|sha384|sha512|sha-512)\1$
+          - metavariable-pattern:
+              metavariable: $PW
+              patterns:
+                - pattern: $PWNAME
+                - metavariable-regex:
+                    metavariable: $PWNAME
+                    regex: (?i)^.*(password|passwd|pwd)$
+      - patterns:
+          - pattern-either:
+              - pattern: $H.update($PW)
+              - pattern: $H.update($PW, ...)
+          - metavariable-pattern:
+              metavariable: $PW
+              patterns:
+                - pattern: $PWNAME
+                - metavariable-regex:
+                    metavariable: $PWNAME
+                    regex: (?i)^.*(password|passwd|pwd)$
+          - pattern-either:
+              - pattern-inside: |
+                  $H = crypto.createHash($ALGO);
+                  ...
+              - pattern-inside: |
+                  $H = createHash($ALGO);
+                  ...
+          - metavariable-regex:
+              metavariable: $ALGO
+              regex: ^(["'])(?i)(md5|sha1|sha-1|sha224|sha256|sha-256|sha384|sha512|sha-512)\1$
+  - id: auth.jwt.alg-none
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      JWTs are being verified with the `none` algorithm in the allowed list.
+      An attacker can forge any token by simply setting `alg: none` in the header
+      and supplying no signature, because the verification routine will accept it.
+
+      Restrict `algorithms` to the ones you actually use, e.g. ["RS256"] or ["ES256"].
+      Never include "none" or "None" in production code paths.
+
+      RFC 7518 §3.6 explicitly warns: "Implementations SHOULD NOT support the
+      'none' algorithm in deployed systems."
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-alg-none
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.6
+        - https://owasp.org/www-project-api-security/
+      technology:
+        - jsonwebtoken
+        - jose
+    pattern-either:
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "none", ...], ... })'
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "None", ...], ... })'
+      - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "NONE", ...], ... })'
+      - pattern: 'jwt.decode($TOKEN, { complete: true, algorithms: [..., "none", ...] })'
+      - patterns:
+          - pattern-inside: |
+              import { ..., verify, ... } from 'jsonwebtoken'
+              ...
+          - pattern-either:
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "none", ...], ... })'
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "None", ...], ... })'
+              - pattern: 'verify($TOKEN, $SECRET, { ..., algorithms: [..., "NONE", ...], ... })'
+  - id: auth.jwt.algorithm-confusion
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A JWT is being verified with HS256 (a symmetric algorithm) but the
+      key looks like an RSA / EC public key in PEM format. This is the
+      "algorithm confusion" attack: an attacker can sign forged tokens
+      with the public key and your code will happily verify them with
+      HMAC-SHA256 treating the PEM string as the shared secret.
+
+      Always pin the algorithm to the asymmetric one you actually use
+      (e.g. `algorithms: ['RS256']`) and pass the public key only when
+      verifying asymmetric tokens.
+
+      RFC 7518 §3.1 — the "alg" header must be matched to the key type.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $KEY, $OPTS)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: -----BEGIN [A-Z ]*PUBLIC KEY-----
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: '{..., algorithms: ["HS256", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS384", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS512", ...], ...}'
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $KEY)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: -----BEGIN [A-Z ]*PUBLIC KEY-----
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $KEY, $OPTS)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i).*pub(lic)?
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-either:
+                    - pattern: '{..., algorithms: ["HS256", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS384", ...], ...}'
+                    - pattern: '{..., algorithms: ["HS512", ...], ...}'
+  - id: auth.jwt.decode-without-verify
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.decode()` from `jsonwebtoken` only parses the token — it does NOT
+      verify the signature. Trusting any claim returned by `decode()` (e.g.
+      `sub`, `role`, `scope`) lets an attacker forge a token and bypass
+      authentication entirely.
+
+      Use `jwt.verify(token, secret, { algorithms: ['RS256'] })`, which checks
+      the signature before returning the payload. Only use `decode()` for
+      non-security-sensitive inspection (e.g. reading `kid` before verifying).
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-decode-without-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/auth0/node-jsonwebtoken#jwtdecodetoken--options
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.decode($X)
+              - pattern: jwt.decode($X, $OPTS)
+          - pattern-not: jwt.decode({...})
+          - pattern-not: jwt.decode({...}, $OPTS)
+          - pattern-not: await jwt.decode(...)
+      - patterns:
+          - pattern-inside: |
+              import { ..., decode, ... } from 'jsonwebtoken'
+              ...
+          - pattern-either:
+              - pattern: decode($X)
+              - pattern: decode($X, $OPTS)
+          - pattern-not: decode({...})
+          - pattern-not: decode({...}, $OPTS)
+          - pattern-not: await decode(...)
+  - id: auth.jwt.ignore-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.verify(token, key, { ignoreExpiration: true })` from `jsonwebtoken`
+      disables the `exp` (expiry) claim check, so an expired token is accepted
+      as valid forever. A stolen or long-old token then never stops working,
+      defeating the whole point of short-lived access tokens.
+
+      Remove `ignoreExpiration: true` so the `exp` claim is enforced, and set a
+      sane `expiresIn` when signing (`jwt.sign(payload, key, { expiresIn: '15m'
+      })`). See CWE-613 (Insufficient Session Expiration).
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-011
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-ignore-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - pattern: "jwt.verify($T, $K, { ..., ignoreExpiration: true, ... })"
+      - patterns:
+          - pattern-inside: |
+              import { ..., verify, ... } from 'jsonwebtoken'
+              ...
+          - pattern: "verify($T, $K, { ..., ignoreExpiration: true, ... })"
+  - id: auth.jwt.in-url
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A JWT-looking value (header `eyJ…`) appears in a URL query string
+      or fragment. URLs leak into server logs, browser history, the
+      `Referer` header (sent to every third-party CDN, ad pixel, and
+      analytics script on the destination page), and even copy-paste
+      operations. A JWT in a URL is a leaked JWT.
+
+      Send JWTs in the `Authorization: Bearer …` header, or in a
+      `Secure; HttpOnly; SameSite` cookie. Never in the URL.
+
+      OWASP ASVS V3.2.3 explicitly forbids credentials in URL parameters.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-in-url
+      category: security
+      cwe: CWE-598
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://owasp.org/www-project-application-security-verification-standard/
+    pattern-either:
+      - pattern-regex: "[?&][^=]+=eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+      - pattern-regex: "#[^=]+=eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+      - pattern-regex: /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+
+  - id: auth.jwt.localstorage
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A JWT (or other auth token) is being written to `localStorage`. Any
+      XSS that lands on the page can exfiltrate the token via
+      `localStorage.getItem(...)` — and unlike `HttpOnly` cookies, there
+      is no browser-side mitigation.
+
+      Store auth tokens in an `HttpOnly; Secure; SameSite=Strict` cookie
+      set by the server, or in memory only. `sessionStorage` is no safer
+      against XSS — it's the same attacker capability.
+
+      OWASP ASVS V3.4: tokens must not be stored where untrusted scripts
+      can read them.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-localstorage
+      category: security
+      cwe: CWE-922
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+    pattern-either:
+      - patterns:
+          - pattern-regex: (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\.setItem\([^)]*?(?i:token|jwt|bearer|credential|api[_-]?key)
+      - patterns:
+          - pattern-regex: (?:window\.|globalThis\.|self\.)?(?:localStorage|sessionStorage)\[\s*['"][^'"]*(?i:token|jwt|bearer|credential|api[_-]?key)[^'"]*['"]\s*\]\s*=
+  - id: auth.jwt.no-algorithms-allowlist
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      `jwt.verify(...)` is called without an explicit `algorithms` allowlist.
+      Without pinning the accepted algorithms, a token signed with an
+      unexpected algorithm — or even `alg: none` on older versions — can be
+      accepted, opening the door to algorithm-confusion attacks.
+
+      Always pass the algorithm(s) you actually expect, e.g.
+      `{ algorithms: ['RS256'] }`.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-algorithms-allowlist
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - pattern: jwt.verify($T, $SECRET)
+      - patterns:
+          - pattern: jwt.verify($T, $SECRET, $OPTS)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., algorithms: ..., ...}"
+                - pattern: "{...}"
+  - id: auth.jwt.no-audience
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      JWT is being verified without checking the `aud` (audience) claim.
+      A token issued for one of your services (e.g. an internal worker)
+      can then be replayed against another service that trusts the same
+      key, leading to confused-deputy attacks.
+
+      Pass `{ audience: 'your-api' }` to `jwt.verify` (or validate the
+      `aud` claim manually) on every verification path.
+
+      RFC 7519 §4.1.3 defines the `aud` claim explicitly for this use case.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-audience
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $SECRET, $OPTS)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., audience: ..., ...}"
+                - pattern: "{...}"
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $SECRET, $OPTS, $CB)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., audience: ..., ...}"
+                - pattern: "{...}"
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $SECRET)
+  - id: auth.jwt.no-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      JWT is signed without any `expiresIn` / `exp` claim, OR a token is
+      verified without an `maxAge` check. A stolen token therefore remains
+      valid forever.
+
+      Always set a reasonable expiration on access tokens (5-60 minutes is
+      typical) and verify it with `{ maxAge: '15m' }` or by validating the
+      `exp` claim explicitly.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern: jwt.sign($PAYLOAD, $SECRET)
+          - pattern-not: "jwt.sign({..., exp: ..., ...}, $SECRET)"
+          - pattern-not: "jwt.sign({..., expiresIn: ..., ...}, $SECRET)"
+      - patterns:
+          - pattern: jwt.sign($PAYLOAD, $SECRET, $OPTS)
+          - pattern-not: "jwt.sign({..., exp: ..., ...}, $SECRET, $OPTS)"
+          - pattern-not: "jwt.sign({..., expiresIn: ..., ...}, $SECRET, $OPTS)"
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., expiresIn: ..., ...}"
+                - pattern-not: "{..., exp: ..., ...}"
+                - pattern: "{...}"
+  - id: auth.jwt.no-issuer
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      JWT is being verified without checking the `iss` (issuer) claim. If
+      your verification key is shared across multiple authorization
+      servers (or even tenants on a single IdP), this lets a token signed
+      by one issuer be accepted by code that was meant to trust another.
+
+      Pass `{ issuer: 'https://your-idp.example.com' }` to `jwt.verify` so
+      that the trust chain is explicit. RFC 7519 §4.1.1 defines the
+      `iss` claim for exactly this purpose.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-no-issuer
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern: jwt.verify($TOKEN, $SECRET, $OPTS)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., issuer: ..., ...}"
+                - pattern: "{...}"
+      - pattern: jwt.verify($TOKEN, $SECRET)
+  - id: auth.jwt.weak-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      JWT signing or verification uses a hard-coded secret. Anyone who reads
+      the source (including via leaked GitHub commits) can forge valid tokens.
+
+      Move the secret to an environment variable or secret manager, and ensure
+      the value is at least 256 bits (32 ASCII characters) when using HMAC-based
+      algorithms (HS256/HS384/HS512).
+
+      Real-world incident: 24,008 unique secrets were found in MCP config files
+      and 3.2% of Claude Code commits leaked secrets in GitGuardian's 2026 report.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-weak-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.2
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.sign($PAYLOAD, $SECRET)
+              - pattern: jwt.sign($PAYLOAD, $SECRET, ...)
+              - pattern: jwt.verify($TOKEN, $SECRET)
+              - pattern: jwt.verify($TOKEN, $SECRET, ...)
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+      - patterns:
+          - pattern-inside: |
+              import { ... } from 'jsonwebtoken'
+              ...
+          - pattern-either:
+              - pattern: sign($PAYLOAD, $SECRET)
+              - pattern: sign($PAYLOAD, $SECRET, ...)
+              - pattern: verify($TOKEN, $SECRET)
+              - pattern: verify($TOKEN, $SECRET, ...)
+          - metavariable-regex:
+              metavariable: $SECRET
+              regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.oauth.access-token-in-url
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth `access_token` (or `refresh_token` / `id_token`) is placed in a
+      URL query string. URLs leak: the full URL — token included — is recorded
+      in server and reverse-proxy access logs, saved in browser history, and
+      sent in the `Referer` header to every third-party CDN, analytics, and ad
+      script loaded by the destination page. A token in a URL is a leaked token.
+
+      Send the token in the `Authorization: Bearer …` header, or in a POST
+      request body. Never in the URL query string.
+
+      CWE-598: Use of GET Request Method With Sensitive Query Strings.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-013
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-access-token-in-url
+      category: security
+      cwe: CWE-598
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+        - https://cwe.mitre.org/data/definitions/598.html
+      technology:
+        - oauth
+    pattern-regex: "[?&](?i:access_token|refresh_token|id_token)="
+  - id: auth.oauth.broad-scope
+    languages:
+      - javascript
+      - typescript
+    severity: INFO
+    message: |
+      OAuth scope request includes an over-broad scope such as `admin`,
+      `full_access`, `*`, or `repo` (entire GitHub access). LLMs default
+      to the widest scope that "works", but every extra scope expands
+      the blast radius if the access token is leaked or replayed.
+
+      Request the narrowest scope that satisfies your feature. Examples:
+      use `repo:status` instead of `repo`, `gmail.send` instead of
+      `https://mail.google.com/`, and scope down to `read:user` when you
+      only need a profile.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-broad-scope
+      category: security
+      cwe: CWE-272
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.3
+    pattern-either:
+      - pattern-regex: scope\s*[:=]\s*(['"])(?:[^'"]*[ ,])?(?:admin|full_access|all|root|superuser|repo)(?:[ ,][^'"]*)?\1
+      - pattern-regex: scope\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
+      - pattern-regex: scope\s*[:=]\s*['"][^'"]*https://mail\.google\.com/[^'"]*['"]
+      - pattern-regex: scopes?\s*[:=]\s*\[[^\]]*(['"])(?:[^'"]*[ ,])?(?:admin|full_access|all|root|superuser|repo)(?:[ ,][^'"]*)?\1[^\]]*\]
+  - id: auth.oauth.hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An OAuth `client_secret` (or similarly sensitive credential) is being
+      assigned a hard-coded string literal. The moment this lands in git, it
+      is one search away from compromise.
+
+      Replace the literal with `process.env.OAUTH_CLIENT_SECRET` (or your
+      secret manager equivalent) and add the variable to `.env.example` with
+      a placeholder so contributors know it is required.
+
+      GitGuardian 2026 found 28.6M public secrets on GitHub, with Claude Code
+      commits leaking at 2x baseline. This is the most common AI-coding leak.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+        - https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/
+    pattern-either:
+      - patterns:
+          - pattern-regex: (?i)client[_-]?secret\s*[:=]\s*['"][^'"\s]{8,}['"]
+          - pattern-not-regex: (?i)client[_-]?secret\s*[:=]\s*['"]\$\{?[A-Za-z_]+\}?['"]
+          - pattern-not-regex: (?i)client[_-]?secret\s*[:=]\s*['"]<[^'"]*>['"]
+          - pattern-not-regex: (?i)client[_-]?secret\s*[:=]\s*['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|redacted)
+  - id: auth.oauth.implicit-flow
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth implicit flow (`response_type=token` or `response_type=id_token
+      token`) is deprecated by OAuth 2.0 Security BCP (RFC 9700) and the
+      OAuth 2.1 working draft. The access token leaks into the URL
+      fragment, browser history, and referrer headers, and there is no
+      refresh-token mechanism.
+
+      Migrate to authorization code + PKCE (`response_type=code` with a
+      `code_challenge`). All modern OAuth providers (Google, Microsoft,
+      Auth0, Okta, Keycloak, WSO2) support this for SPAs and native apps.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-implicit-flow
+      category: security
+      cwe: CWE-1004
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700
+    pattern-either:
+      - pattern-regex: response_type\s*[:=]\s*['"]token['"]
+      - pattern-regex: response_type\s*[:=]\s*['"]id_token\s+token['"]
+      - pattern-regex: response_type\s*[:=]\s*['"]token\s+id_token['"]
+      - pattern-regex: "[?&]response_type=token(?:&|['\"]|#|$)"
+      - pattern-regex: "[?&]response_type=(?:id_token(?:%20|\\+)token|token(?:%20|\\+)id_token)(?:&|['\"]|#|$)"
+  - id: auth.oauth.long-token-lifetime
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth `expires_in` (or comparable token-lifetime field) is being
+      set to a literal value greater than 86_400 seconds — i.e. longer
+      than 24 hours. Long-lived access tokens make every token theft
+      catastrophic because they remain valid for days or weeks; the
+      industry standard is 15-60 minutes for access tokens, paired with
+      a refresh-token rotation flow for longer sessions.
+
+      Don't issue access tokens longer than a day. Use refresh tokens
+      with proper rotation (RFC 6749 §6, RFC 9700 §4.14) for "stay
+      logged in" semantics.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-long-token-lifetime
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-4.14
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-6
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: "{ ..., expires_in: $TTL, ... }"
+              - pattern: "{ ..., expiresIn: $TTL, ... }"
+              - pattern: "{ ..., access_token_ttl: $TTL, ... }"
+              - pattern: "{ ..., accessTokenTtl: $TTL, ... }"
+              - pattern: "{ ..., tokenLifetime: $TTL, ... }"
+          - metavariable-comparison:
+              metavariable: $TTL
+              comparison: $TTL > 86400
+      - patterns:
+          - pattern-either:
+              - pattern: $X.expires_in = $TTL
+              - pattern: $X.expiresIn = $TTL
+              - pattern: $X.access_token_ttl = $TTL
+              - pattern: $X.accessTokenTtl = $TTL
+              - pattern: $X.tokenLifetime = $TTL
+          - metavariable-comparison:
+              metavariable: $TTL
+              comparison: $TTL > 86400
+      - pattern-regex: (?:expiresIn|expires_in)\s*[:=]\s*['"](?:[2-9]|[1-9][0-9]+)\s*(?:d|days?)['"]
+      - pattern-regex: (?:expiresIn|expires_in)\s*[:=]\s*['"][1-9][0-9]*\s*(?:w|y|weeks?|years?|months?)['"]
+  - id: auth.oauth.no-nonce
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OIDC authorization request (scope contains `openid`) is being built
+      WITHOUT a `nonce` parameter. The nonce binds the id_token to this
+      specific authorization request — without it, an attacker can replay or
+      substitute a stolen/forged id_token (OIDC Core §3.1.2.1).
+
+      Generate a cryptographically random `nonce`, store it in the
+      session/cookie, send it on the authorize call, and verify the `nonce`
+      claim in the returned id_token. It is REQUIRED for the implicit and
+      hybrid flows and RECOMMENDED for the authorization-code flow.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-nonce
+      category: security
+      cwe: CWE-294
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+      technology:
+        - oidc
+    pattern-either:
+      - patterns:
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*scope=[^'\"&]*openid[^'\"]*['\"]"
+          - pattern-regex: response_type=
+          - pattern-not-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*nonce=[^'\"]*['\"]"
+      - patterns:
+          - pattern: "new URLSearchParams({..., response_type: $R, ...})"
+          - pattern: "new URLSearchParams({..., scope: $S, ...})"
+          - metavariable-regex:
+              metavariable: $S
+              regex: .*openid.*
+          - pattern-not: "new URLSearchParams({..., nonce: $N, ...})"
+          - pattern-not: new URLSearchParams({..., nonce, ...})
+  - id: auth.oauth.no-pkce
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth 2.0 authorization request looks like a public client (SPA,
+      mobile, or native app) but does not include a `code_challenge`
+      parameter. Without PKCE, the authorization code can be intercepted
+      and exchanged by an attacker.
+
+      RFC 8252 §6 mandates PKCE for native/SPA clients. RFC 9700 (OAuth 2.0
+      Security BCP) recommends PKCE for ALL clients, including confidential
+      ones, as defence in depth.
+
+      Generate a `code_verifier` (43-128 char), derive `code_challenge =
+      BASE64URL-NoPad(SHA256(code_verifier))`, send it with
+      `code_challenge_method=S256` on the authorize call, and POST the
+      `code_verifier` on the token call.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-pkce
+      category: security
+      cwe: CWE-345
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7636
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-6
+    pattern-either:
+      - patterns:
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*response_type=code[^'\"]*['\"]"
+          - pattern-regex: client_id=
+          - pattern-not-regex: code_challenge
+      - patterns:
+          - pattern: "new URLSearchParams({..., client_id: $C, ...})"
+          - pattern-either:
+              - pattern: "new URLSearchParams({..., response_type: 'code', ...})"
+              - pattern: 'new URLSearchParams({..., response_type: "code", ...})'
+          - pattern-not: "new URLSearchParams({..., code_challenge: $X, ...})"
+  - id: auth.oauth.no-state
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth 2.0 authorization request is being built WITHOUT a `state`
+      parameter. This opens you to CSRF attacks during the OAuth dance —
+      an attacker can trick the victim into logging in as the attacker.
+
+      Always generate a cryptographically random `state`, store it in a
+      session/cookie, and validate it on the callback. PKCE alone is not a
+      substitute for `state` when handling browser sessions.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state
+      category: security
+      cwe: CWE-352
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+    pattern-either:
+      - patterns:
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*client_id=[^'\"]*['\"]"
+          - pattern-regex: response_type=
+          - pattern-not-regex: state=
+      - patterns:
+          - pattern: "new URLSearchParams({..., client_id: $C, ...})"
+          - pattern: "new URLSearchParams({..., response_type: $R, ...})"
+          - pattern-not: "new URLSearchParams({..., state: $S, ...})"
+          - pattern-not: new URLSearchParams({..., state, ...})
+  - id: auth.oauth.no-state-validation
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth callback handler reads `state` from the request but never
+      compares it to a stored value. Sending `state` on the authorize
+      call is half of the CSRF mitigation; verifying it on the callback
+      is the other half.
+
+      Compare the received `state` to the value you stored before
+      redirecting (session, signed cookie, or Redis). Reject the callback
+      if it's missing or doesn't match.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-no-state-validation
+      category: security
+      cwe: CWE-352
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query.state
+              - pattern: $REQ.body.state
+              - pattern: $URL.searchParams.get("state")
+          - pattern-not-inside: |
+              if (<... $REQ.query.state ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $REQ.body.state ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $URL.searchParams.get("state") ...>) { ... }
+          - pattern-not-inside: |
+              $S = $REQ.query.state;
+              ...
+              if (<... $S ...>) { ... }
+          - pattern-not-inside: |
+              $S = $REQ.body.state;
+              ...
+              if (<... $S ...>) { ... }
+          - pattern-not-inside: |
+              $S = $URL.searchParams.get("state");
+              ...
+              if (<... $S ...>) { ... }
+  - id: auth.oauth.open-redirect-callback
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The OAuth callback handler redirects to a URL taken straight from
+      the request without validating it. An attacker can craft a phishing
+      link to your real callback that forwards the victim to a malicious
+      site under your domain's trust.
+
+      Maintain an explicit allow-list of post-login redirect destinations
+      (route names or full URLs you control). Never forward to an
+      arbitrary `req.query.redirect_to`, `req.query.next`, or
+      `req.query.return_url` value.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-open-redirect-callback
+      category: security
+      cwe: CWE-601
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+      technology:
+        - express
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query.$A
+      - pattern: $REQ.body.$A
+      - pattern: $REQ.params.$A
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.body[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($SINK)
+              - pattern: $RES.redirect($CODE, $SINK)
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: $SET.has(...)
+      - pattern: $ARR.includes(...)
+      - pattern: $ARR.indexOf(...)
+  - id: auth.oauth.pkce-plain
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      PKCE is configured with `code_challenge_method=plain`. The `plain`
+      method sends the `code_verifier` itself as the `code_challenge`, so an
+      attacker who intercepts the authorization request learns the verifier
+      and PKCE provides no protection against authorization-code interception.
+
+      Use `code_challenge_method=S256`: derive `code_challenge =
+      BASE64URL-NoPad(SHA256(code_verifier))` (RFC 7636 §4.2). S256 is
+      mandatory for clients that can compute SHA-256.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-011
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-pkce-plain
+      category: security
+      cwe: CWE-757
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc7636#section-4.2
+      technology:
+        - oauth
+    pattern-either:
+      - pattern-regex: code_challenge_method=plain\b
+      - pattern: "{..., code_challenge_method: 'plain', ...}"
+      - pattern: '{..., code_challenge_method: "plain", ...}'
+      - pattern: $P.set('code_challenge_method', 'plain')
+      - pattern: $P.set("code_challenge_method", "plain")
+      - pattern: $P.append('code_challenge_method', 'plain')
+      - pattern: $P.append("code_challenge_method", "plain")
+  - id: auth.oauth.token-in-localstorage
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth/OIDC token is being written to `localStorage` /
+      `sessionStorage` under a token-named key (`access_token`,
+      `refresh_token`, `id_token`, …). Web storage is readable by any
+      script on the origin, so any XSS — including a compromised
+      third-party dependency — can exfiltrate the token via
+      `getItem(...)`. There is no browser-side mitigation, unlike
+      `HttpOnly` cookies.
+
+      Keep access/refresh/id tokens in memory only, or have the server
+      issue them in a `Secure; HttpOnly; SameSite=Strict` cookie.
+      `sessionStorage` is no safer than `localStorage` against XSS — it
+      grants the same attacker capability.
+
+      See CWE-922: Insecure Storage of Sensitive Information.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-012
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-token-in-localstorage
+      category: security
+      cwe: CWE-922
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+        - https://cwe.mitre.org/data/definitions/922.html
+      technology:
+        - localStorage
+        - sessionStorage
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage.setItem("$KEY", $V)
+              - pattern: sessionStorage.setItem("$KEY", $V)
+              - pattern: window.localStorage.setItem("$KEY", $V)
+              - pattern: window.sessionStorage.setItem("$KEY", $V)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage.$KEY = $V
+              - pattern: sessionStorage.$KEY = $V
+              - pattern: window.localStorage.$KEY = $V
+              - pattern: window.sessionStorage.$KEY = $V
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage["$KEY"] = $V
+              - pattern: sessionStorage["$KEY"] = $V
+              - pattern: window.localStorage["$KEY"] = $V
+              - pattern: window.sessionStorage["$KEY"] = $V
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+  - id: auth.oauth.wildcard-redirect
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth `redirect_uri` allow-list contains a wildcard, an `http://` URL,
+      or `localhost`. Wildcards (and HTTP) let an attacker register their own
+      callback URL and harvest authorization codes; `localhost` whitelisting
+      is acceptable for dev tooling but disastrous in production.
+
+      Pin redirect URIs to exact, HTTPS URLs of subdomains you control. RFC 6749
+      §10.6 explicitly requires "exact match" or restricted matching.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-wildcard-redirect
+      category: security
+      cwe: CWE-601
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.6
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-7.3
+    pattern-either:
+      - patterns:
+          - pattern-regex: redirect_uris?\s*[:=]\s*\[[^\]]*['"][^'"]*\*[^'"]*['"]
+      - patterns:
+          - pattern-regex: redirect_uris?\s*[:=]\s*\[[^\]]*['"]http://[^'"]*['"]
+          - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|\[::1\])
+      - patterns:
+          - pattern-regex: redirect_uri\s*[:=]\s*['"][^'"]*\*[^'"]*['"]
+      - patterns:
+          - pattern-regex: redirect_uri\s*[:=]\s*['"]http://[^'"]*['"]
+          - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|\[::1\])
+  - id: auth.secret.provider-key
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A hard-coded credential matching a well-known provider's key format
+      was found in the source. These keys are designed to be revocable —
+      once one ships to git, the only safe action is to rotate it, even
+      if the repo is private.
+
+      Move the value to an environment variable, a secret manager (AWS
+      Secrets Manager, GCP Secret Manager, Doppler, 1Password CLI),
+      or a `.env` file that's `.gitignore`d.
+
+      Detected formats:
+        - Stripe live / test:  sk_live_…  / sk_test_…   / pk_live_…
+        - OpenAI:              sk-…  /  sk-proj-…
+        - Anthropic:           sk-ant-…
+        - GitHub:              ghp_… / gho_… / ghu_… / ghs_… / ghr_… / github_pat_…
+        - Google Workspace:    GOCSPX-…
+        - Google API key:      AIza…
+        - AWS Access Key:      AKIA[0-9A-Z]{16}
+        - Slack Bot / User:    xoxb-… / xoxp-…
+    metadata:
+      oauthlint-rule-id: AUTH-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/secret-provider-key
+      category: security
+      cwe: CWE-798
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/
+        - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
+    pattern-either:
+      - pattern-regex: \b(?:sk|pk|rk)_(?:live|test)_[0-9a-zA-Z]{16,}
+      - pattern-regex: \bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}
+      - pattern-regex: \bgh[opusr]_[A-Za-z0-9]{36,}
+      - pattern-regex: \bgithub_pat_[A-Za-z0-9_]{40,}
+      - pattern-regex: \bGOCSPX-[A-Za-z0-9_-]{20,}
+      - pattern-regex: \bAKIA[0-9A-Z]{16}\b
+      - pattern-regex: \bAIza[0-9A-Za-z_-]{35}\b
+      - pattern-regex: \bxox[bp]-[0-9]{10,}-[0-9]{10,}-[A-Za-z0-9]{20,}
+  - id: auth.secret.public-env-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A secret is being read from an environment variable whose name carries a
+      client-public prefix. Bundlers inline these variables into the browser
+      JavaScript at build time:
+
+        - Next.js / webpack:        NEXT_PUBLIC_*
+        - Create React App:         REACT_APP_*
+        - Gatsby:                   GATSBY_*
+        - SvelteKit / generic:      PUBLIC_*
+        - Vite:                     VITE_*  (via import.meta.env)
+
+      Anything carried by such a variable ships to every visitor — a secret,
+      token, password, or private key placed here is published, not protected.
+
+      Keep the secret in a server-only variable (no public prefix) and read it
+      only in server code (API routes, server actions, loaders). If a value is
+      genuinely safe to expose (publishable key, client_id), name it so.
+    metadata:
+      oauthlint-rule-id: AUTH-SECRET-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/secret-public-env-secret
+      category: security
+      cwe: CWE-200
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://nextjs.org/docs/app/building-your-application/configuring/environment-variables#bundling-environment-variables-for-the-browser
+        - https://vitejs.dev/guide/env-and-mode#env-variables
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+      technology:
+        - next.js
+        - vite
+        - create-react-app
+    pattern-either:
+      - patterns:
+          - pattern: process.env.$VAR
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: ^(NEXT_PUBLIC|REACT_APP|GATSBY|PUBLIC)_.*(SECRET|PRIVATE|PASSWORD).*$
+      - patterns:
+          - pattern: import.meta.env.$VAR
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: ^VITE_.*(SECRET|PRIVATE|PASSWORD).*$
+  - id: auth.session.hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An `express-session` / `cookie-session` `secret` is set to a hard-coded
+      string literal (the infamous `secret: 'keyboard cat'` is the canonical
+      AI-generated example). This key signs the session cookie: anyone who
+      reads it from your source or git history can forge arbitrary session
+      cookies and impersonate any user.
+
+      Load the secret from the environment (`process.env.SESSION_SECRET`) or a
+      secret manager, and rotate it out of source control. Add a placeholder
+      to `.env.example` so contributors know it is required.
+    metadata:
+      oauthlint-rule-id: AUTH-SESSION-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/session-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/expressjs/session#secret
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - express-session
+        - cookie-session
+    patterns:
+      - pattern-either:
+          - pattern: "session({secret: $S, ...})"
+          - pattern: "cookieSession({secret: $S, ...})"
+          - pattern: "expressSession({secret: $S, ...})"
+      - metavariable-pattern:
+          metavariable: $S
+          patterns:
+            - pattern-regex: ^['"].*['"]$
+  - id: auth.session.id-in-url
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A session token / id appears in a URL query string. URLs are
+      logged everywhere (web server logs, reverse proxies, browser
+      history, referrer headers leaking to third-party CDNs and ad
+      networks), so this leaks the credential.
+
+      Pass session ids/tokens in the `Authorization` header or in a
+      `Secure; HttpOnly` cookie. Never in the URL.
+
+      OWASP ASVS V3.2 explicitly bans this pattern.
+    metadata:
+      oauthlint-rule-id: AUTH-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/session-id-in-url
+      category: security
+      cwe: CWE-598
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://owasp.org/www-project-application-security-verification-standard/
+    pattern-either:
+      - pattern-regex: "[?&](?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)="
+      - pattern-regex: "\\?\\s*['\"]?(?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)['\"]?\\s*:"
+  - id: auth.session.no-regeneration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      The user is being marked as logged in (`req.session.user = ...`,
+      `req.session.userId = ...`, etc.) WITHOUT first regenerating the
+      session id. This opens the door to session-fixation attacks: an
+      attacker who plants a known session id in the victim's browser
+      before login retains access after authentication succeeds.
+
+      Call `req.session.regenerate(cb)` (or your framework's equivalent)
+      between authenticating the credentials and writing the user
+      identity onto the session.
+
+      OWASP ASVS V3.2.1: "The session id must be regenerated on
+      authentication".
+    metadata:
+      oauthlint-rule-id: AUTH-SESSION-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/session-no-regeneration
+      category: security
+      cwe: CWE-384
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#renew-the-session-id-after-any-privilege-level-change
+      technology:
+        - express
+    patterns:
+      - pattern-either:
+          - pattern: $REQ.session.user = $X
+          - pattern: $REQ.session.userId = $X
+          - pattern: $REQ.session.user_id = $X
+          - pattern: $REQ.session.uid = $X
+          - pattern: $REQ.session.authenticated = true
+          - pattern: $REQ.session.isAuthenticated = true
+      - pattern-not-inside: |
+          $REQ.session.regenerate(...)
+      - pattern-not-inside: |
+          await new Promise(($R) => $REQ.session.regenerate(...));
+          ...
+      - pattern-not-inside: |
+          await new Promise(($R, $J) => $REQ.session.regenerate(...));
+          ...
+      - pattern-not-inside: |
+          await promisify($REQ.session.regenerate)(...);
+          ...
+  - id: auth.tls.reject-unauthorized
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Disabling TLS certificate validation (`rejectUnauthorized: false` or
+      `NODE_TLS_REJECT_UNAUTHORIZED=0`) makes the connection accept ANY
+      certificate, including self-signed or attacker-supplied ones. This
+      removes the protection TLS provides against man-in-the-middle attacks:
+      anyone able to intercept the network path can present a forged
+      certificate, then read and modify the traffic (credentials, tokens, data).
+
+      Keep certificate validation enabled. If the server uses a private or
+      self-signed CA, supply that CA explicitly instead of turning validation
+      off — e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
+      CWE-295 and the Node.js TLS docs.
+    metadata:
+      oauthlint-rule-id: AUTH-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/tls-reject-unauthorized
+      category: security
+      cwe: CWE-295
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://nodejs.org/api/tls.html#tlsconnectoptions-callback
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - node
+        - https
+        - axios
+    pattern-either:
+      - pattern: "{..., rejectUnauthorized: false, ...}"
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'

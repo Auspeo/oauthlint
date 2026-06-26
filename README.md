@@ -108,6 +108,16 @@ The Action is **Docker-based**, so it runs in any repository's CI regardless of 
 
 Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
 
+### Use directly with Semgrep
+
+Already have [Semgrep](https://semgrep.dev)? Run the **full pack** with one command — no install, no config file:
+
+```bash
+semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+```
+
+Per-language bundles are available too (e.g. `oauthlint-python.yaml`, `oauthlint-go.yaml`). The hosted config is always the latest pack; for a pinned ruleset, use the `oauthlint` CLI / [`oauthlint-rules`](https://www.npmjs.com/package/oauthlint-rules) on npm. See [the Semgrep docs](https://oauthlint.dev/docs/semgrep).
+
 ### Inline suppression
 
 ```ts
