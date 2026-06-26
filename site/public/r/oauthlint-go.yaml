@@ -1,0 +1,477 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# go subset — 13 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.go.cookie.insecure
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A session/auth `http.Cookie` is created with a security attribute
+      explicitly disabled (`Secure: false` or `HttpOnly: false`). With
+      `Secure: false` the cookie is sent over plain HTTP, so a network
+      attacker can read the session token. With `HttpOnly: false` the cookie
+      is readable from JavaScript, so any XSS can steal it. For OAuth/OIDC
+      this exposes session and token cookies to theft and hijacking.
+
+      Set `Secure: true` and `HttpOnly: true` on auth cookies, and add an
+      appropriate `SameSite` mode (for example `SameSite: http.SameSiteLaxMode`).
+    metadata:
+      oauthlint-rule-id: AUTH-GO-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/net/http#Cookie
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - net/http
+    patterns:
+      - pattern-either:
+          - pattern: "http.Cookie{..., Secure: false, ...}"
+          - pattern: "http.Cookie{..., HttpOnly: false, ...}"
+  - id: auth.go.cors.allow-all
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      CORS is configured to allow every origin with the wildcard `*`. Any
+      website can then make cross-origin requests to this endpoint, defeating
+      the same-origin policy (CWE-942). This is a common AI-generated mistake —
+      `AllowAllOrigins: true`, `AllowedOrigins: []string{"*"}`, or a raw
+      `Access-Control-Allow-Origin: *` header is pasted in to "make the browser
+      call work" and the intended scope is never added. Combined with
+      credentials this becomes an account-takeover primitive that leaks
+      OAuth/OIDC tokens cross-origin.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, for
+      example `AllowOrigins: []string{"https://app.example.com"}` (gin-contrib),
+      `AllowedOrigins: []string{"https://app.example.com"}` (rs/cors), or
+      `w.Header().Set("Access-Control-Allow-Origin", "https://app.example.com")`.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/gin-contrib/cors
+        - https://github.com/rs/cors
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - gin
+        - rs-cors
+        - net/http
+    pattern-either:
+      - pattern: "cors.Config{..., AllowAllOrigins: true, ...}"
+      - pattern: 'cors.Options{..., AllowedOrigins: []string{..., "*", ...}, ...}'
+      - pattern: $W.Header().Set("Access-Control-Allow-Origin", "*")
+  - id: auth.go.crypto.bcrypt-low-cost
+    languages:
+      - go
+    severity: WARNING
+    message: |
+      `bcrypt.GenerateFromPassword` is called with a cost factor below 10. A
+      low work factor makes each hash cheap to compute, which lets an attacker
+      brute-force stolen password hashes far too quickly. OWASP recommends a
+      bcrypt cost of at least 10, and ≥ 12 for new applications, tuned so a
+      single hash takes roughly 250ms on your hardware.
+
+      Common LLM-generated mistake: `bcrypt.GenerateFromPassword(pw, 8)`
+      because the literal "looks fast enough". Use `bcrypt.DefaultCost` (10)
+      or raise the cost factor to 12 or higher.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-crypto-bcrypt-low-cost
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://pkg.go.dev/golang.org/x/crypto/bcrypt#GenerateFromPassword
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/916.html
+      technology:
+        - bcrypt
+    patterns:
+      - pattern: bcrypt.GenerateFromPassword($PW, $N)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 10
+  - id: auth.go.crypto.weak-cipher
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A broken or deprecated block/stream cipher is used to protect data. DES
+      (`des.NewCipher`) and 3DES (`des.NewTripleDESCipher`) have a 64-bit block
+      and are considered insecure (Sweet32, brute-force), while RC4
+      (`rc4.NewCipher`) has well-known keystream biases and is forbidden by RFC
+      7465. For OAuth/OIDC this means tokens, client secrets, and other
+      sensitive material are not adequately protected and may be recovered by
+      an attacker.
+
+      Use authenticated AES instead: load the key with `crypto/aes`
+      (`aes.NewCipher(key)`) and wrap it in `cipher.NewGCM(block)` to get
+      AES-GCM, which provides both confidentiality and integrity.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-crypto-weak-cipher
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://pkg.go.dev/crypto/aes#NewCipher
+        - https://pkg.go.dev/crypto/cipher#NewGCM
+        - https://cwe.mitre.org/data/definitions/327.html
+      technology:
+        - crypto/des
+        - crypto/rc4
+    patterns:
+      - pattern-either:
+          - pattern: des.NewCipher(...)
+          - pattern: des.NewTripleDESCipher(...)
+          - pattern: rc4.NewCipher(...)
+  - id: auth.go.crypto.weak-password-hash
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A password is being hashed with a fast, general-purpose digest from the
+      Go standard library (MD5, SHA-1, SHA-256, SHA-512). These algorithms are
+      designed to be fast, which makes offline brute-force and rainbow-table
+      attacks cheap — they are NOT suitable for storing passwords (CWE-916).
+
+      Use a dedicated, slow password-hashing function with a per-password salt
+      and a tunable work factor: bcrypt
+      (`golang.org/x/crypto/bcrypt.GenerateFromPassword`), Argon2
+      (`golang.org/x/crypto/argon2.IDKey`), or scrypt
+      (`golang.org/x/crypto/scrypt.Key`). These resist brute-force by design.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-crypto-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/916.html
+        - https://pkg.go.dev/golang.org/x/crypto/bcrypt
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+      technology:
+        - crypto/md5
+        - crypto/sha256
+    patterns:
+      - pattern-either:
+          - pattern: md5.Sum([]byte($PW))
+          - pattern: sha1.Sum([]byte($PW))
+          - pattern: sha256.Sum256([]byte($PW))
+          - pattern: sha512.Sum512([]byte($PW))
+          - pattern: $H.Write([]byte($PW))
+      - metavariable-regex:
+          metavariable: $PW
+          regex: (?i).*(password|passwd|pwd).*
+  - id: auth.go.flow.weak-rand
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A security-sensitive value — its name indicates a token, secret, key,
+      password, nonce, OTP, or salt — is being generated with the `math/rand`
+      package. `math/rand` is a deterministic PRNG: its output is predictable
+      and an attacker who observes enough values can recover the seed and
+      forecast every future token. For OAuth/OIDC this means forgeable
+      `state` values, guessable authorization codes, and predictable refresh
+      tokens.
+
+      Use `crypto/rand` instead: allocate a byte slice and fill it with
+      `rand.Read(b)` (from `crypto/rand`), then hex- or base64url-encode it.
+      Never derive a credential from `math/rand`.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-weak-rand
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/crypto/rand#Read
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - math/rand
+    pattern-either:
+      - patterns:
+          - pattern: $VAR := rand.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(Intn|Int|Int31|Int63|Float64|Perm)$
+          - metavariable-pattern:
+              metavariable: $VAR
+              patterns:
+                - pattern-regex: (?i)(token|secret|key|password|nonce|otp|salt)
+      - patterns:
+          - pattern: $VAR = rand.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(Intn|Int|Int31|Int63|Float64|Perm)$
+          - metavariable-pattern:
+              metavariable: $VAR
+              patterns:
+                - pattern-regex: (?i)(token|secret|key|password|nonce|otp|salt)
+  - id: auth.go.jwt.hardcoded-secret
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A JWT HMAC signing/verification key is hardcoded as a string literal in a
+      call to golang-jwt. Anyone who can read the source or git history can
+      forge or tamper with tokens, which is a complete authentication bypass.
+
+      Load the secret from the environment or a secret manager instead, e.g.
+      `key := []byte(os.Getenv("JWT_SECRET"))` and `token.SignedString(key)`.
+      Never commit signing keys to source control.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Token.SignedString
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - golang-jwt
+    pattern-either:
+      - pattern: $TOKEN.SignedString([]byte("..."))
+      - patterns:
+          - pattern: return []byte("..."), nil
+          - pattern-inside: func(...) (interface{}, error) { ... }
+  - id: auth.go.jwt.none-algorithm
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A JWT is created or accepted with the `none` algorithm, which produces an
+      unsigned token. Anyone can forge such a token by setting `alg: none` and
+      omitting the signature, so the server has no way to verify who issued it —
+      a complete authentication bypass (CWE-347). In golang-jwt this happens
+      when signing with `jwt.SigningMethodNone` or passing the
+      `jwt.UnsafeAllowNoneSignatureType` sentinel to `SignedString`.
+
+      Never use the `none` algorithm. Sign tokens with a real algorithm such as
+      HS256 (`jwt.SigningMethodHS256`), RS256 (`jwt.SigningMethodRS256`), or
+      ES256 (`jwt.SigningMethodES256`) and verify them with the matching key.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-none-algorithm
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#pkg-variables
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - golang-jwt
+    pattern-either:
+      - pattern: jwt.NewWithClaims(jwt.SigningMethodNone, ...)
+      - pattern: jwt.New(jwt.SigningMethodNone, ...)
+      - pattern: jwt.New(jwt.SigningMethodNone)
+      - pattern: jwt.UnsafeAllowNoneSignatureType
+  - id: auth.go.jwt.parse-unverified
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A JWT is decoded with `ParseUnverified`, which parses the token WITHOUT
+      checking its signature. Any claims read from the result are fully
+      attacker-controlled — an attacker can forge arbitrary subjects, scopes,
+      or expiry and the token will still parse. Trusting these claims for
+      authentication or authorization is a complete auth bypass (CWE-347).
+
+      Verify the signature instead: use `jwt.Parse(tok, keyfunc)` or
+      `jwt.ParseWithClaims(tok, claims, keyfunc)` with a `Keyfunc` that returns
+      the expected signing key, so a token with a bad or missing signature is
+      rejected.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-parse-unverified
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Parser.ParseUnverified
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - golang-jwt
+    pattern: $P.ParseUnverified($TOK, $CLAIMS)
+  - id: auth.go.jwt.skip-claims-validation
+    languages:
+      - go
+    severity: WARNING
+    message: |
+      A JWT parser is configured with `jwt.WithoutClaimsValidation()`, which
+      turns OFF the standard registered-claims validation golang-jwt performs by
+      default — the `exp` (expiry), `nbf` (not-before) and `iat` (issued-at)
+      checks. With validation disabled an expired or not-yet-valid token still
+      parses successfully, so a stolen or long-expired token is accepted as if
+      it were current (CWE-613).
+
+      Remove `jwt.WithoutClaimsValidation()` and let golang-jwt validate the
+      time-based claims. If a specific claim must be relaxed, scope it narrowly
+      (e.g. `jwt.WithLeeway(...)`) instead of disabling all claims validation.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-skip-claims-validation
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#ParserOption
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - golang-jwt
+    pattern: jwt.WithoutClaimsValidation()
+  - id: auth.go.jwt.unchecked-method
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `Keyfunc` passed to `jwt.Parse`/`jwt.ParseWithClaims` returns the
+      verification key WITHOUT first checking `token.Method` (the signing
+      algorithm). This enables an algorithm-confusion attack: if the server
+      verifies RS256 tokens with an RSA public key, an attacker can forge a
+      token signed with HS256 using that public key as the HMAC secret, and the
+      library will accept it — a complete authentication bypass (CWE-347).
+
+      Always assert the signing method inside the keyfunc before returning the
+      key, e.g.:
+      `if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok { return nil, err }`
+      (or `*jwt.SigningMethodRSA` / `*jwt.SigningMethodECDSA` as appropriate),
+      so a token signed with an unexpected algorithm is rejected.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-unchecked-method
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Keyfunc
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - golang-jwt
+    patterns:
+      - pattern-either:
+          - pattern: |
+              jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+                ...
+                return $KEY, nil
+              })
+          - pattern: |
+              jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+                ...
+                return $KEY, nil
+              })
+      - pattern-not: |
+          jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+            ...
+            $T.Method
+            ...
+          })
+      - pattern-not: |
+          jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+            ...
+            $T.Method
+            ...
+          })
+      - pattern-not: |
+          jwt.Parse($TOK, func($T *jwt.Token) (interface{}, error) {
+            ...
+            if <... $T.Method ...> { ... }
+            ...
+          })
+      - pattern-not: |
+          jwt.ParseWithClaims($TOK, $CLAIMS, func($T *jwt.Token) (interface{}, error) {
+            ...
+            if <... $T.Method ...> { ... }
+            ...
+          })
+  - id: auth.go.tls.insecure-skip-verify
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `tls.Config` is created with `InsecureSkipVerify: true`, which disables
+      verification of the server's certificate chain and host name. Any
+      attacker who can intercept the connection can present any certificate
+      and read or tamper with the traffic — a classic man-in-the-middle hole.
+      For OAuth/OIDC this leaks authorization codes, access tokens, and client
+      secrets in transit.
+
+      Never set `InsecureSkipVerify: true`. Leave verification on (the default).
+      To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`
+      loaded with that CA instead.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-insecure-skip-verify
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/crypto/tls#Config
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - crypto/tls
+    pattern: "tls.Config{..., InsecureSkipVerify: true, ...}"
+  - id: auth.go.tls.min-version
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A `tls.Config` is created with `MinVersion` pinned to an obsolete
+      protocol — SSL 3.0, TLS 1.0, or TLS 1.1. These versions have known
+      cryptographic weaknesses (POODLE, BEAST, downgrade attacks) and are
+      deprecated by RFC 8996. Allowing them lets an attacker negotiate a
+      broken cipher and intercept or tamper with OAuth/OIDC traffic,
+      leaking authorization codes, access tokens, and client secrets.
+
+      Set `MinVersion` to at least `tls.VersionTLS12`, and ideally
+      `tls.VersionTLS13`, so the handshake refuses obsolete protocols.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-TLS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-min-version
+      category: security
+      cwe: CWE-326
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://pkg.go.dev/crypto/tls#Config
+        - https://datatracker.ietf.org/doc/html/rfc8996
+        - https://cwe.mitre.org/data/definitions/326.html
+      technology:
+        - crypto/tls
+    patterns:
+      - pattern: "tls.Config{..., MinVersion: $V, ...}"
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^tls\.(VersionSSL30|VersionTLS10|VersionTLS11)$
