@@ -10,6 +10,7 @@ A curated, multi-language Semgrep rule pack (JS/TS · Python · Go · Java · Ru
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/auspeo.oauthlint-vscode?label=VS%20Code&color=2f6feb)](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
 [![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg)](https://semgrep.dev)
 
@@ -97,7 +98,7 @@ The Action is **Docker-based**, so it runs in any repository's CI regardless of 
 
 ### VS Code extension
 
-Install **oauthlint** from the Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
+Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
 
 ### Inline suppression
 
