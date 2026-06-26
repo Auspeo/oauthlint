@@ -1,5 +1,26 @@
 # oauthlint-rules
 
+## 0.2.3
+
+### Patch Changes
+
+- 782d1c0: feat(rules): add 3 rules — OAuth tokens in web storage, Go skipped claims, Flask-CORS
+
+  - `auth.oauth.token-in-localstorage` (JS/TS, CWE-922) — OAuth/OIDC tokens stored in
+    localStorage/sessionStorage (XSS-exfiltratable).
+  - `auth.go.jwt.skip-claims-validation` (Go/golang-jwt, CWE-613) — parsing with
+    `jwt.WithoutClaimsValidation()` (skips expiry/claims checks).
+  - `auth.py.cors.allow-all` (Python/Flask-CORS, CWE-942) — wildcard origin together
+    with `supports_credentials=True`.
+
+- d2465c7: feat(rules): add 4 rules for common AI-generated auth mistakes
+
+  - `auth.tls.reject-unauthorized` (JS/TS, CWE-295) — disabling Node TLS certificate
+    validation (`rejectUnauthorized: false` / `NODE_TLS_REJECT_UNAUTHORIZED=0`).
+  - `auth.jwt.ignore-expiration` (JS/TS, CWE-613) — `jwt.verify(…, { ignoreExpiration: true })`.
+  - `auth.cookie.samesite-none-insecure` (JS/TS, CWE-1275) — `SameSite=None` cookie without `Secure`.
+  - `auth.py.jwt.no-expiration` (Python/PyJWT, CWE-613) — `options={"verify_exp": False}`.
+
 ## 0.2.2
 
 ### Patch Changes
