@@ -18,8 +18,8 @@ export interface Announcement {
 
 export const announcement: Announcement | null = {
   version: 'v0.4.0',
-  text: 'v0.4.0 — incremental scanning, baseline mode, and 100+ rules',
-  href: 'https://github.com/Auspeo/oauthlint/releases',
+  text: 'v0.4.0 — baseline mode, update notifier, and 100+ rules',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.4.0',
 };
 
 /**
