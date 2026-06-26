@@ -1,0 +1,31 @@
+name: Move major tag
+
+# The GitHub Action is consumed as `Auspeo/oauthlint/action@v1`. The Marketplace
+# and `@v1` users follow the moving `v1` major tag. When a release tag like
+# `v1.2.3` is pushed, repoint `v1` at that commit so the published Action updates
+# without anyone changing their `uses:` line. Package tags (`oauthlint@x.y.z`)
+# don't match this pattern, so they don't trigger it.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Repoint the major tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"        # e.g. v1.2.3
+          MAJOR="v${TAG#v}"               # strip a leading v if present
+          MAJOR="v${MAJOR%%.*}"           # -> v1
+          echo "Moving $MAJOR -> $TAG ($GITHUB_SHA)"
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$MAJOR"

@@ -97,7 +97,7 @@ The Action is **Docker-based**, so it runs in any repository's CI regardless of 
 
 ### VS Code extension
 
-Install **oauthlint** from the Marketplace for inline diagnostics as you type, plus Quick Fix suppressions.
+Install **oauthlint** from the Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
 
 ### Inline suppression
 
