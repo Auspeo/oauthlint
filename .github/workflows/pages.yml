@@ -30,7 +30,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build site (Astro)
-        run: pnpm --filter oauthlint-site build
+        # `...` builds oauthlint-site AND its workspace deps (oauthlint-rules) in
+        # topological order, so the prebuild Semgrep-config generator can import
+        # the built rules loader.
+        run: pnpm --filter "oauthlint-site..." build
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
