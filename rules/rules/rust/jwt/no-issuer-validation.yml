@@ -1,0 +1,59 @@
+rules:
+  - id: auth.rust.jwt.no-issuer-validation
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the
+      expected issuer, so `decode` accepts a token minted by ANY issuer. The
+      `jsonwebtoken` crate does not validate the `iss` claim unless you opt in,
+      so a token signed by an attacker-controlled or otherwise untrusted issuer
+      passes validation as long as the signature checks out. For OAuth/OIDC this
+      lets a token from the wrong authorization server be replayed against this
+      API.
+
+      Pin the issuer before decoding, e.g.
+      `validation.set_issuer(&["https://issuer.example.com"])` (or set
+      `validation.iss`), so only tokens whose `iss` claim matches your trusted
+      authorization server are accepted.
+    # Modeled on auth.rust.jwt.no-aud-validation: detect a `Validation`
+    # (`Validation::new(...)` or `Validation::default()`) that flows into
+    # `decode(...)` but never has its issuer pinned. Unlike `aud`/`exp` (default
+    # `true`, disabled via `validate_* = false`), the issuer check is OFF by
+    # default and must be opted into via `set_issuer(...)` / `validation.iss`,
+    # so the vulnerable shape is the ABSENCE of that call. We bind the validator
+    # to `$V` at construction, require a `decode` that uses it, and suppress the
+    # finding with `pattern-not-inside` when `set_issuer` / `validation.iss` is
+    # set on the same `$V`. Matching on the construction (not the `decode` call)
+    # mirrors the sibling rule's low-FP, AST-only profile.
+    patterns:
+      - pattern-either:
+          - pattern: let mut $V = Validation::new(...);
+          - pattern: let mut $V = Validation::default();
+      - pattern-not-inside: |
+          let mut $V = ...;
+          ...
+          $V.set_issuer(...);
+          ...
+      - pattern-not-inside: |
+          let mut $V = ...;
+          ...
+          $V.iss = $X;
+          ...
+      - pattern-inside: |
+          let mut $V = ...;
+          ...
+          decode($TOKEN, $KEY, &$V)
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-issuer-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#method.set_issuer
+        - https://cwe.mitre.org/data/definitions/345.html
+        - https://cwe.mitre.org/data/definitions/287.html

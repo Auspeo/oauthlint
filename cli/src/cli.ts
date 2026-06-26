@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import pc from 'picocolors';
+import { runBaseline } from './commands/baseline.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runList } from './commands/list.js';
@@ -83,6 +84,10 @@ export async function buildProgram(): Promise<Command> {
     .option('--staged', 'Scan only git-staged files (useful for pre-commit hooks)')
     .option('--rules-dir <path>', 'Override the bundled rules directory')
     .option('--fix', 'Apply auto-fixes (rewrites source in place where possible)')
+    .option(
+      '--baseline [file]',
+      'Suppress findings already in a baseline file; report only NEW findings (default: .oauthlint-baseline.json)',
+    )
     .action(async (paths: string[], opts: ScanCliOptions) => {
       const code = await runScan({
         paths,
@@ -94,6 +99,24 @@ export async function buildProgram(): Promise<Command> {
         failOn: opts.failOn,
         rulesDir: opts.rulesDir,
         fix: opts.fix,
+        baseline: opts.baseline,
+      });
+      await exitAfterFlush(code);
+    });
+
+  program
+    .command('baseline')
+    .argument('[paths...]', 'One or more files/directories to scan', ['.'])
+    .description(
+      'Scan and write a baseline of current findings (for adopting on an existing codebase)',
+    )
+    .option('-o, --output <file>', 'Where to write the baseline JSON', '.oauthlint-baseline.json')
+    .option('--rules-dir <path>', 'Override the bundled rules directory')
+    .action(async (paths: string[], opts: BaselineCliOptions) => {
+      const code = await runBaseline({
+        paths,
+        output: opts.output,
+        rulesDir: opts.rulesDir,
       });
       await exitAfterFlush(code);
     });
@@ -136,6 +159,14 @@ interface ScanCliOptions {
   staged?: boolean;
   rulesDir?: string;
   fix?: boolean;
+  // commander gives `true` for a bare `--baseline`, or the string path for
+  // `--baseline <file>`.
+  baseline?: string | boolean;
+}
+
+interface BaselineCliOptions {
+  output?: string;
+  rulesDir?: string;
 }
 
 function parseSeverity(v: string): SeverityName {

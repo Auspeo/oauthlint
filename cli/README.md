@@ -98,7 +98,48 @@ npx oauthlint scan --diff
 
 # scan only git-staged files (ideal in a pre-commit hook)
 npx oauthlint scan --staged
+
+# adopt on a large existing codebase: snapshot today's findings…
+npx oauthlint baseline ./src
+# …then only get alerted on NEW findings from here on
+npx oauthlint scan ./src --baseline --fail-on HIGH
 ```
+
+## Adopting on an existing codebase (baseline)
+
+Turning a linter on for the first time on a large repo usually drowns you in
+pre-existing findings. A **baseline** snapshots the findings that exist *today*
+so `scan` only alerts on **new** ones — letting you adopt OAuthLint without
+fixing everything up front.
+
+```bash
+# 1. capture the current findings into .oauthlint-baseline.json (commit this file)
+oauthlint baseline ./src
+
+# 2. from now on, scan reports only findings NOT in the baseline
+oauthlint scan ./src --baseline --fail-on HIGH
+```
+
+- **`oauthlint baseline [paths...]`** scans and writes
+  `.oauthlint-baseline.json` (override with `-o, --output <file>`). It prints how
+  many findings were baselined. Commit the file so the whole team shares it.
+- **`oauthlint scan --baseline [file]`** runs a normal scan, then suppresses any
+  finding already in the baseline and reports only the rest. `--fail-on` and the
+  exit code consider **only the new findings**. With no value it defaults to
+  `.oauthlint-baseline.json`; a missing baseline file is a **clear error**
+  (exit `2`), never silently treated as empty.
+
+**How a finding is fingerprinted.** Each finding gets a stable fingerprint —
+`sha256(oauthlintRuleId + repo-relative path + a whitespace-normalised snapshot
+of the matched code)`. Crucially the **raw line number is not part of the hash**,
+so moving a finding up or down (adding imports, reformatting) keeps it
+baselined, while **changing the flagged code** surfaces it as new. The same
+fingerprint occurring multiple times in one file is disambiguated by a
+deterministic occurrence index. Paths are normalised to repo/cwd-relative
+(POSIX separators) so a baseline is portable across machines, and unreadable
+files (deleted/binary) degrade gracefully instead of crashing. The baseline
+JSON is small, sorted and human-diffable (a `version`, a `generatedAt`, and the
+fingerprint list).
 
 ## Incremental scanning
 
@@ -154,6 +195,9 @@ oauthlint scan --format sarif   Emit SARIF for GitHub Code Scanning
 oauthlint scan --severity HIGH  Only show findings ≥ HIGH
 oauthlint scan --fail-on off    Never fail the build (CI dry-run)
 oauthlint scan --fix            Auto-apply safe fixes
+oauthlint scan --baseline       Report only findings NOT in the baseline
+oauthlint baseline [paths...]   Snapshot current findings to a baseline file
+oauthlint baseline -o <file>    Write the baseline to a custom path
 oauthlint list                  List every shipped rule
 oauthlint list --json           Same, as JSON
 oauthlint init                  Generate .oauthlintrc.yml at cwd
@@ -233,8 +277,11 @@ the next reviewer needs to see exactly which lines opted out, and why.
 |:----:|------|
 | `0` | No finding at or above the `--fail-on` threshold |
 | `1` | At least one **HIGH** finding |
-| `2` | At least one **CRITICAL** finding, or a scan whose output could not be parsed (it never silently exits clean) |
+| `2` | At least one **CRITICAL** finding, a scan whose output could not be parsed (it never silently exits clean), or a missing/malformed `--baseline` file |
 | `127` | Semgrep is not installed |
+
+> With `--baseline`, the `--fail-on` gate and these exit codes consider only the
+> **new** (non-baselined) findings.
 
 ## License
 

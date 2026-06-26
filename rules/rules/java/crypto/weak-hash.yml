@@ -1,0 +1,41 @@
+rules:
+  - id: auth.java.crypto.weak-hash
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      A broken hash algorithm (MD5 or SHA-1) is being instantiated via JCA
+      `MessageDigest.getInstance(...)`. MD5 and SHA-1 are cryptographically
+      broken: practical collision attacks exist, so they must NOT be used for
+      any security purpose — integrity checks, content/token fingerprints,
+      digital signatures, HMAC keys, or deduplication that a trust decision
+      depends on (CWE-328 / CWE-327).
+
+      Use SHA-256 or stronger (SHA-384, SHA-512, SHA-3):
+      `MessageDigest.getInstance("SHA-256")`. Note: this rule covers the general
+      weak-digest case; storing *passwords* needs a dedicated slow hasher
+      (BCrypt/Argon2/PBKDF2), which is enforced separately.
+    # Match only the algorithm string passed to MessageDigest.getInstance(...).
+    # The metavariable-regex flags the broken digests MD5, SHA-1 and the SHA1
+    # alias (case-insensitive, optional hyphen). It is scoped to the
+    # getInstance(...) instantiation site on purpose so it is low-FP and does
+    # NOT overlap auth.java.crypto.weak-password-hash, which instead anchors on
+    # a password-named digest()/update() call (and also flags SHA-256/SHA-512 in
+    # that password context). "SHA-256"/"SHA-512" are silent here.
+    patterns:
+      - pattern: java.security.MessageDigest.getInstance($ALG, ...)
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^"(md5|sha-?1)"$
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-weak-hash
+      category: security
+      cwe: CWE-328
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - java
+      references:
+        - https://cwe.mitre.org/data/definitions/328.html
+        - https://csrc.nist.gov/news/2022/nist-transitioning-away-from-sha-1-for-all-apps

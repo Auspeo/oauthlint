@@ -1,0 +1,39 @@
+rules:
+  - id: auth.oauth.access-token-in-url
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth `access_token` (or `refresh_token` / `id_token`) is placed in a
+      URL query string. URLs leak: the full URL — token included — is recorded
+      in server and reverse-proxy access logs, saved in browser history, and
+      sent in the `Referer` header to every third-party CDN, analytics, and ad
+      script loaded by the destination page. A token in a URL is a leaked token.
+
+      Send the token in the `Authorization: Bearer …` header, or in a POST
+      request body. Never in the URL query string.
+
+      CWE-598: Use of GET Request Method With Sensitive Query Strings.
+    # Anchored to the query-param shape `?<name>=` / `&<name>=` (the `[?&]…=`
+    # form) so we fire on token-carrying URLs built as string or template
+    # literals, while staying silent on: a token in an `Authorization` header,
+    # a POST body / object property `{ access_token: t }` (no leading `?`/`&`
+    # and no trailing `=`), `params.set('access_token', …)` builders, and the
+    # bare word `access_token` in a comment or non-URL string. Case-insensitive
+    # on the param name. This is deliberately distinct from
+    # auth.flow.credentials-in-url (which excludes `access_token`) and
+    # auth.jwt.in-url (which only matches JWT-shaped `eyJ…` values).
+    pattern-regex: '[?&](?i:access_token|refresh_token|id_token)='
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-013
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-access-token-in-url
+      category: security
+      cwe: CWE-598
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+        - https://cwe.mitre.org/data/definitions/598.html
