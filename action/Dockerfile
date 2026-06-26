@@ -11,6 +11,7 @@ RUN apk add --no-cache nodejs=~22 npm=~10 bash ca-certificates
 WORKDIR /action
 
 COPY entrypoint.sh /action/entrypoint.sh
+COPY annotate.mjs /action/annotate.mjs
 RUN chmod +x /action/entrypoint.sh
 
 ENTRYPOINT ["/action/entrypoint.sh"]
