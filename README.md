@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="docs/public/logo.svg" width="76" alt="oauthlint logo" />
-
-# oauthlint
+<a href="https://oauthlint.dev"><img src="docs/public/banner.png" alt="OAuthLint — AI ships the auth bug. Catch it before the PR." width="840" /></a>
 
 **Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
 
