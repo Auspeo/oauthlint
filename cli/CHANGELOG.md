@@ -1,5 +1,26 @@
 # oauthlint
 
+## 0.4.0
+
+### Minor Changes
+
+- fe253ca: feat(cli): baseline support — adopt on existing codebases, alert only on new findings
+
+  `oauthlint baseline` writes a `.oauthlint-baseline.json` of current findings (stable,
+  line-shift-resilient fingerprints), and `oauthlint scan --baseline` reports only findings
+  not in the baseline (exit code gates on new findings only).
+
+- 54810db: feat(cli): notify when a newer version is available
+
+  On normal runs the CLI checks (at most once a day, cached, non-blocking) whether a
+  newer `oauthlint` is on npm and prints an upgrade hint to stderr. Silent in CI,
+  when piped, with `--json`/`--format sarif`, with `NO_UPDATE_NOTIFIER`, or `--no-update-check`.
+
+### Patch Changes
+
+- Updated dependencies [fe253ca]
+  - oauthlint-rules@0.2.4
+
 ## 0.3.0
 
 ### Minor Changes
