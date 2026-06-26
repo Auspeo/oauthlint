@@ -1,6 +1,8 @@
 ---
 import SiteChrome from '../../components/SiteChrome.astro';
 import Base from '../../layouts/Base.astro';
+import { highlightCode } from '../../lib/highlight';
+import { cweUrl, owaspUrl } from '../../lib/references';
 import { type RuleView, type Severity, getRules } from '../../lib/rules';
 
 export function getStaticPaths() {
@@ -73,6 +75,19 @@ const codeFont =
   'font-family:var(--ol-font-mono); font-size:var(--ol-text-code); line-height:1.9; white-space:pre; overflow-x:auto; margin:0;';
 
 const langBadge = rule.languages.join(' · ');
+
+// Build-time syntax highlighting (Shiki dual-theme). Each rule is
+// single-language, so we highlight each fixture in its own language and inject
+// the result with `set:html`; theme selection is handled by CSS below.
+const vulnerableHtml = rule.vulnerable
+  ? await highlightCode(rule.vulnerable.code, rule.vulnerable.language)
+  : undefined;
+const safeHtml = rule.safe ? await highlightCode(rule.safe.code, rule.safe.language) : undefined;
+
+// Canonical external pages for the CWE / OWASP identifiers (used in both the
+// title badges and the metadata rail).
+const cweHref = rule.cwe ? cweUrl(rule.cwe) : undefined;
+const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
 ---
 <Base
   title={`${rule.id} — OAuthLint`}
@@ -95,8 +110,12 @@ const langBadge = rule.languages.join(' · ');
             </div>
             <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); line-height:1.15;">{rule.title}</h1>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              {rule.cwe && <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{rule.cwe}</span>}
-              {rule.owasp && <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP {rule.owasp}</span>}
+              {rule.cwe && (cweHref
+                ? <a href={cweHref} rel="noopener noreferrer" target="_blank" class="ol-ref-badge" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px; text-decoration:none;">{rule.cwe}</a>
+                : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{rule.cwe}</span>)}
+              {rule.owasp && (owaspHref
+                ? <a href={owaspHref} rel="noopener noreferrer" target="_blank" class="ol-ref-badge" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px; text-decoration:none;">OWASP {rule.owasp}</a>
+                : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP {rule.owasp}</span>)}
               <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{langBadge}</span>
             </div>
           </div>
@@ -115,7 +134,7 @@ const langBadge = rule.languages.join(' · ');
             </div>
             <div style={`background:var(--ol-canvas); border:1px solid ${sev.border}; overflow:hidden; margin-bottom:var(--ol-space-6);`}>
               <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.vulnerable.filename}</div>
-              <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.vulnerable.code}</code></pre>
+              <div class="ol-codeblock" set:html={vulnerableHtml}></div>
             </div>
           </>
         )}
@@ -128,7 +147,7 @@ const langBadge = rule.languages.join(' · ');
             </div>
             <div style="background:var(--ol-canvas); border:1px solid var(--ol-sev-pass-border); overflow:hidden; margin-bottom:var(--ol-space-10);">
               <div style="padding:8px 14px; background:var(--ol-surface); border-bottom:1px solid var(--ol-border); font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{rule.safe.filename}</div>
-              <pre style={`padding:var(--ol-space-4) var(--ol-space-5); color:var(--ol-text-secondary); ${codeFont}`}><code>{rule.safe.code}</code></pre>
+              <div class="ol-codeblock" set:html={safeHtml}></div>
             </div>
           </>
         )}
@@ -155,8 +174,12 @@ const langBadge = rule.languages.join(' · ');
           <div style="padding:var(--ol-space-4); display:flex; flex-direction:column; gap:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Severity</span><span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:${sev.main};`}>● {sev.label}</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">OAuthLint id</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.ruleId}</span></div>
-            {rule.cwe && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">CWE</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.cwe}</span></div>}
-            {rule.owasp && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">OWASP</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.owasp}</span></div>}
+            {rule.cwe && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">CWE</span>{cweHref
+              ? <a href={cweHref} rel="noopener noreferrer" target="_blank" class="ol-ref-link" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); text-decoration:none;">{rule.cwe}</a>
+              : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.cwe}</span>}</div>}
+            {rule.owasp && <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">OWASP</span>{owaspHref
+              ? <a href={owaspHref} rel="noopener noreferrer" target="_blank" class="ol-ref-link" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); text-decoration:none;">{rule.owasp}</a>
+              : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.owasp}</span>}</div>}
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Category</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.category}</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">LLM prevalence</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.llmPrevalence}</span></div>
           </div>
@@ -166,3 +189,44 @@ const langBadge = rule.languages.join(' · ');
     </div>
   </SiteChrome>
 </Base>
+
+<style is:global>
+  /* Shiki dual-theme highlighting for rule code panels. `defaultColor:false`
+     emits `--shiki-light` / `--shiki-dark` (token + background) inline; we pick
+     the set that matches the active `data-theme`, so colours flip with the
+     site theme toggle. Background is left to the panel surface (`--ol-canvas`)
+     so the existing code-panel chrome shows through. */
+  .ol-codeblock .shiki,
+  .ol-codeblock .shiki span {
+    color: var(--shiki-dark);
+    background-color: transparent;
+    font-style: var(--shiki-dark-font-style);
+    font-weight: var(--shiki-dark-font-weight);
+    text-decoration: var(--shiki-dark-text-decoration);
+  }
+  html[data-theme='light'] .ol-codeblock .shiki,
+  html[data-theme='light'] .ol-codeblock .shiki span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+    text-decoration: var(--shiki-light-text-decoration);
+  }
+
+  /* Match the previous plain-code chrome: padding, mono font, scroll. */
+  .ol-codeblock .shiki {
+    margin: 0;
+    padding: var(--ol-space-4) var(--ol-space-5);
+    font-family: var(--ol-font-mono);
+    font-size: var(--ol-text-code);
+    line-height: 1.9;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* CWE / OWASP reference links keep the badge/row look; accent on hover. */
+  .ol-ref-badge:hover,
+  .ol-ref-link:hover {
+    color: var(--ol-accent);
+    border-color: var(--ol-accent);
+  }
+</style>

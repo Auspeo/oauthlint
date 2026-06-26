@@ -94,6 +94,21 @@ nav a[href]:hover {
   color: var(--ol-accent) !important;
 }
 
+/* Rules-catalogue rows. The rows are clickable (`<tr onclick>`); give them a
+   subtle, readable hover (a raised surface tint — never a solid accent fill,
+   which would hide the title/description text). Reads well in dark AND light
+   because `--ol-surface-raised` flips with the theme. We also kill the mobile
+   tap-highlight so a tapped row never flashes a solid accent band that some
+   browsers keep painted when the page is restored from bfcache on Back; the
+   page script additionally clears any transient state on pageshow/pagehide.
+   Keyboard focus is unaffected — the global :focus-visible outline still shows. */
+[data-row] {
+  -webkit-tap-highlight-color: transparent;
+}
+[data-row]:hover {
+  background: var(--ol-surface-raised);
+}
+
 @keyframes ol-blink {
   0%,
   49% {

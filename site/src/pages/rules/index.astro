@@ -41,11 +41,11 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ol-text-muted)" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-5-5"></path></svg>
           <input id="rule-search" type="search" placeholder="Search rule id or title…" aria-label="Search rules" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--ol-text); font-family:var(--ol-font-mono); font-size:13px;" />
         </div>
-        <select id="rule-lang" aria-label="Filter by language" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+        <select id="rule-lang" aria-label="Filter by language" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none;">
           <option value="all">All languages</option>
           {langOptions.map((o) => <option value={o}>{o}</option>)}
         </select>
-        <select id="rule-cat" aria-label="Filter by category" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer;">
+        <select id="rule-cat" aria-label="Filter by category" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none;">
           <option value="all">All categories</option>
           {catOptions.map((o) => <option value={o}>{o}</option>)}
         </select>
@@ -217,6 +217,18 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
       search.addEventListener('input', onFilterChange);
       langSel.addEventListener('change', onFilterChange);
       catSel.addEventListener('change', onFilterChange);
+
+      // Rows navigate via onclick; some browsers keep the :active / tap-highlight
+      // paint on the clicked row when it is restored from bfcache (Back button),
+      // leaving it stuck under a solid accent fill with unreadable text. Mirror
+      // the layout's stuck-hover reset: drop the lingering state on bfcache
+      // events by blurring focus and clearing any transient inline background.
+      const clearStuckRows = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        for (const row of rows) row.style.background = '';
+      };
+      window.addEventListener('pageshow', clearStuckRows);
+      window.addEventListener('pagehide', clearStuckRows);
 
       render();
     })();
