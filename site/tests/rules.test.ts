@@ -10,6 +10,11 @@ const catalogueSource = readFileSync(
   'utf8',
 );
 
+const owaspSource = readFileSync(
+  fileURLToPath(new URL('../src/pages/owasp.astro', import.meta.url)),
+  'utf8',
+);
+
 describe('getRules()', () => {
   it('loads the full rule pack', () => {
     expect(rules.length).toBeGreaterThan(80);
@@ -70,6 +75,47 @@ describe('rules catalogue pagination', () => {
     expect(catalogueSource).toContain('id="rule-prev"');
     expect(catalogueSource).toContain('id="rule-next"');
     expect(catalogueSource).toContain('id="rule-page-indicator"');
+  });
+});
+
+describe('AI (LLM) prevalence', () => {
+  it('tags every rule with a HIGH / MEDIUM / LOW prevalence', () => {
+    for (const r of rules) {
+      expect(['HIGH', 'MEDIUM', 'LOW'], `${r.id} llmPrevalence`).toContain(r.llmPrevalence);
+    }
+  });
+
+  it('exposes the AI prevalence filter control + per-row signal on the catalogue', () => {
+    expect(catalogueSource).toContain('id="rule-prevalence"');
+    expect(catalogueSource).toContain('data-prev={r.llmPrevalence}');
+    // The filter participates in the client-side match predicate.
+    expect(catalogueSource).toContain('row.dataset.prev === prev');
+  });
+
+  it('only offers prevalence options that are actually present in the pack', () => {
+    // presentPrevs is derived from the data, never frozen.
+    expect(catalogueSource).toContain('presentPrevs');
+  });
+});
+
+describe('OWASP coverage page', () => {
+  it('every shipped owasp code resolves to a known edition (api-2023 / web-2021)', () => {
+    const codes = [...new Set(rules.map((r) => r.owasp).filter(Boolean) as string[])];
+    expect(codes.length).toBeGreaterThan(0);
+    for (const code of codes) {
+      expect(/:(2023|2021)$/.test(code), `${code} edition`).toBe(true);
+    }
+  });
+
+  it('derives coverage from getRules() rather than hardcoding a category list', () => {
+    expect(owaspSource).toContain('getRules()');
+    expect(owaspSource).toContain('rule.owasp');
+    // No frozen "covers N categories" count in the copy.
+    expect(owaspSource).toContain('{categoryCount}');
+  });
+
+  it('links the catalogue to the OWASP coverage page', () => {
+    expect(catalogueSource).toContain('href="/owasp"');
   });
 });
 
