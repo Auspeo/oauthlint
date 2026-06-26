@@ -20,13 +20,13 @@ describe('buildProgram', () => {
     expect(program.version()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it('registers the scan, list, init and doctor commands', async () => {
+  it('registers the scan, baseline, list, init and doctor commands', async () => {
     const program = await buildProgram();
     const names = program.commands.map((c) => c.name()).sort();
-    expect(names).toEqual(['doctor', 'init', 'list', 'scan']);
+    expect(names).toEqual(['baseline', 'doctor', 'init', 'list', 'scan']);
   });
 
-  it('scan accepts variadic path args and the incremental flags', async () => {
+  it('scan accepts variadic path args and the incremental/baseline flags', async () => {
     const program = await buildProgram();
     const scan = program.commands.find((c) => c.name() === 'scan');
     if (!scan) throw new Error('scan command missing');
@@ -35,6 +35,16 @@ describe('buildProgram', () => {
     const flags = scan.options.map((o) => o.long);
     expect(flags).toContain('--diff');
     expect(flags).toContain('--staged');
+    expect(flags).toContain('--baseline');
+  });
+
+  it('baseline accepts variadic path args and an --output flag', async () => {
+    const program = await buildProgram();
+    const baseline = program.commands.find((c) => c.name() === 'baseline');
+    if (!baseline) throw new Error('baseline command missing');
+    expect(baseline.registeredArguments[0].variadic).toBe(true);
+    const flags = baseline.options.map((o) => o.long);
+    expect(flags).toContain('--output');
   });
 });
 
