@@ -11,15 +11,13 @@ OAuthLint surfaces auth findings as native VS Code diagnostics, with a one-click
 
 ## Install
 
-The extension's publisher / extension id is **`auspeo.oauthlint-vscode`** (display name **oauthlint**). It's pre-release (`0.1.x`) and not on the Marketplace yet, so build the `.vsix` from source and install it:
+Install **oauthlint** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) — search **oauthlint** in the Extensions view (⇧⌘X / Ctrl+Shift+X), or from a terminal:
 
 ```bash
-git clone https://github.com/Auspeo/oauthlint && cd oauthlint
-pnpm install
-pnpm --filter oauthlint-vscode build
-cd vscode && pnpm dlx @vscode/vsce package --no-dependencies
-code --install-extension oauthlint-vscode-*.vsix
+code --install-extension auspeo.oauthlint-vscode
 ```
+
+Publisher / extension id: **`auspeo.oauthlint-vscode`**. It's pre-release (`0.1.x`) — early but functional.
 
 Or in VS Code: **Extensions** view → **⋯** menu → **Install from VSIX…** → pick the built file. Once it lands on the Marketplace you'll be able to search for **oauthlint** there directly.
 
