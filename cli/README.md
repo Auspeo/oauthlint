@@ -89,12 +89,66 @@ npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
 # auto-apply safe fixes (e.g. cookie flags)
 npx oauthlint scan ./src --fix
+
+# scan several explicit paths (e.g. a list of changed files)
+npx oauthlint scan src/auth.ts src/session.ts
+
+# scan only what changed vs the default branch (fast, incremental)
+npx oauthlint scan --diff
+
+# scan only git-staged files (ideal in a pre-commit hook)
+npx oauthlint scan --staged
+```
+
+## Incremental scanning
+
+For pre-commit hooks and editor integrations, scanning the whole tree on every
+keystroke is wasteful. OAuthLint can scan **only the files that changed**:
+
+```bash
+# files changed vs the merge-base with the repo's default branch
+oauthlint scan --diff
+
+# files changed vs an explicit ref (branch, tag, or commit)
+oauthlint scan --diff origin/main
+oauthlint scan --diff HEAD~5
+
+# only git-staged files — drop this in a pre-commit hook
+oauthlint scan --staged --fail-on HIGH
+```
+
+How the change set is resolved:
+
+- **`--diff [ref]`** — when no `ref` is given, the base is the merge-base with the
+  repo's default branch (`origin/HEAD` → `origin/main` → `origin/master`, falling
+  back to `HEAD` when there's no remote). The change set is everything Added /
+  Copied / Modified / Renamed since that base, plus uncommitted work-tree and
+  staged changes, plus new untracked files. Deleted files are skipped.
+- **`--staged`** — only the staged set (`git diff --cached`), the same files a
+  commit is about to capture.
+- Explicit path args (`oauthlint scan a.ts b.ts`) scan exactly those paths.
+
+In every mode, files in a language the rule pack doesn't cover (Markdown,
+lockfiles, images, …) are filtered out automatically, and an **empty change set
+exits `0`** with a `No changed files to scan.` note — it never fails your commit.
+Outside a git repository, `--diff` / `--staged` print a clear error and exit `2`
+instead of crashing. Git is always invoked with arguments passed as an array
+(never a shell string), so a ref name can't inject a shell command.
+
+Example pre-commit hook (`.git/hooks/pre-commit`):
+
+```bash
+#!/bin/sh
+npx oauthlint scan --staged --fail-on HIGH
 ```
 
 ## Commands
 
 ```
-oauthlint scan [path]           Scan a directory (default: current dir)
+oauthlint scan [paths...]       Scan files/directories (default: current dir)
+oauthlint scan a.ts b.ts        Scan an explicit list of paths
+oauthlint scan --diff [ref]     Scan only files changed vs a git ref
+oauthlint scan --staged         Scan only git-staged files (pre-commit)
 oauthlint scan --json           Emit machine-readable JSON
 oauthlint scan --format sarif   Emit SARIF for GitHub Code Scanning
 oauthlint scan --severity HIGH  Only show findings ≥ HIGH
