@@ -1,0 +1,317 @@
+---
+import SiteChrome from '../components/SiteChrome.astro';
+import { research } from '../data/research';
+import Base from '../layouts/Base.astro';
+import { cweUrl } from '../lib/references';
+
+// Every figure on this page comes from src/data/research.ts — nothing here is
+// hardcoded, so the numbers can be finalised in one place before publishing.
+const r = research;
+
+// Human-readable date for the snapshot eyebrow (UTC, locale-stable).
+const updated = new Date(r.updatedISO).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+// --- Distribution helpers: bars are derived, never hand-sized. ---
+// Severity, in fixed worst-first order so the colour ramp reads top-down.
+const severityRows = [
+  { label: 'High+', value: r.severity.high, color: 'var(--ol-sev-high)' },
+  { label: 'Medium', value: r.severity.medium, color: 'var(--ol-sev-medium)' },
+  { label: 'Low', value: r.severity.low, color: 'var(--ol-sev-low)' },
+];
+const severityMax = Math.max(1, ...severityRows.map((s) => s.value));
+
+// By category, largest first; the accent bar keeps it visually distinct from
+// the severity ramp above it.
+const categoryRows = [...r.byCategory].sort((a, b) => b.findings - a.findings);
+const categoryMax = Math.max(1, ...categoryRows.map((c) => c.findings));
+
+// By language (affected repos), largest first.
+const languageRows = [...r.byLanguage].sort((a, b) => b.repos - a.repos);
+const languageMax = Math.max(1, ...languageRows.map((l) => l.repos));
+
+const pct = (value: number, max: number) => `${Math.round((value / max) * 100)}%`;
+
+// Headline stats, rendered as one strip so they stay in lockstep with the data.
+const headlineStats = [
+  { value: String(r.reposScanned), label: 'repositories scanned' },
+  { value: `${r.pctWithFindings}%`, label: 'had ≥1 auth finding' },
+  { value: `${r.pctHigh}%`, label: 'had a HIGH+ finding' },
+  { value: String(r.totalFindings), label: 'total findings' },
+];
+---
+<Base
+  title="What AI coding tools get wrong about auth — OAuthLint research"
+  description="An aggregate, reproducible measurement of the authentication anti-patterns common in AI-generated code, across public repositories self-identifying as AI-generated apps. Scanned with OAuthLint; 100% aggregate, no repositories named."
+>
+  <SiteChrome>
+    <main style="max-width:1120px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6) var(--ol-space-20);">
+      <!-- HEADLINE -->
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);">
+        <span style="width:6px; height:6px; background:var(--ol-accent);"></span>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">SECURITY RESEARCH</span>
+      </div>
+      <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4); max-width:20ch;">The auth bugs AI coding tools ship by default.</h1>
+      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:64ch; margin:0 0 var(--ol-space-5);">
+        AI coding tools repeat the same authentication anti-patterns across the projects they touch. We scanned {r.reposScanned} public repositories that self-identify as AI-generated applications and measured which auth anti-patterns turn up, how often, and how severe. This is what we found — reported in aggregate, with no repository, author, or specific tool named.
+      </p>
+      <p style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin:0 0 var(--ol-space-10);">
+        Updated {updated} · OAuthLint v{r.toolVersion} · default ruleset
+      </p>
+
+      <!-- KEY STATS -->
+      <div data-statgrid style="display:grid; grid-template-columns:repeat(4, 1fr); border:1px solid var(--ol-border); margin-bottom:var(--ol-space-6);">
+        {headlineStats.map((stat, i) => (
+          <div data-statcell style={`padding:var(--ol-space-6); ${i < headlineStats.length - 1 ? 'border-right:1px solid var(--ol-border);' : ''}`}>
+            <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(28px,3.4vw,40px); letter-spacing:-0.03em; line-height:1; color:var(--ol-text);">{stat.value}</div>
+            <div style="font-family:var(--ol-font-mono); font-size:11px; letter-spacing:0.04em; color:var(--ol-text-muted); margin-top:10px; text-transform:uppercase; max-width:18ch;">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <!-- STANDOUT STAT — validates the project's premise. -->
+      <div style="border:1px solid var(--ol-accent-border); background:var(--ol-accent-subtle); padding:var(--ol-space-6) var(--ol-space-8); margin-bottom:var(--ol-space-12); display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--ol-space-5);">
+        <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(36px,5vw,52px); letter-spacing:-0.03em; line-height:1; color:var(--ol-accent);">~{r.llmPrevalenceHighPct}%</div>
+        <p style="flex:1; min-width:240px; font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0;">
+          of all findings landed on the exact patterns we tag as <strong style="color:var(--ol-text); font-weight:600;">HIGH-prevalence in AI-generated code</strong> — the bugs OAuthLint was built to catch. The rules and the corpus agree: these are the anti-patterns AI tools reach for first.
+        </p>
+      </div>
+
+      <!-- MOST COMMON PATTERNS -->
+      <section style="margin-bottom:var(--ol-space-12);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-4);">
+          <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">MOST COMMON PATTERNS</span>
+        </div>
+        <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:62ch; margin:0 0 var(--ol-space-5);">
+          The anti-patterns that showed up most across the corpus. Each links to its rule page — what it is, why it matters, and the safe alternative.
+        </p>
+        <div style="border:1px solid var(--ol-border); overflow-x:auto;">
+          <table style="width:100%; min-width:560px; border-collapse:collapse; font-family:var(--ol-font-ui);">
+            <thead>
+              <tr style="background:var(--ol-surface-raised);">
+                <th scope="col" style="text-align:left; padding:12px var(--ol-space-5); font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ol-text-muted); border-bottom:1px solid var(--ol-border);">Pattern</th>
+                <th scope="col" style="text-align:left; padding:12px var(--ol-space-5); font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ol-text-muted); border-bottom:1px solid var(--ol-border);">CWE</th>
+                <th scope="col" style="text-align:right; padding:12px var(--ol-space-5); font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ol-text-muted); border-bottom:1px solid var(--ol-border);">Findings</th>
+                <th scope="col" style="text-align:right; padding:12px var(--ol-space-5); font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ol-text-muted); border-bottom:1px solid var(--ol-border);">% of repos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.topPatterns.map((p) => {
+                const href = cweUrl(p.cwe);
+                return (
+                  <tr class="ol-pattern-row">
+                    <td style="padding:14px var(--ol-space-5); border-bottom:1px solid var(--ol-border-subtle); vertical-align:top;">
+                      <a href={`/rules/${p.ruleSlug}`} class="ol-pattern-link" style="font-size:var(--ol-text-body-s); font-weight:500; color:var(--ol-text); text-decoration:none;">{p.label}</a>
+                    </td>
+                    <td style="padding:14px var(--ol-space-5); border-bottom:1px solid var(--ol-border-subtle); vertical-align:top;">
+                      {href
+                        ? <a href={href} target="_blank" rel="noopener noreferrer" class="ol-ref-link" style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none; white-space:nowrap;">{p.cwe} ↗</a>
+                        : <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); white-space:nowrap;">{p.cwe}</span>}
+                    </td>
+                    <td style="padding:14px var(--ol-space-5); border-bottom:1px solid var(--ol-border-subtle); text-align:right; vertical-align:top; font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text);">{p.findings}</td>
+                    <td style="padding:14px var(--ol-space-5); border-bottom:1px solid var(--ol-border-subtle); text-align:right; vertical-align:top; font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text-secondary);">{p.reposPct}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin:var(--ol-space-3) 0 0;">
+          Counts are findings (static matches); "% of repos" is the share of the {r.reposScanned} scanned repositories with at least one such finding. A repository can appear under several patterns.
+        </p>
+      </section>
+
+      <!-- DISTRIBUTIONS -->
+      <section style="margin-bottom:var(--ol-space-12);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-5);">
+          <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">DISTRIBUTIONS</span>
+        </div>
+
+        <div data-distgrid style="display:grid; grid-template-columns:repeat(2, 1fr); gap:var(--ol-space-4);">
+          <!-- Severity -->
+          <article style="border:1px solid var(--ol-border); background:var(--ol-surface); padding:var(--ol-space-5) var(--ol-space-6);">
+            <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 4px;">Findings by severity</h3>
+            <p style="font-size:12px; color:var(--ol-text-muted); margin:0 0 var(--ol-space-5);">All {r.totalFindings} findings, by triage level.</p>
+            <div style="display:flex; flex-direction:column; gap:var(--ol-space-4);">
+              {severityRows.map((row) => (
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary);">{row.label}</span>
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text);">{row.value}</span>
+                  </div>
+                  <div style="height:8px; background:var(--ol-overlay); overflow:hidden;">
+                    <div style={`height:100%; width:${pct(row.value, severityMax)}; background:${row.color};`}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <!-- By category -->
+          <article style="border:1px solid var(--ol-border); background:var(--ol-surface); padding:var(--ol-space-5) var(--ol-space-6);">
+            <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 4px;">Findings by category</h3>
+            <p style="font-size:12px; color:var(--ol-text-muted); margin:0 0 var(--ol-space-5);">Which area of the auth surface they land in.</p>
+            <div style="display:flex; flex-direction:column; gap:var(--ol-space-4);">
+              {categoryRows.map((row) => (
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary);">{row.category}</span>
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text);">{row.findings}</span>
+                  </div>
+                  <div style="height:8px; background:var(--ol-overlay); overflow:hidden;">
+                    <div style={`height:100%; width:${pct(row.findings, categoryMax)}; background:var(--ol-accent);`}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <!-- By language -->
+          <article style="border:1px solid var(--ol-border); background:var(--ol-surface); padding:var(--ol-space-5) var(--ol-space-6); grid-column:1 / -1;">
+            <h3 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-s); margin:0 0 4px;">Affected repositories by language</h3>
+            <p style="font-size:12px; color:var(--ol-text-muted); margin:0 0 var(--ol-space-5);">Primary language of the repositories that carried at least one finding.</p>
+            <div style="display:flex; flex-direction:column; gap:var(--ol-space-4);">
+              {languageRows.map((row) => (
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary);">{row.language}</span>
+                    <span style="font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text);">{row.repos}</span>
+                  </div>
+                  <div style="height:8px; background:var(--ol-overlay); overflow:hidden;">
+                    <div style={`height:100%; width:${pct(row.repos, languageMax)}; background:var(--ol-sev-low);`}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- METHODOLOGY -->
+      <section style="margin-bottom:var(--ol-space-12);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-4);">
+          <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">METHODOLOGY</span>
+        </div>
+        <div style="border:1px solid var(--ol-border); background:var(--ol-surface); padding:var(--ol-space-6) var(--ol-space-8);">
+          <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0 0 var(--ol-space-4); max-width:70ch;">
+            We assembled a corpus of {r.reposScanned} public repositories that self-identify as AI-generated or "vibe-coded" applications — selected via GitHub search over that category, never any one tool. Each repository was scanned with <strong style="color:var(--ol-text); font-weight:600;">OAuthLint v{r.toolVersion}</strong> using the default ruleset. A "finding" is a static match of an auth anti-pattern: {r.totalFindings} findings across {r.reposWithFindings} affected repositories, an average of {r.avgPerAffected} per affected repository.
+          </p>
+          <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); margin:0 0 var(--ol-space-5); max-width:70ch;">
+            The measurement is reproducible — the ruleset is open and the scan is one command. Run it against any codebase:
+          </p>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text-secondary); background:var(--ol-code-bg); border:1px solid var(--ol-code-border); padding:10px 12px; overflow-x:auto; white-space:nowrap;"><span style="color:var(--ol-accent);">$</span> npx oauthlint scan ./src</div>
+            <div style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text-secondary); background:var(--ol-code-bg); border:1px solid var(--ol-code-border); padding:10px 12px; overflow-x:auto; white-space:nowrap;"><span style="color:var(--ol-accent);">$</span> semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIMITATIONS -->
+      <section style="margin-bottom:var(--ol-space-12);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-4);">
+          <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">LIMITATIONS</span>
+        </div>
+        <ul style="list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:var(--ol-space-3); max-width:78ch;">
+          {[
+            ['Self-identification ≠ line-level authorship.', 'A repository describing itself as AI-generated does not prove every line was written by an AI tool. We measure code that ships under that banner, not provenance per line.'],
+            ['Auth surface concentrates the rate.', 'Many repositories in the corpus are frontend-only or demos with no real auth code, so they cannot produce auth findings. The finding rate is therefore concentrated in the subset of repositories that actually handle authentication.'],
+            ['Findings are static, not confirmed exploits.', 'Each finding is a low-false-positive static match — a potential issue worth review, not a demonstrated vulnerability. We did not attempt exploitation.'],
+            ['A snapshot, not a trend.', `These figures describe the corpus as scanned on ${updated}. The corpus and the AI tools that produce such code both move quickly; treat this as a point-in-time reading.`],
+          ].map(([head, body]) => (
+            <li style="border-left:3px solid var(--ol-border-strong); padding:2px 0 2px var(--ol-space-5);">
+              <span style="display:block; font-size:var(--ol-text-body-s); font-weight:600; color:var(--ol-text); margin-bottom:3px;">{head}</span>
+              <span style="display:block; font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-muted);">{body}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- CONTEXT — independent corroborating research -->
+      <section style="margin-bottom:var(--ol-space-12);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-4);">
+          <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+          <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">IN CONTEXT</span>
+        </div>
+        <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:62ch; margin:0 0 var(--ol-space-5);">
+          Our reading lines up with independent research into AI-generated code from other teams.
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(2, 1fr); border:1px solid var(--ol-border);" data-contextgrid>
+          <a href="https://research.gatech.edu/bad-vibes-ai-generated-code-vulnerable-researchers-warn" target="_blank" rel="noopener noreferrer" class="ol-context-link" style="display:block; padding:var(--ol-space-6); border-right:1px solid var(--ol-border); text-decoration:none;" data-contextcell>
+            <div style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.55;">Confirmed CVEs traced to AI-generated code, with <strong style="color:var(--ol-text); font-weight:600;">authentication bypass</strong> among the most common.</div>
+            <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin-top:var(--ol-space-3);">Georgia Tech · "Bad Vibes" ↗</div>
+          </a>
+          <a href="https://www.helpnetsecurity.com/2026/04/14/gitguardian-ai-agents-credentials-leak/" target="_blank" rel="noopener noreferrer" class="ol-context-link" style="display:block; padding:var(--ol-space-6); text-decoration:none;" data-contextcell>
+            <div style="font-size:var(--ol-text-body-s); color:var(--ol-text-secondary); line-height:1.55;">AI-assisted commits <strong style="color:var(--ol-text); font-weight:600;">leak secrets</strong> into public repositories at well above the baseline rate.</div>
+            <div style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); margin-top:var(--ol-space-3);">GitGuardian · Secrets Sprawl 2026 ↗</div>
+          </a>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section style="border:1px solid var(--ol-border); background:var(--ol-surface); padding:var(--ol-space-8);">
+        <h2 style="font-family:var(--ol-font-display); font-weight:600; font-size:clamp(1.5rem,3.5vw,2rem); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); max-width:24ch;">Scan your own AI-generated code.</h2>
+        <p style="font-size:var(--ol-text-body-m); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-5);">
+          The same scan that produced these numbers runs against your repository in one command — no signup, MIT-licensed, low false positives.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:var(--ol-space-6);">
+          <div style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text-secondary); background:var(--ol-code-bg); border:1px solid var(--ol-code-border); padding:10px 12px; overflow-x:auto; white-space:nowrap;"><span style="color:var(--ol-accent);">$</span> npx oauthlint scan ./src</div>
+          <div style="font-family:var(--ol-font-mono); font-size:13px; color:var(--ol-text-secondary); background:var(--ol-code-bg); border:1px solid var(--ol-code-border); padding:10px 12px; overflow-x:auto; white-space:nowrap;"><span style="color:var(--ol-accent);">$</span> semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3);">
+          <a href="/rules" class="ol-cta-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-accent-fg); background:var(--ol-accent); border:1px solid var(--ol-accent); height:38px; padding:0 16px; text-decoration:none;">Browse the rules →</a>
+          <a href="/docs" class="ol-cta-btn" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none;">Read the docs</a>
+        </div>
+      </section>
+    </main>
+  </SiteChrome>
+</Base>
+
+<style is:global>
+  /* Pattern label warms to the accent on hover/focus; the row tints. */
+  .ol-pattern-row:hover,
+  .ol-pattern-row:focus-within {
+    background: var(--ol-surface-raised);
+  }
+  .ol-pattern-link:hover,
+  .ol-pattern-link:focus-visible {
+    color: var(--ol-accent);
+  }
+  /* CWE reference links match the OWASP page affordance. */
+  .ol-ref-link:hover {
+    color: var(--ol-accent-hover);
+  }
+  /* Context cards lift on hover, like the landing proof strip. */
+  .ol-context-link:hover,
+  .ol-context-link:focus-visible {
+    background: var(--ol-overlay);
+  }
+  .ol-cta-btn[style*="background:var(--ol-accent)"]:hover {
+    background: var(--ol-accent-hover);
+  }
+  .ol-cta-btn[style*="border:1px solid var(--ol-border-strong)"]:hover {
+    border-color: var(--ol-accent-border);
+    color: var(--ol-text);
+  }
+
+  /* Phones: stack the headline stat strip 2-up, distributions + context 1-up. */
+  @media (max-width: 640px) {
+    [data-distgrid] {
+      grid-template-columns: 1fr !important;
+    }
+    [data-contextgrid] {
+      grid-template-columns: 1fr !important;
+    }
+    [data-contextcell]:first-child {
+      border-right: none !important;
+      border-bottom: 1px solid var(--ol-border) !important;
+    }
+  }
+</style>
