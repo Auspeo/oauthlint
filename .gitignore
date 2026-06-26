@@ -58,7 +58,8 @@ validation-report.md
 
 # VS Code extension build artifact
 *.vsix
-POSITIONING.local.md
-AIBENCH.local.md
-design/design-prompts.local.md
+
+# Private working notes — kept outside the repo, never published.
+# (POSITIONING / AIBENCH / TODO / design-prompts etc. live in ../oauthlint-notes)
+*.local.md
 .claude/
