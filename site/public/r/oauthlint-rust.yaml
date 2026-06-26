@@ -1,0 +1,480 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# rust subset — 13 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.rust.cookie.insecure
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A session/auth cookie is built with a security attribute explicitly
+      disabled (`secure(false)` or `http_only(false)`). With `secure(false)`
+      the cookie is sent over plain HTTP, so a network attacker can read the
+      session token. With `http_only(false)` the cookie is readable from
+      JavaScript, so any XSS can steal it. For OAuth/OIDC this exposes session
+      and token cookies to theft and hijacking.
+
+      Set `secure(true)` and `http_only(true)` on auth cookies, and add an
+      appropriate `SameSite` mode (for example
+      `same_site(SameSite::Lax)`).
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.rs/cookie/latest/cookie/struct.CookieBuilder.html
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - cookie
+    patterns:
+      - pattern-either:
+          - pattern: $C.secure(false)
+          - pattern: $C.http_only(false)
+  - id: auth.rust.cors.permissive
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A wide-open CORS policy is configured. `Cors::permissive()` (actix-web),
+      `CorsLayer::permissive()` / `CorsLayer::very_permissive()` (tower-http),
+      and `CorsLayer::new().allow_origin(Any)` all allow requests from any
+      origin. Combined with credentialed requests this lets any website read
+      authenticated responses — including OAuth/OIDC tokens, session data, and
+      user info exposed by your API.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, e.g.
+      `allow_origin("https://app.example.com".parse().unwrap())` or
+      `allow_origin(["https://app.example.com".parse().unwrap()])`.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-cors-permissive
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/actix-cors/latest/actix_cors/struct.Cors.html#method.permissive
+        - https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - actix-web
+        - tower-http
+    patterns:
+      - pattern-either:
+          - pattern: Cors::permissive()
+          - pattern: CorsLayer::permissive()
+          - pattern: CorsLayer::very_permissive()
+          - pattern: $B.allow_origin(Any)
+  - id: auth.rust.crypto.bcrypt-low-cost
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      `bcrypt::hash` (or `bcrypt::hash_with_result`) is called with a cost
+      factor below 10. A low work factor makes each hash cheap to compute,
+      which lets an attacker brute-force stolen password hashes far too
+      quickly. OWASP recommends a bcrypt cost of at least 10, and ≥ 12 for new
+      applications, tuned so a single hash takes roughly 250ms on your
+      hardware.
+
+      Common LLM-generated mistake: `bcrypt::hash(password, 8)` because the
+      literal "looks fast enough". Use `bcrypt::DEFAULT_COST` (12) or raise the
+      cost factor to 12 or higher.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-crypto-bcrypt-low-cost
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/bcrypt/latest/bcrypt/fn.hash.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/916.html
+      technology:
+        - bcrypt
+    patterns:
+      - pattern-either:
+          - pattern: bcrypt::hash($PW, $N)
+          - pattern: bcrypt::hash_with_result($PW, $N)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 10
+  - id: auth.rust.crypto.weak-cipher
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A broken or deprecated cipher from the RustCrypto ecosystem is used to
+      protect data. DES (`Des::new`, crate `des`) and 3DES (`TdesEde3::new` /
+      `TdesEde2::new`) have a 64-bit block and are considered insecure
+      (Sweet32, brute-force), while RC4 (`Rc4::new`, crate `rc4`) has
+      well-known keystream biases and is forbidden by RFC 7465. For OAuth/OIDC
+      this means tokens, client secrets, and other sensitive material are not
+      adequately protected and may be recovered by an attacker.
+
+      Use an authenticated AEAD cipher instead: AES-GCM via the `aes-gcm`
+      crate (`Aes256Gcm::new(key)`) or ChaCha20-Poly1305
+      (`ChaCha20Poly1305::new(key)`), both of which provide confidentiality
+      and integrity.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-crypto-weak-cipher
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://docs.rs/aes-gcm/latest/aes_gcm/
+        - https://datatracker.ietf.org/doc/html/rfc7465
+      technology:
+        - des
+        - rc4
+    patterns:
+      - pattern-either:
+          - pattern: Des::new(...)
+          - pattern: TdesEde3::new(...)
+          - pattern: TdesEde2::new(...)
+          - pattern: Rc4::new(...)
+  - id: auth.rust.crypto.weak-password-hash
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A password is being hashed with a fast, general-purpose digest (MD5 via
+      the `md5` crate, or SHA-1/SHA-256/SHA-512 via the RustCrypto `sha1`/`sha2`
+      crates). These algorithms are designed to be fast, which makes offline
+      brute-force and rainbow-table attacks cheap — they are NOT suitable for
+      storing passwords (CWE-916).
+
+      Use a dedicated, slow password-hashing function with a per-password salt
+      and a tunable work factor: Argon2 (`argon2` crate,
+      `Argon2::default().hash_password(...)`), bcrypt (`bcrypt::hash(...)`), or
+      scrypt (`scrypt` crate). These resist brute-force by design.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-crypto-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/916.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        - https://docs.rs/argon2/latest/argon2/
+      technology:
+        - sha2
+        - md5
+    patterns:
+      - pattern-either:
+          - pattern: md5::compute($PW)
+          - pattern: Md5::digest($PW)
+          - pattern: Sha1::digest($PW)
+          - pattern: Sha256::digest($PW)
+          - pattern: Sha512::digest($PW)
+          - pattern: $H.update($PW)
+      - metavariable-regex:
+          metavariable: $PW
+          regex: (?i).*(password|passwd|pwd).*
+  - id: auth.rust.flow.timing-unsafe-compare
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      A secret-shaped value (`password`, `token`, `secret`, `apikey`,
+      `hmac`, `signature`, `mac`, `digest`) is being compared with `==` /
+      `!=`. Rust's `PartialEq` for slices and strings short-circuits on the
+      first differing byte, so the comparison time leaks the length of the
+      matching prefix — a classic timing-attack vector (CWE-208).
+
+      Use a constant-time comparison instead: `subtle::ConstantTimeEq`
+      (`a.ct_eq(b).into()`) or the `constant_time_eq` crate
+      (`constant_time_eq(a, b)`). For password verification, use a verifier
+      that compares in constant time for you (`argon2::Argon2::verify_password`,
+      `bcrypt::verify`, `scrypt`).
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-flow-timing-unsafe-compare
+      category: security
+      cwe: CWE-208
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/208.html
+        - https://docs.rs/subtle/latest/subtle/
+        - https://docs.rs/constant_time_eq/latest/constant_time_eq/
+      technology:
+        - std
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $A
+              regex: (?i)^.*(password|passwd|secret|token|apikey|api_key|hmac|signature|mac|digest)$
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X == None
+          - pattern-not: $X != None
+          - pattern-not: None == $X
+          - pattern-not: None != $X
+          - pattern-not: $X.len() == $N
+          - pattern-not: $X.len() != $N
+      - patterns:
+          - pattern-either:
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $B
+              regex: (?i)^.*(password|passwd|secret|token|apikey|api_key|hmac|signature|mac|digest)$
+          - pattern-not: $X == "..."
+          - pattern-not: $X != "..."
+          - pattern-not: '"..." == $X'
+          - pattern-not: '"..." != $X'
+          - pattern-not: $X == None
+          - pattern-not: $X != None
+          - pattern-not: None == $X
+          - pattern-not: None != $X
+          - pattern-not: $X.len() == $N
+          - pattern-not: $X.len() != $N
+  - id: auth.rust.jwt.disable-signature-validation
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      `Validation::insecure_disable_signature_validation()` turns off JWT
+      signature verification. Once disabled, `decode` accepts any token —
+      including ones forged or tampered with by an attacker — because the
+      cryptographic signature is never checked. For OAuth/OIDC this lets an
+      attacker mint arbitrary access tokens and identities.
+
+      Never disable signature validation. Build the validator with the
+      expected algorithm, e.g. `Validation::new(Algorithm::HS256)` (or the
+      RS/ES algorithm your issuer uses), and verify the token through
+      `decode::<Claims>(token, &key, &validation)`.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-disable-signature-validation
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#method.insecure_disable_signature_validation
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - jsonwebtoken
+    pattern: $V.insecure_disable_signature_validation()
+  - id: auth.rust.jwt.hardcoded-secret
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A JWT HMAC signing/verification key is hardcoded as a literal in a call
+      to jsonwebtoken's `EncodingKey::from_secret` / `DecodingKey::from_secret`.
+      Anyone who can read the source or git history can forge or tamper with
+      tokens, which is a complete authentication bypass.
+
+      Load the secret at runtime from the environment or a secret manager
+      instead, e.g. `let key = std::env::var("JWT_SECRET")?;` followed by
+      `EncodingKey::from_secret(key.as_bytes())`. Never commit signing keys to
+      source control.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.EncodingKey.html#method.from_secret
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - jsonwebtoken
+    pattern-either:
+      - pattern: jsonwebtoken::EncodingKey::from_secret(b"...")
+      - pattern: jsonwebtoken::DecodingKey::from_secret(b"...")
+      - pattern: EncodingKey::from_secret(b"...")
+      - pattern: DecodingKey::from_secret(b"...")
+      - pattern: EncodingKey::from_secret("...".as_ref())
+      - pattern: DecodingKey::from_secret("...".as_ref())
+      - pattern: EncodingKey::from_secret("...".as_bytes())
+      - pattern: DecodingKey::from_secret("...".as_bytes())
+  - id: auth.rust.jwt.no-aud-validation
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      JWT audience (`aud`) validation is disabled by setting
+      `validate_aud: false` on the `jsonwebtoken` `Validation`. With the
+      audience check turned off, a token minted for a different service is
+      accepted by `decode`, so an attacker can replay a token issued for
+      another audience against this API.
+
+      Keep `validate_aud` at its default `true` and declare the audience you
+      expect via `validation.set_audience(&["my-api"])`, so only tokens whose
+      `aud` claim matches your service are accepted.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-aud-validation
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#structfield.validate_aud
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - jsonwebtoken
+    pattern: $V.validate_aud = false
+  - id: auth.rust.jwt.no-expiration-validation
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      JWT expiration validation is turned off by setting `validate_exp: false`
+      on the `jsonwebtoken` `Validation`. With `exp` checking disabled, `decode`
+      accepts tokens that have already expired, so a leaked or stolen access
+      token stays usable forever. For OAuth/OIDC this defeats token lifetimes
+      and revocation-by-expiry, letting an attacker replay old tokens.
+
+      Leave `validate_exp` at its default `true` so expired tokens are
+      rejected. Build the validator with `Validation::new(Algorithm::HS256)`
+      (or your issuer's algorithm) and do not turn off `validate_exp`.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-expiration-validation
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#structfield.validate_exp
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - jsonwebtoken
+    pattern: $V.validate_exp = false
+  - id: auth.rust.jwt.no-issuer-validation
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the
+      expected issuer, so `decode` accepts a token minted by ANY issuer. The
+      `jsonwebtoken` crate does not validate the `iss` claim unless you opt in,
+      so a token signed by an attacker-controlled or otherwise untrusted issuer
+      passes validation as long as the signature checks out. For OAuth/OIDC this
+      lets a token from the wrong authorization server be replayed against this
+      API.
+
+      Pin the issuer before decoding, e.g.
+      `validation.set_issuer(&["https://issuer.example.com"])` (or set
+      `validation.iss`), so only tokens whose `iss` claim matches your trusted
+      authorization server are accepted.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-issuer-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/struct.Validation.html#method.set_issuer
+        - https://cwe.mitre.org/data/definitions/345.html
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - jsonwebtoken
+    patterns:
+      - pattern-either:
+          - pattern: let mut $V = Validation::new(...);
+          - pattern: let mut $V = Validation::default();
+      - pattern-not-inside: |
+          let mut $V = ...;
+          ...
+          $V.set_issuer(...);
+          ...
+      - pattern-not-inside: |
+          let mut $V = ...;
+          ...
+          $V.iss = $X;
+          ...
+      - pattern-inside: |
+          let mut $V = ...;
+          ...
+          decode($TOKEN, $KEY, &$V)
+  - id: auth.rust.tls.accept-invalid-certs
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A reqwest client is built with `danger_accept_invalid_certs(true)`, which
+      turns off TLS certificate validation. Any attacker who can intercept the
+      connection can present any certificate and read or tamper with the
+      traffic — a man-in-the-middle hole. For OAuth/OIDC this leaks
+      authorization codes, access tokens, and client secrets in transit.
+
+      Never accept invalid certificates. Leave validation on (the default). To
+      trust a private CA in development, add it explicitly with
+      `ClientBuilder::add_root_certificate(cert)` instead.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-tls-accept-invalid-certs
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.rs/reqwest/latest/reqwest/struct.ClientBuilder.html#method.danger_accept_invalid_certs
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - reqwest
+    pattern: $B.danger_accept_invalid_certs(true)
+    fix: $B.danger_accept_invalid_certs(false)
+  - id: auth.rust.tls.accept-invalid-hostnames
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A reqwest client is built with `danger_accept_invalid_hostnames(true)`,
+      which turns off TLS hostname verification. The certificate chain is still
+      checked, but a certificate valid for any other domain is accepted for this
+      connection — so an attacker holding a valid certificate for a host they
+      control can intercept the connection and read or tamper with the traffic,
+      a man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
+      access tokens, and client secrets in transit.
+
+      Never accept invalid hostnames. Leave hostname verification on (the
+      default). To trust a private CA in development, add it explicitly with
+      `ClientBuilder::add_root_certificate(cert)` instead.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-TLS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-tls-accept-invalid-hostnames
+      category: security
+      cwe: CWE-297
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.rs/reqwest/latest/reqwest/struct.ClientBuilder.html#method.danger_accept_invalid_hostnames
+        - https://cwe.mitre.org/data/definitions/297.html
+      technology:
+        - reqwest
+    pattern: $B.danger_accept_invalid_hostnames(true)
+    fix: $B.danger_accept_invalid_hostnames(false)

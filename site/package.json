@@ -6,6 +6,8 @@
   "description": "oauthlint.dev — marketing site + docs + rule catalogue (Astro).",
   "scripts": {
     "dev": "astro dev",
+    "build:semgrep": "tsx scripts/build-semgrep-config.ts",
+    "prebuild": "pnpm run build:semgrep",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
@@ -19,6 +21,8 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
+    "oauthlint-rules": "workspace:*",
+    "tsx": "4.19.2",
     "vitest": "2.1.9"
   }
 }

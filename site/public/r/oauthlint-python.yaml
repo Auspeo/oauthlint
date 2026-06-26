@@ -1,0 +1,547 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# python subset — 14 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.py.cookie.insecure-flags
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A session/auth cookie is issued with a security attribute explicitly
+      disabled. `secure=False` lets the cookie travel over plain HTTP (it can be
+      sniffed on the wire), and `httponly=False` exposes it to JavaScript so an
+      XSS payload can read and exfiltrate it — either way the session token is
+      at risk of theft (CWE-614, OWASP A05:2021). The same applies to Django's
+      `SESSION_COOKIE_SECURE = False`, `CSRF_COOKIE_SECURE = False`, and
+      `SESSION_COOKIE_HTTPONLY = False` settings.
+
+      Always set Secure + HttpOnly (and ideally `SameSite`) on auth cookies,
+      e.g. `response.set_cookie("session", token, secure=True, httponly=True,
+      samesite="Lax")` or, in Django settings, `SESSION_COOKIE_SECURE = True`
+      and `SESSION_COOKIE_HTTPONLY = True`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-cookie-insecure-flags
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/settings/#session-cookie-secure
+        - https://flask.palletsprojects.com/en/stable/api/#flask.Response.set_cookie
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - flask
+        - django
+    pattern-either:
+      - pattern: $RESP.set_cookie(..., secure=False, ...)
+      - pattern: $RESP.set_cookie(..., httponly=False, ...)
+      - pattern: SESSION_COOKIE_SECURE = False
+      - pattern: CSRF_COOKIE_SECURE = False
+      - pattern: SESSION_COOKIE_HTTPONLY = False
+  - id: auth.py.cors.allow-all
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Flask-CORS is configured with `supports_credentials=True` together with a
+      wildcard origin (`origins="*"`, `origins=["*"]`, or — since Flask-CORS
+      defaults to `*` — no `origins` argument at all). The CORS spec forbids the
+      `Access-Control-Allow-Origin: *` + `Access-Control-Allow-Credentials: true`
+      combination, so browsers will block it; the dangerous "fix" is to leave the
+      wildcard in place while keeping credentials on, which exposes credentialed
+      cross-origin access to ANY website (CWE-942). For OAuth/OIDC this leaks
+      cookies, session tokens and CSRF protections cross-origin.
+
+      Credentialed requests must use an explicit allow-list of trusted origins,
+      e.g. `CORS(app, origins=["https://app.example.com"], supports_credentials=True)`.
+      If you genuinely need a public, wildcard endpoint, drop credentials:
+      `CORS(app, origins="*")` (the default, `supports_credentials=False`).
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://flask-cors.readthedocs.io/en/latest/configuration.html
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - flask-cors
+    pattern-either:
+      - pattern: CORS(..., origins="*", ..., supports_credentials=True, ...)
+      - pattern: CORS(..., supports_credentials=True, ..., origins="*", ...)
+      - pattern: CORS(..., origins=["*"], ..., supports_credentials=True, ...)
+      - pattern: CORS(..., supports_credentials=True, ..., origins=["*"], ...)
+      - pattern: '@cross_origin(..., origins="*", ..., supports_credentials=True, ...)'
+      - pattern: '@cross_origin(..., supports_credentials=True, ..., origins="*", ...)'
+      - pattern: '@cross_origin(..., origins=["*"], ..., supports_credentials=True, ...)'
+      - pattern: '@cross_origin(..., supports_credentials=True, ..., origins=["*"], ...)'
+      - patterns:
+          - pattern: CORS(..., supports_credentials=True, ...)
+          - pattern-not: CORS(..., origins=$ORIGINS, ...)
+      - patterns:
+          - pattern: "@cross_origin(..., supports_credentials=True, ...)"
+          - pattern-not: "@cross_origin(..., origins=$ORIGINS, ...)"
+  - id: auth.py.flow.csrf-exempt
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A Django view disables CSRF protection. The `@csrf_exempt` decorator
+      (from `django.views.decorators.csrf`), or `@method_decorator(csrf_exempt,
+      ...)` on a class-based view, turns off Django's CSRF middleware check for
+      that endpoint. An attacker can then forge cross-site requests that the
+      victim's browser submits with their session cookie — a CSRF vulnerability.
+
+      Do not exempt views from CSRF. Keep the default protection and submit the
+      CSRF token from your client. For machine-to-machine endpoints such as
+      webhooks, validate a signed request signature (e.g. an HMAC header)
+      instead of disabling CSRF wholesale.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-csrf-exempt
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/csrf/
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - django
+    pattern-either:
+      - patterns:
+          - pattern: |
+              @csrf_exempt
+              def $VIEW(...): ...
+      - patterns:
+          - pattern: |
+              @method_decorator(csrf_exempt, ...)
+              class $VIEW(...): ...
+  - id: auth.py.flow.debug-enabled
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      Debug mode is hard-coded to `True`. In production this leaks the
+      `SECRET_KEY`, environment variables, and full tracebacks, and Flask's
+      Werkzeug debugger additionally exposes an interactive console that
+      allows remote code execution.
+
+      Never enable debug mode in production. Drive it from an environment
+      variable that defaults to off, e.g.
+      `debug=os.environ.get("FLASK_DEBUG") == "1"` (Flask) or
+      `DEBUG = os.environ.get("DJANGO_DEBUG") == "1"` (Django).
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-debug-enabled
+      category: security
+      cwe: CWE-489
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://flask.palletsprojects.com/en/stable/config/#DEBUG
+        - https://docs.djangoproject.com/en/stable/ref/settings/#debug
+        - https://cwe.mitre.org/data/definitions/489.html
+      technology:
+        - flask
+        - django
+    pattern-either:
+      - pattern: $APP.run(..., debug=True, ...)
+      - pattern: $APP.config["DEBUG"] = True
+      - pattern: $APP.debug = True
+      - pattern: DEBUG = True
+  - id: auth.py.flow.insecure-random-token
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A security-sensitive value (token, secret, password, OTP, nonce, API key,
+      reset/verification code) is being generated with the `random` module.
+      `random` is a pseudo-random number generator seeded from predictable state
+      and is NOT cryptographically secure — its output can be predicted or
+      reproduced by an attacker, defeating the secret entirely.
+
+      Use the `secrets` module or `os.urandom` instead:
+      `secrets.token_urlsafe(32)`, `secrets.token_hex(16)`,
+      `secrets.choice(alphabet)`, or `os.urandom(32)`. These draw from the
+      operating system's CSPRNG.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-insecure-random-token
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.python.org/3/library/secrets.html
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - random
+    patterns:
+      - pattern-either:
+          - pattern: $VAR = random.random()
+          - pattern: $VAR = random.randint(...)
+          - pattern: $VAR = random.randrange(...)
+          - pattern: $VAR = random.choice(...)
+          - pattern: $VAR = random.choices(...)
+          - pattern: $VAR = random.sample(...)
+          - pattern: $VAR = random.getrandbits(...)
+          - patterns:
+              - pattern: $VAR = "".join($X)
+              - metavariable-pattern:
+                  metavariable: $X
+                  patterns:
+                    - pattern-either:
+                        - pattern: random.choice(...)
+                        - pattern: random.choices(...)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i).*(token|secret|password|passwd|otp|nonce|api_?key|reset|verification).*
+  - id: auth.py.flow.requests-verify-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A `requests` call disables TLS certificate verification with
+      `verify=False`. This silences the validation of the server's
+      certificate, so an attacker who can intercept the connection can
+      present any certificate and read or tamper with the traffic — a
+      classic man-in-the-middle exposure. For OAuth/OIDC this leaks
+      authorization codes, access tokens and client secrets.
+
+      Never set `verify=False`. Leave verification on (the default) so the
+      system CA bundle is used. In development against a private CA, point
+      `verify` at the CA bundle instead, e.g.
+      `requests.get(url, verify="/path/to/ca-bundle.pem")` or set the
+      `REQUESTS_CA_BUNDLE` env var (certifi).
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-requests-verify-disabled
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - requests
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+      - pattern: requests.put(..., verify=False, ...)
+      - pattern: requests.delete(..., verify=False, ...)
+      - pattern: requests.patch(..., verify=False, ...)
+      - pattern: requests.head(..., verify=False, ...)
+      - pattern: requests.options(..., verify=False, ...)
+      - pattern: requests.request(..., verify=False, ...)
+      - pattern: $SESSION.get(..., verify=False, ...)
+      - pattern: $SESSION.post(..., verify=False, ...)
+      - pattern: $SESSION.put(..., verify=False, ...)
+      - pattern: $SESSION.delete(..., verify=False, ...)
+      - pattern: $SESSION.patch(..., verify=False, ...)
+      - pattern: $SESSION.head(..., verify=False, ...)
+      - pattern: $SESSION.options(..., verify=False, ...)
+      - pattern: $SESSION.request(..., verify=False, ...)
+  - id: auth.py.flow.weak-password-hash
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A password is being hashed with a fast, general-purpose digest from
+      `hashlib` (MD5, SHA-1, SHA-256, SHA-512). These algorithms are designed
+      to be fast, which makes offline brute-force and rainbow-table attacks
+      cheap — they are NOT suitable for storing passwords.
+
+      Use a dedicated, slow password-hashing function with a per-password salt
+      and a tunable work factor: `bcrypt` (`bcrypt.hashpw`), `argon2`
+      (`argon2.PasswordHasher().hash`), `scrypt`, or a wrapper such as
+      `passlib`. These resist brute-force by design.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/916.html
+        - https://argon2-cffi.readthedocs.io/en/stable/
+        - https://passlib.readthedocs.io/en/stable/
+      technology:
+        - hashlib
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: hashlib.md5($PW)
+              - pattern: hashlib.sha1($PW)
+              - pattern: hashlib.sha256($PW)
+              - pattern: hashlib.sha512($PW)
+          - metavariable-regex:
+              metavariable: $PW
+              regex: (?i)^.*(password|passwd|pwd).*$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $H = hashlib.md5(...)
+                  ...
+                  $H.update($PW)
+              - pattern: |
+                  $H = hashlib.sha1(...)
+                  ...
+                  $H.update($PW)
+              - pattern: |
+                  $H = hashlib.sha256(...)
+                  ...
+                  $H.update($PW)
+              - pattern: |
+                  $H = hashlib.sha512(...)
+                  ...
+                  $H.update($PW)
+          - metavariable-regex:
+              metavariable: $PW
+              regex: (?i)^.*(password|passwd|pwd).*$
+  - id: auth.py.jwt.alg-none
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT is decoded or signed with the `none` algorithm. The `none`
+      algorithm means the token is NOT cryptographically signed, so any
+      attacker can forge a token with arbitrary claims and have it accepted —
+      a complete authentication bypass (CVE-class JWT alg=none vulnerability).
+
+      Never allow `none`. Pin a strong signing algorithm explicitly:
+      `jwt.decode(token, key, algorithms=["RS256"])` for verification, or
+      `jwt.encode(claims, key, algorithm="RS256")` (also ES256 / HS256) when
+      issuing tokens. Never include `"none"` in the `algorithms` allowlist.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-alg-none
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - pyjwt
+    pattern-either:
+      - patterns:
+          - pattern: jwt.decode(..., algorithms=$ALGS, ...)
+          - metavariable-regex:
+              metavariable: $ALGS
+              regex: (?i).*['"]none['"].*
+      - patterns:
+          - pattern: jwt.encode(..., algorithm=$ALG, ...)
+          - metavariable-regex:
+              metavariable: $ALG
+              regex: (?i)^['"]none['"]$
+  - id: auth.py.jwt.hardcoded-secret
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT signing/verification key is hardcoded as a string literal in the
+      call to PyJWT. Anyone who can read the source or git history can forge or
+      tamper with tokens, which is a complete authentication bypass.
+
+      Load the secret from the environment or a secret manager instead, e.g.
+      `key = os.environ["JWT_SECRET"]` and `jwt.encode(payload, key, ...)`.
+      Never commit signing keys to source control.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.encode
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - pyjwt
+    pattern-either:
+      - patterns:
+          - pattern: jwt.encode($PAYLOAD, $KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: ^["'].*["']$
+      - patterns:
+          - pattern: jwt.decode($TOKEN, $KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: ^["'].*["']$
+  - id: auth.py.jwt.no-algorithms
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A JWT is decoded with a verification key but WITHOUT an explicit
+      `algorithms` allowlist. Without pinning the accepted algorithms, PyJWT
+      may accept a token signed with an unexpected algorithm, enabling
+      algorithm-confusion attacks (e.g. an RS256 verifier tricked into
+      treating an attacker-supplied HS256 token as valid by using the public
+      key as an HMAC secret).
+
+      Always pass an explicit allowlist: `jwt.decode(token, key,
+      algorithms=["RS256"])` (or the exact algorithm you expect). List only the
+      algorithms your application actually uses.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-algorithms
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - pyjwt
+    patterns:
+      - pattern: jwt.decode($T, $K, ...)
+      - pattern-not: jwt.decode($T, $K, ..., algorithms=$A, ...)
+      - pattern-not: jwt.decode($T, ..., verify=False, ...)
+      - pattern-not: jwt.decode($T, ..., options=$OPTS, ...)
+      - pattern-inside: |
+          import jwt
+          ...
+  - id: auth.py.jwt.no-expiration
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A JWT is decoded with `options={"verify_exp": False}`, which turns off
+      PyJWT's `exp` (expiration) check. With expiry verification disabled, an
+      expired — or stolen and long-since-revoked — token is still accepted, so
+      tokens effectively never expire.
+
+      Remove the `"verify_exp": False` option; PyJWT verifies `exp` by default,
+      e.g. `jwt.decode(token, key, algorithms=["RS256"])`. If a token legitimately
+      carries no `exp`, prefer `options={"require": ["exp"]}` to mandate one.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - PyJWT
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - pattern: decode(..., options=$OPTS, ...)
+      - metavariable-pattern:
+          metavariable: $OPTS
+          pattern: '{..., "verify_exp": False, ...}'
+  - id: auth.py.jwt.no-verify
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT is decoded with signature verification disabled. PyJWT's
+      `jwt.decode(token, verify=False)` (legacy) or
+      `options={"verify_signature": False}` parses the token WITHOUT checking
+      the signature, so any attacker-forged token is accepted — a complete
+      authentication bypass.
+
+      Always verify: `jwt.decode(token, key, algorithms=["RS256"])`. If you
+      only need to read an unverified header (e.g. the `kid` before fetching
+      the key), use `jwt.get_unverified_header(token)` and treat the claims
+      as untrusted.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-no-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - pyjwt
+    pattern-either:
+      - pattern: jwt.decode(..., verify=False, ...)
+      - patterns:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., "verify_signature": False, ...}'
+  - id: auth.py.secret.django-hardcoded-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      The Django `SECRET_KEY` is set to a hard-coded string literal in
+      settings. This is typically the auto-generated `django-insecure-...`
+      value committed by mistake. `SECRET_KEY` signs sessions, CSRF tokens
+      and password-reset tokens — anyone who reads the source or a leaked
+      repo can forge them and bypass authentication entirely (CWE-798).
+
+      Load it from the environment or a secret manager instead, e.g.
+      `SECRET_KEY = os.environ["SECRET_KEY"]`, `django-environ`
+      (`env("SECRET_KEY")`), or `config("SECRET_KEY")`. Generate the value
+      with a CSPRNG and never commit it.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-SECRET-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-secret-django-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/settings/#secret-key
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - django
+    pattern: SECRET_KEY = "..."
+  - id: auth.py.secret.flask-hardcoded-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      The Flask `SECRET_KEY` (used to sign session cookies and CSRF tokens) is
+      set to a hard-coded string literal. Anyone who reads the source — or a
+      leaked repo — can forge session cookies and impersonate any user, a
+      complete authentication bypass (CWE-798).
+
+      Load the secret from the environment or a secret manager instead, e.g.
+      `app.secret_key = os.environ["SECRET_KEY"]`, and generate it with a CSPRNG
+      such as `secrets.token_hex(32)` / `os.urandom(32)`. Never commit the value.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-secret-flask-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://flask.palletsprojects.com/en/stable/config/#SECRET_KEY
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - flask
+    pattern-either:
+      - pattern: $APP.secret_key = "..."
+      - pattern: $APP.config["SECRET_KEY"] = "..."
+      - pattern: $APP.config.update(..., SECRET_KEY="...", ...)

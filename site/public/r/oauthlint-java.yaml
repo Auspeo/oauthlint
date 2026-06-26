@@ -1,0 +1,481 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# java subset — 13 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.java.cookie.insecure
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A servlet Cookie is created with a security attribute explicitly
+      disabled. `setSecure(false)` lets the cookie travel over plain HTTP,
+      and `setHttpOnly(false)` makes it readable from JavaScript — either way
+      a session or auth cookie can be intercepted or stolen (CWE-614). This is
+      a common AI-generated mistake where the flag is set to `false` to "make
+      it work" over localhost and never switched back.
+
+      Set `cookie.setSecure(true)` and `cookie.setHttpOnly(true)` on every
+      session or authentication cookie, and add `SameSite` (e.g. `Strict` or
+      `Lax`) to further limit cross-site exposure.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://owasp.org/www-community/controls/SecureCookieAttribute
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - servlet
+    pattern-either:
+      - pattern: $C.setSecure(false)
+      - pattern: $C.setHttpOnly(false)
+  - id: auth.java.cors.allow-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      CORS is configured to allow every origin with the wildcard `*`. Any
+      website can then make cross-origin requests to this endpoint, defeating
+      the same-origin policy (CWE-942). This is a common AI-generated Spring
+      mistake — `@CrossOrigin(origins = "*")` or `addAllowedOrigin("*")` is
+      pasted in to "make the browser call work" and the intended scope is
+      never added. A bare `@CrossOrigin` (no arguments) also defaults to all
+      origins.
+
+      Restrict CORS to an explicit allowlist of trusted origins instead, e.g.
+      `@CrossOrigin(origins = "https://app.example.com")` or
+      `config.setAllowedOrigins(List.of("https://app.example.com"))`. Note that
+      `addAllowedOriginPattern("*")` combined with `setAllowCredentials(true)`
+      is just as dangerous, because it sends the victim's cookies cross-origin.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.spring.io/spring-framework/reference/web/webmvc-cors.html
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - spring-web
+    pattern-either:
+      - pattern: '@CrossOrigin(origins = "*")'
+      - pattern: '@CrossOrigin(origins = {..., "*", ...})'
+      - pattern: '@CrossOrigin("*")'
+      - pattern: |
+          @CrossOrigin
+          $RET $M(...) { ... }
+      - pattern: $C.addAllowedOrigin("*")
+      - pattern: $C.setAllowedOrigins($L(..., "*", ...))
+  - id: auth.java.crypto.ecb-mode
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A JCA `Cipher` is being created in ECB mode (or with a bare algorithm
+      alias that defaults to ECB). ECB encrypts each block independently, so
+      identical plaintext blocks produce identical ciphertext blocks — it is
+      deterministic and leaks structure/patterns of the plaintext (CWE-327).
+      `Cipher.getInstance("AES")`, `"DES"`, `"DESede"`, or `"Blowfish"` with no
+      mode specified silently falls back to ECB as well.
+
+      Use an authenticated mode: `Cipher.getInstance("AES/GCM/NoPadding")` with
+      a unique 12-byte IV per message. At minimum use CBC with a random IV plus
+      a separate HMAC (encrypt-then-MAC). Never use ECB or a bare cipher alias.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+        - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      technology:
+        - javax.crypto
+    patterns:
+      - pattern: javax.crypto.Cipher.getInstance($TRANSFORM, ...)
+      - metavariable-regex:
+          metavariable: $TRANSFORM
+          regex: (?i)^"(aes|des|desede|blowfish)(/ecb/.*)?"$
+  - id: auth.java.crypto.insecure-random
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A security-sensitive value (token, secret, key, password, nonce, OTP, or
+      salt) is generated with a non-cryptographic PRNG. `java.util.Random` and
+      `Math.random()` are predictable: their output is seeded from system time
+      and the internal state can be recovered from a few observed values, so an
+      attacker can reconstruct the "random" secret (CWE-330). This is a common
+      AI-generated mistake — `new Random().nextInt(...)` gets pasted in to
+      produce a token because it looks random enough.
+
+      Use `java.security.SecureRandom` instead. For example,
+      `new SecureRandom().nextBytes(buf)` to fill a byte buffer, then encode it
+      (Base64/hex) to build the token or secret.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-insecure-random
+      category: security
+      cwe: CWE-330
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.oracle.com/javase/8/docs/api/java/security/SecureRandom.html
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - java.util
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $VAR = new java.util.Random(...).$M(...)
+              - pattern: $VAR = new Random(...).$M(...)
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(nextInt|nextLong|nextDouble|nextFloat|nextBoolean)$
+      - patterns:
+          - pattern: $VAR = Math.random()
+          - metavariable-regex:
+              metavariable: $VAR
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  java.util.Random $RND = new java.util.Random(...);
+                  ...
+                  $RND.nextBytes($BUF);
+              - pattern: |
+                  Random $RND = new Random(...);
+                  ...
+                  $RND.nextBytes($BUF);
+          - metavariable-regex:
+              metavariable: $BUF
+              regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+  - id: auth.java.crypto.weak-hash
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      A broken hash algorithm (MD5 or SHA-1) is being instantiated via JCA
+      `MessageDigest.getInstance(...)`. MD5 and SHA-1 are cryptographically
+      broken: practical collision attacks exist, so they must NOT be used for
+      any security purpose — integrity checks, content/token fingerprints,
+      digital signatures, HMAC keys, or deduplication that a trust decision
+      depends on (CWE-328 / CWE-327).
+
+      Use SHA-256 or stronger (SHA-384, SHA-512, SHA-3):
+      `MessageDigest.getInstance("SHA-256")`. Note: this rule covers the general
+      weak-digest case; storing *passwords* needs a dedicated slow hasher
+      (BCrypt/Argon2/PBKDF2), which is enforced separately.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-weak-hash
+      category: security
+      cwe: CWE-328
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/328.html
+        - https://csrc.nist.gov/news/2022/nist-transitioning-away-from-sha-1-for-all-apps
+      technology:
+        - java
+    patterns:
+      - pattern: java.security.MessageDigest.getInstance($ALG, ...)
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^"(md5|sha-?1)"$
+  - id: auth.java.crypto.weak-password-hash
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A password is being hashed with a fast, general-purpose digest from the
+      JCA `MessageDigest` (MD5, SHA-1, SHA-256, SHA-512). These algorithms are
+      designed to be fast, which makes offline brute-force and rainbow-table
+      attacks cheap — they are NOT suitable for storing passwords (CWE-916).
+
+      Use a dedicated, slow password-hashing function with a per-password salt
+      and a tunable work factor: BCrypt (`BCryptPasswordEncoder`), Argon2
+      (`Argon2PasswordEncoder`), or PBKDF2 (`Pbkdf2PasswordEncoder` /
+      `SecretKeyFactory` with `PBKDF2WithHmacSHA256`). These resist brute-force
+      by design.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/916.html
+        - https://docs.spring.io/spring-security/reference/features/authentication/password-storage.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+      technology:
+        - java.security
+    patterns:
+      - pattern-either:
+          - pattern: $MD.digest($PW.getBytes(...))
+          - pattern: $MD.digest($PW)
+          - pattern: $MD.update($PW.getBytes(...))
+          - pattern: $MD.update($PW)
+      - metavariable-regex:
+          metavariable: $PW
+          regex: (?i).*(password|passwd|pwd).*
+      - pattern-inside: |
+          MessageDigest $MD = MessageDigest.getInstance("=~/(?i)^(MD5|SHA-?1|SHA-?256|SHA-?512)$/");
+          ...
+  - id: auth.java.jwt.hardcoded-secret
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A JWT signing key is hard-coded as a string literal (CWE-798). Anyone with
+      access to the source, the compiled artifact, or the version-control history
+      can read the secret and forge valid tokens — changing the subject, roles,
+      or expiry at will, because the signature will still verify. This is a common
+      AI-generated mistake: a placeholder secret is pasted inline to "make signing
+      work" and is never moved out of the code.
+
+      Load the signing key from outside the source: an environment variable
+      (`System.getenv("JWT_SECRET")`), a configuration property, or a dedicated
+      secret manager (Vault, AWS Secrets Manager, etc.). With jjwt, build the key
+      from those bytes via `Keys.hmacShaKeyFor(secret.getBytes(...))`. Never commit
+      the key, and rotate any secret that has already been checked in.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/jwtk/jjwt#signing-key
+        - https://cwe.mitre.org/data/definitions/798.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+      technology:
+        - jjwt
+    pattern-either:
+      - pattern: io.jsonwebtoken.security.Keys.hmacShaKeyFor("...".getBytes(...))
+      - pattern: Keys.hmacShaKeyFor("...".getBytes(...))
+      - pattern: $B.signWith($ALG, "...")
+      - pattern: $P.setSigningKey("...")
+      - pattern: $P.setSigningKey("...".getBytes(...))
+  - id: auth.java.jwt.unsigned-jwt
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      This JWT is created or parsed without a signature, so its contents are
+      neither authenticated nor tamper-proof (CWE-347). An unsecured ("alg=none")
+      token can be forged by anyone — changing the claims (e.g. the subject or
+      roles) costs nothing because there is no signature to verify. This is a
+      common AI-generated mistake: the "plaintext"/"unsecured" JWT API is reached
+      for during prototyping and never swapped for a signed token.
+
+      Sign tokens and verify their signatures. With nimbus-jose-jwt use
+      `SignedJWT` (and verify with a `JWSVerifier`); with jjwt build tokens via
+      `Jwts.builder()...signWith(key)` and parse them with `parseSignedClaims`
+      (or the legacy `parseClaimsJws`) instead of `parseClaimsJwt` /
+      `parsePlaintextJwt`.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-unsigned-jwt
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://connect2id.com/products/nimbus-jose-jwt/examples/unsecured-jwt
+        - https://github.com/jwtk/jjwt#reading-a-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - jjwt
+        - nimbus-jose-jwt
+    pattern-either:
+      - pattern: new com.nimbusds.jwt.PlainJWT(...)
+      - pattern: new PlainJWT(...)
+      - pattern: $P.parseClaimsJwt(...)
+      - pattern: $P.parsePlaintextJwt(...)
+  - id: auth.java.session.fixation-disabled
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security session fixation protection is disabled via
+      `sessionFixation().none()`. With `none()`, the session ID is NOT
+      regenerated when a user authenticates, so an attacker who fixes the
+      victim's session ID before login (e.g. by planting a cookie) keeps a
+      valid session and hijacks the authenticated account (CWE-384).
+
+      Leave the default (`changeSessionId`) in place, or use `migrateSession()`
+      to copy the existing session attributes into a new session ID. Never use
+      `none()`.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-session-fixation-disabled
+      category: security
+      cwe: CWE-384
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
+        - https://cwe.mitre.org/data/definitions/384.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $S.sessionFixation().none()
+      - pattern: $S.sessionFixation($F -> $F.none())
+  - id: auth.java.tls.trust-all-certs
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      TLS hostname verification is disabled. A permissive `HostnameVerifier`
+      that returns `true` for every host — or Apache HttpClient's
+      `NoopHostnameVerifier` — accepts any certificate regardless of the name
+      it was issued for, so a man-in-the-middle can present a certificate for a
+      different domain and the connection succeeds (CWE-295). This is a common
+      AI-generated mistake — the verifier is stubbed out to "fix" a handshake
+      or certificate error during development and shipped to production.
+
+      Never accept all hosts. Leave the default hostname verification in place
+      (do not call `setHostnameVerifier`/`setDefaultHostnameVerifier` with a
+      permissive verifier), or fix the trust chain by supplying a proper
+      truststore so the certificate validates normally.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-tls-trust-all-certs
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/295.html
+        - https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/HostnameVerifier.html
+      technology:
+        - javax.net.ssl
+        - apache-httpclient
+    pattern-either:
+      - pattern: ($HOST, $SESSION) -> true
+      - pattern: |
+          new HostnameVerifier() {
+            public boolean verify(String $H, SSLSession $S) { return true; }
+          }
+      - pattern: new org.apache.http.conn.ssl.NoopHostnameVerifier()
+      - pattern: new NoopHostnameVerifier()
+      - pattern: org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE
+      - pattern: NoopHostnameVerifier.INSTANCE
+  - id: auth.java.web.csrf-disabled
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security CSRF protection is disabled. With CSRF off, an attacker
+      can forge state-changing requests that a logged-in victim's browser
+      submits with their session cookie (CWE-352). This is one of the most
+      common AI-generated Spring mistakes — `csrf().disable()` is pasted in to
+      "make the API work" and never removed.
+
+      Keep CSRF protection enabled. For a stateless API authenticated with
+      bearer tokens (not cookies), scope it instead — e.g. ignore specific
+      paths or use a `CookieCsrfTokenRepository` — rather than disabling it
+      globally.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-csrf-disabled
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $H.csrf().disable()
+      - pattern: $H.csrf($C -> $C.disable())
+      - pattern: $H.csrf(AbstractHttpConfigurer::disable)
+  - id: auth.java.web.frame-options-disabled
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      Spring Security's `X-Frame-Options` header is disabled. This header is
+      the browser's clickjacking defense — with it off, an attacker can embed
+      the application in a hidden `<iframe>` on a malicious page and trick a
+      logged-in victim into clicking UI elements they cannot see (CWE-1021).
+
+      Keep `X-Frame-Options` set to DENY or SAMEORIGIN — e.g.
+      `frameOptions(f -> f.sameOrigin())` or `frameOptions(f -> f.deny())`. If
+      you need to allow framing from a specific set of origins, use a Content
+      Security Policy `frame-ancestors` directive instead of disabling the
+      protection outright.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-frame-options-disabled
+      category: security
+      cwe: CWE-1021
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/exploits/headers.html
+        - https://cwe.mitre.org/data/definitions/1021.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $H.frameOptions().disable()
+      - pattern: $H.frameOptions($F -> $F.disable())
+      - pattern: $H.frameOptions(FrameOptionsConfig::disable)
+  - id: auth.java.web.permit-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring Security authorizes every request without authentication via
+      `anyRequest().permitAll()`. Because `anyRequest()` is the catch-all
+      matcher, this makes the entire application publicly accessible — any
+      endpoint, including state-changing and sensitive ones, can be reached
+      without a logged-in user (CWE-862, broken access control). This is a
+      common AI-generated Spring mistake: the default-allow line is pasted in
+      to "make it work" and the intended access rules are never added.
+
+      Require authentication by default with `anyRequest().authenticated()`,
+      and open only the specific public routes explicitly, e.g.
+      `requestMatchers("/public/**").permitAll()`. Granting `permitAll()` on a
+      specific matcher is fine; granting it on `anyRequest()` is not.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-permit-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html
+        - https://cwe.mitre.org/data/definitions/862.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $X.anyRequest().permitAll()

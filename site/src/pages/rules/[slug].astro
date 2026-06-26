@@ -57,6 +57,28 @@ const SEV: Record<
 };
 const sev = SEV[rule.severity];
 
+// AI (LLM) prevalence is OAuthLint's core differentiator: these are the auth
+// bugs AI coding tools systematically produce. Surface it as a labeled badge
+// near the severity with a one-line "why AI tools produce this" framing.
+const PREV: Record<'HIGH' | 'MEDIUM' | 'LOW', { label: string; color: string; why: string }> = {
+  HIGH: {
+    label: 'HIGH',
+    color: 'var(--ol-sev-critical)',
+    why: 'AI coding tools generate this anti-pattern by default — it appears in a large share of AI-written auth code.',
+  },
+  MEDIUM: {
+    label: 'MEDIUM',
+    color: 'var(--ol-sev-high)',
+    why: 'AI coding tools produce this regularly, typically when prompted for a shortcut or a quick fix.',
+  },
+  LOW: {
+    label: 'LOW',
+    color: 'var(--ol-text-muted)',
+    why: 'AI coding tools rarely emit this on their own, but it still slips into assisted edits.',
+  },
+};
+const prev = PREV[rule.llmPrevalence];
+
 // The message: first line is the title (rendered in the masthead); the rest is
 // the "what / why" body. Split into paragraphs on blank lines.
 const messageLines = rule.message.split('\n');
@@ -106,6 +128,7 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
           <div style="padding:var(--ol-space-6);">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:var(--ol-space-4);">
               <span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.08em; color:var(--ol-neutral-50); background:${sev.solid}; padding:4px 10px;`}>{sev.label}</span>
+              <span title="How often AI coding tools generate this anti-pattern by default" style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.06em; color:${prev.color}; border:1px solid ${prev.color}; padding:3px 9px;`}>AI PREVALENCE: {prev.label}</span>
               <span style="font-family:var(--ol-font-mono); font-size:16px; color:var(--ol-text);">{rule.id}</span>
             </div>
             <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-m); letter-spacing:-0.02em; margin:0 0 var(--ol-space-3); line-height:1.15;">{rule.title}</h1>
@@ -117,6 +140,10 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
                 ? <a href={owaspHref} rel="noopener noreferrer" target="_blank" class="ol-ref-badge" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px; text-decoration:none;">OWASP {rule.owasp}</a>
                 : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP {rule.owasp}</span>)}
               <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{langBadge}</span>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:8px; margin-top:var(--ol-space-4);">
+              <span aria-hidden="true" style={`flex:none; width:6px; height:6px; margin-top:6px; background:${prev.color};`}></span>
+              <p style="font-size:var(--ol-text-body-s); line-height:1.55; color:var(--ol-text-muted); margin:0;"><span style={`color:${prev.color}; font-weight:600;`}>Why AI tools produce this:</span> {prev.why}</p>
             </div>
           </div>
         </div>
@@ -181,7 +208,7 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
               ? <a href={owaspHref} rel="noopener noreferrer" target="_blank" class="ol-ref-link" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); text-decoration:none;">{rule.owasp}</a>
               : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.owasp}</span>}</div>}
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Category</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.category}</span></div>
-            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">LLM prevalence</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.llmPrevalence}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">AI prevalence</span><span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:${prev.color};`}>● {prev.label}</span></div>
           </div>
         </div>
         <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;">← all rules</a>

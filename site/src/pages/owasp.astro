@@ -1,0 +1,186 @@
+---
+import SiteChrome from '../components/SiteChrome.astro';
+import Base from '../layouts/Base.astro';
+import { owaspUrl } from '../lib/references';
+import { type RuleView, type Severity, getRules } from '../lib/rules';
+
+const rules = getRules();
+
+// Severity ramp colours, keyed by design severity (matches the catalogue).
+const SEV: Record<Severity, string> = {
+  critical: 'var(--ol-sev-critical)',
+  high: 'var(--ol-sev-high)',
+  medium: 'var(--ol-sev-medium)',
+  low: 'var(--ol-sev-low)',
+  info: 'var(--ol-sev-info)',
+};
+const sevRank: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+
+// Human-readable titles for the OWASP codes the pack actually carries. Unknown
+// codes fall back to the raw identifier, so the page never breaks if a rule
+// adds a category we haven't named yet — it just shows the code.
+const OWASP_TITLES: Record<string, string> = {
+  'API1:2023': 'Broken Object Level Authorization',
+  'API2:2023': 'Broken Authentication',
+  'API3:2023': 'Broken Object Property Level Authorization',
+  'API4:2023': 'Unrestricted Resource Consumption',
+  'API5:2023': 'Broken Function Level Authorization',
+  'API8:2023': 'Security Misconfiguration',
+  'A01:2021': 'Broken Access Control',
+  'A02:2021': 'Cryptographic Failures',
+  'A05:2021': 'Security Misconfiguration',
+  'A07:2021': 'Identification and Authentication Failures',
+};
+
+// Which edition a code belongs to, so we can group + label the two families.
+function editionOf(code: string): { key: string; label: string; order: number } {
+  if (/:2023$/.test(code)) {
+    return { key: 'api-2023', label: 'API Security Top 10 · 2023', order: 0 };
+  }
+  if (/:2021$/.test(code)) {
+    return { key: 'web-2021', label: 'Web Application Top 10 · 2021', order: 1 };
+  }
+  return { key: 'other', label: 'Other', order: 2 };
+}
+
+// Derive coverage straight from the rule pack — no frozen counts.
+interface OwaspGroup {
+  code: string;
+  title: string;
+  href?: string;
+  rules: RuleView[];
+}
+const byCode = new Map<string, OwaspGroup>();
+let mappedRuleCount = 0;
+for (const rule of rules) {
+  if (!rule.owasp) continue;
+  mappedRuleCount += 1;
+  const code = rule.owasp;
+  let group = byCode.get(code);
+  if (!group) {
+    group = {
+      code,
+      title: OWASP_TITLES[code] ?? code,
+      href: owaspUrl(code),
+      rules: [],
+    };
+    byCode.set(code, group);
+  }
+  group.rules.push(rule);
+}
+
+// Sort rules inside a category by severity, then id; sort categories by code.
+for (const group of byCode.values()) {
+  group.rules.sort((a, b) => sevRank[a.severity] - sevRank[b.severity] || a.id.localeCompare(b.id));
+}
+
+// Group the categories under their edition, both in code order.
+const editions = new Map<string, { label: string; order: number; groups: OwaspGroup[] }>();
+for (const group of [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code))) {
+  const ed = editionOf(group.code);
+  let bucket = editions.get(ed.key);
+  if (!bucket) {
+    bucket = { label: ed.label, order: ed.order, groups: [] };
+    editions.set(ed.key, bucket);
+  }
+  bucket.groups.push(group);
+}
+const editionList = [...editions.values()].sort((a, b) => a.order - b.order);
+
+const categoryCount = byCode.size;
+const editionCount = editionList.length;
+---
+<Base
+  title="OWASP coverage — OAuthLint"
+  description="Which OWASP API Security and Web Application Top 10 categories the OAuthLint rule pack covers, derived from the shipped rules. Every rule maps to an OWASP risk."
+>
+  <SiteChrome active="rules">
+    <main style="max-width:1120px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6) var(--ol-space-20);">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-3);">
+        <span style="width:6px; height:6px; background:var(--ol-accent);"></span>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">OWASP COVERAGE</span>
+      </div>
+      <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Mapped to the risks that matter.</h1>
+      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:62ch; margin:0 0 var(--ol-space-8);">
+        Every OAuthLint rule maps to an OWASP risk. This page is derived from the shipped rule pack — it shows exactly which OWASP API Security and Web Application Top 10 categories the rules cover, and which auth anti-patterns sit under each.
+      </p>
+
+      <!-- COVERAGE SUMMARY -->
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); border:1px solid var(--ol-border); margin-bottom:var(--ol-space-10);">
+        <div style="padding:var(--ol-space-5) var(--ol-space-6); border-right:1px solid var(--ol-border);">
+          <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(26px,3vw,32px); letter-spacing:-0.03em; line-height:1; color:var(--ol-text);">{categoryCount}</div>
+          <div style="font-family:var(--ol-font-mono); font-size:11px; letter-spacing:0.04em; color:var(--ol-text-muted); margin-top:8px; text-transform:uppercase;">OWASP categories covered</div>
+        </div>
+        <div style="padding:var(--ol-space-5) var(--ol-space-6); border-right:1px solid var(--ol-border);">
+          <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(26px,3vw,32px); letter-spacing:-0.03em; line-height:1; color:var(--ol-text);">{mappedRuleCount}</div>
+          <div style="font-family:var(--ol-font-mono); font-size:11px; letter-spacing:0.04em; color:var(--ol-text-muted); margin-top:8px; text-transform:uppercase;">rules mapped to a risk</div>
+        </div>
+        <div style="padding:var(--ol-space-5) var(--ol-space-6);">
+          <div style="font-family:var(--ol-font-display); font-weight:700; font-size:clamp(26px,3vw,32px); letter-spacing:-0.03em; line-height:1; color:var(--ol-text);">{editionCount}</div>
+          <div style="font-family:var(--ol-font-mono); font-size:11px; letter-spacing:0.04em; color:var(--ol-text-muted); margin-top:8px; text-transform:uppercase;">OWASP editions</div>
+        </div>
+      </div>
+
+      {editionList.map((edition) => (
+        <section style="margin-bottom:var(--ol-space-12);">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:var(--ol-space-5);">
+            <span style="width:6px; height:6px; background:var(--ol-text-muted);"></span>
+            <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.1em; color:var(--ol-text-muted);">{edition.label.toUpperCase()}</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:var(--ol-space-4);">
+            {edition.groups.map((group) => (
+              <article style="border:1px solid var(--ol-border); background:var(--ol-surface); display:flex; flex-direction:column;">
+                <header style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding:var(--ol-space-4) var(--ol-space-5); border-bottom:1px solid var(--ol-border);">
+                  {group.href
+                    ? <a href={group.href} target="_blank" rel="noopener noreferrer" class="ol-ref-link" style="font-family:var(--ol-font-mono); font-size:12px; font-weight:600; color:var(--ol-accent); text-decoration:none;">{group.code} ↗</a>
+                    : <span style="font-family:var(--ol-font-mono); font-size:12px; font-weight:600; color:var(--ol-text-secondary);">{group.code}</span>}
+                  <span style="font-family:var(--ol-font-ui); font-size:var(--ol-text-body-s); color:var(--ol-text);">{group.title}</span>
+                  <span style="margin-left:auto; font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint); white-space:nowrap;">{group.rules.length} {group.rules.length === 1 ? 'rule' : 'rules'}</span>
+                </header>
+                <ul style="list-style:none; margin:0; padding:0;">
+                  {group.rules.map((r) => (
+                    <li>
+                      <a
+                        href={`/rules/${r.slug}`}
+                        style={`display:flex; align-items:center; gap:10px; padding:10px var(--ol-space-5); border-bottom:1px solid var(--ol-border-subtle); text-decoration:none; border-left:3px solid ${SEV[r.severity]};`}
+                      >
+                        <span aria-hidden="true" style={`flex:none; width:7px; height:7px; background:${SEV[r.severity]};`}></span>
+                        <span style="flex:1; min-width:0;">
+                          <span style="display:block; font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{r.id}</span>
+                          <span style="display:block; font-size:12px; color:var(--ol-text-secondary); line-height:1.4;">{r.title}</span>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-top:var(--ol-space-4);">
+        <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;">← all rules</a>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">Coverage derived from the shipped rule pack — it grows with the rules.</span>
+      </div>
+    </main>
+  </SiteChrome>
+</Base>
+
+<style is:global>
+    /* OWASP reference link: accent on hover, matches the rule-detail rail. */
+    .ol-ref-link:hover {
+      color: var(--ol-accent-hover);
+    }
+    /* Rule rows lift on hover/focus without introducing a new visual style. */
+    article ul li a:hover,
+    article ul li a:focus-visible {
+      background: var(--ol-overlay);
+    }
+    @media (max-width: 560px) {
+      main > div[style*="repeat(3, 1fr)"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+</style>
