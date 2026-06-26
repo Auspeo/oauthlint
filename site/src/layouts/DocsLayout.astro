@@ -96,7 +96,9 @@ const NAV = [
   }
   @media (max-width: 820px) {
     .docs-wrap {
-      grid-template-columns: 1fr;
+      /* minmax(0,1fr) (not 1fr) so a wide <pre>/<table> scrolls inside the
+         content column instead of stretching the grid past the viewport. */
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--ol-space-6);
     }
     .docs-side {
@@ -118,6 +120,7 @@ const NAV = [
 
   /* Prose — shared with the Validation page styling. */
   .prose {
+    min-width: 0;
     color: var(--ol-text-secondary);
     font-family: var(--ol-font-ui);
     font-size: var(--ol-text-body-l);
@@ -231,5 +234,13 @@ const NAV = [
     border: none;
     border-top: 1px solid var(--ol-border-subtle);
     margin: var(--ol-space-8) 0;
+  }
+  /* Wide docs tables scroll horizontally on phones instead of overflowing. */
+  @media (max-width: 640px) {
+    .prose table {
+      display: block;
+      overflow-x: auto;
+      width: 100%;
+    }
   }
 </style>

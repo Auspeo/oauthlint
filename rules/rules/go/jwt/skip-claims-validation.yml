@@ -1,0 +1,36 @@
+rules:
+  - id: auth.go.jwt.skip-claims-validation
+    languages:
+      - go
+    severity: WARNING
+    message: |
+      A JWT parser is configured with `jwt.WithoutClaimsValidation()`, which
+      turns OFF the standard registered-claims validation golang-jwt performs by
+      default — the `exp` (expiry), `nbf` (not-before) and `iat` (issued-at)
+      checks. With validation disabled an expired or not-yet-valid token still
+      parses successfully, so a stolen or long-expired token is accepted as if
+      it were current (CWE-613).
+
+      Remove `jwt.WithoutClaimsValidation()` and let golang-jwt validate the
+      time-based claims. If a specific claim must be relaxed, scope it narrowly
+      (e.g. `jwt.WithLeeway(...)`) instead of disabling all claims validation.
+    # Presence-based: `jwt.WithoutClaimsValidation()` is a parser option whose
+    # only purpose is to disable claims validation, so matching the call
+    # expression anywhere it is passed (to `jwt.Parse`, `jwt.ParseWithClaims`
+    # or `jwt.NewParser`) is unambiguous and low false-positive. Normal
+    # `jwt.Parse(...)` / `jwt.ParseWithClaims(...)` calls without the option are
+    # NOT matched. `jwt` is the golang-jwt/jwt/v5 import used in the sibling
+    # rules.
+    pattern: jwt.WithoutClaimsValidation()
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-skip-claims-validation
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - golang-jwt
+      references:
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#ParserOption
+        - https://cwe.mitre.org/data/definitions/613.html

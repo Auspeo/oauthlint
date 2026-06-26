@@ -164,6 +164,52 @@ const jsonLd = {
       window.addEventListener('pageshow', syncIcon);
     </script>
 
+    <!-- Mobile navigation toggle. Below 920px the nav links collapse into a
+         disclosure panel ([data-navlinks]) opened by the hamburger button
+         ([data-nav-toggle]). Lives in the layout so it also wires the set:html
+         partials (index/about), whose own scripts never run. Accessible: the
+         button owns aria-expanded; Escape, outside-click and a tapped link all
+         close the panel; resizing back to desktop resets state. -->
+    <script>
+      for (const toggle of document.querySelectorAll<HTMLElement>('[data-nav-toggle]')) {
+        const nav = toggle.closest('nav');
+        const panel = nav?.querySelector<HTMLElement>('[data-navlinks]');
+        if (!panel) continue;
+
+        const setOpen = (open: boolean) => {
+          panel.classList.toggle('open', open);
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+        };
+        const close = () => setOpen(false);
+
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setOpen(!panel.classList.contains('open'));
+        });
+        // A tapped link navigates; collapse the panel so it never lingers.
+        for (const a of panel.querySelectorAll('a')) a.addEventListener('click', close);
+        // Click / tap outside the open panel closes it.
+        document.addEventListener('click', (e) => {
+          if (!panel.classList.contains('open')) return;
+          const t = e.target as Node;
+          if (!panel.contains(t) && !toggle.contains(t)) close();
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && panel.classList.contains('open')) {
+            close();
+            toggle.focus();
+          }
+        });
+        // Returning to desktop width: drop the open state (CSS shows links inline).
+        window.matchMedia('(min-width: 921px)').addEventListener('change', (e) => {
+          if (e.matches) close();
+        });
+        // Never leave the panel stuck open across bfcache navigations.
+        window.addEventListener('pageshow', close);
+      }
+    </script>
+
     <!-- Scroll reveal: sections fade up as they enter the viewport. One restrained
          motion idea, not scattered effects. Gated on prefers-reduced-motion and on
          IntersectionObserver; the `html.js section` CSS only hides when JS is on, so

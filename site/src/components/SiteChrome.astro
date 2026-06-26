@@ -24,11 +24,14 @@ const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--o
       <span style="font-family:var(--ol-font-display); font-weight:700; font-size:15px; letter-spacing:-0.02em;">OAuthLint</span>
     </a>
     <div style="flex:1;"></div>
-    <div style="display:flex; gap:var(--ol-space-6); align-items:center;">
+    <div id="site-nav-links" data-navlinks style="display:flex; gap:var(--ol-space-6); align-items:center;">
       <a href="/docs" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
       <a href="/rules" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
       <a href="/about" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('about')}; text-decoration:none;`}>about</a>
     </div>
+    <button type="button" data-nav-toggle aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-nav-links">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <button type="button" data-theme-toggle aria-label="Toggle colour theme" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; background:var(--ol-surface); border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); cursor:pointer; transition:border-color var(--ol-dur-fast) var(--ol-ease-standard);"><span data-theme-icon aria-hidden="true" style="font-family:var(--ol-font-mono); font-size:14px; line-height:1;">◐</span></button>
     <a href="https://github.com/Auspeo/oauthlint" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; height:32px; padding:0 12px; background:var(--ol-surface); border:1px solid var(--ol-border-strong); font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-text-secondary); text-decoration:none;">GitHub ↗</a>
   </nav>

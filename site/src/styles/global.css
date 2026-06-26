@@ -174,10 +174,29 @@ nav a[href]:hover {
   [data-intcell]:last-child {
     border-bottom: none !important;
   }
-  [data-navlinks] {
-    display: none !important;
+  /* The finding cards are `display:grid; grid-template-columns:3px 1fr`. A `1fr`
+     track is min-width:auto, so the inner nowrap code row (overflow-x:auto) blows
+     the card past the viewport. Constrain the content track so the code row's own
+     horizontal scroll engages instead of widening the page. */
+  [data-findgrid] > article {
+    grid-template-columns: 3px minmax(0, 1fr) !important;
   }
 }
+
+/* about.html "three principles" row stacks on phones. */
+@media (max-width: 640px) {
+  [data-prinrow] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-prinrow] > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ol-border) !important;
+  }
+  [data-prinrow] > div:last-child {
+    border-bottom: none !important;
+  }
+}
+
 @media (max-width: 560px) {
   [data-statgrid] {
     grid-template-columns: 1fr 1fr !important;
@@ -187,6 +206,90 @@ nav a[href]:hover {
   }
   [data-statcell] {
     border-bottom: 1px solid var(--ol-border) !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile navigation
+   --------------------------------------------------------------------------
+   Desktop-first: the hamburger button is hidden and the nav links sit inline.
+   Below 920px the inline link row collapses into a disclosure panel toggled by
+   an accessible hamburger button ([data-nav-toggle] / [data-navlinks]). The
+   button is injected into every nav variant (SiteChrome + the captured index/
+   about partials); the notfound nav has no links so it is unaffected.
+
+   The panel is positioned absolutely under the sticky bar so opening it never
+   reflows the page. Wiring (aria-expanded, click-outside, Escape) lives in
+   Base.astro so it runs on the set:html partials too. */
+[data-nav-toggle] {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: var(--ol-surface);
+  border: 1px solid var(--ol-border-strong);
+  color: var(--ol-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--ol-dur-fast) var(--ol-ease-standard);
+}
+[data-nav-toggle]:hover {
+  border-color: var(--ol-accent-border);
+  color: var(--ol-text);
+}
+[data-nav-toggle] svg {
+  display: block;
+}
+
+@media (max-width: 920px) {
+  /* Hamburger appears only when JS can drive it; no-JS keeps links visible. */
+  html.js [data-nav-toggle] {
+    display: inline-flex;
+  }
+  /* Tighter nav gutters on phones so the logo + hamburger + theme toggle +
+     GitHub control all fit at 375px without horizontal overflow. */
+  nav {
+    padding-left: var(--ol-space-4) !important;
+    padding-right: var(--ol-space-4) !important;
+    gap: var(--ol-space-3) !important;
+  }
+  /* The link row becomes a dropdown panel anchored under the sticky nav. */
+  [data-navlinks] {
+    position: absolute;
+    top: 56px;
+    right: var(--ol-space-4);
+    left: var(--ol-space-4);
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    padding: var(--ol-space-2);
+    background: var(--ol-canvas);
+    border: 1px solid var(--ol-border-strong);
+    box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.5);
+    z-index: 60;
+  }
+  /* With JS the panel is closed by default and opens when JS adds `.open`.
+     With no JS there is no toggle, so the links stay visible (stacked). */
+  html.js [data-navlinks] {
+    display: none !important;
+  }
+  html.js [data-navlinks].open {
+    display: flex !important;
+  }
+  [data-navlinks] > a {
+    display: block;
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    min-height: 44px;
+    line-height: 20px;
+    border-bottom: 1px solid var(--ol-border-subtle);
+  }
+  [data-navlinks] > a:last-child {
+    border-bottom: none;
+  }
+  [data-navlinks] > a:hover {
+    background: var(--ol-surface);
   }
 }
 @media print {
