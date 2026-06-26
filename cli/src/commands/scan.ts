@@ -5,6 +5,7 @@ import {
   SemgrepNotInstalledError,
   SemgrepOutputError,
 } from '../adapters/semgrep.js';
+import { GitError, resolveDiffFiles, resolveStagedFiles } from '../core/changed-files.js';
 import { loadConfig } from '../core/config.js';
 import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
@@ -15,7 +16,22 @@ import type { Finding, SeverityName } from '../types.js';
 export type ScanFormat = 'pretty' | 'json' | 'sarif';
 
 export interface ScanCommandOptions {
-  path: string;
+  /**
+   * Path(s) to scan. Accepts one or many — e.g. a pre-commit hook or editor
+   * integration passing the list of changed files. Defaults to `['.']`.
+   * The legacy singular `path` is still honoured for backwards compatibility.
+   */
+  paths?: string[];
+  /** @deprecated single-path form, kept for backwards compatibility. */
+  path?: string;
+  /**
+   * Incremental: scan only files changed versus a git ref. When the flag is
+   * given without a value (`true`), the ref defaults to the merge-base with the
+   * repo's default branch (origin/HEAD → origin/main → origin/master → HEAD).
+   */
+  diff?: string | boolean;
+  /** Incremental: scan only git-staged files (`--cached`). For pre-commit. */
+  staged?: boolean;
   /** Legacy boolean — equivalent to `format: 'json'`. */
   json?: boolean;
   /** Output format. Overrides `json` when set. */
@@ -32,23 +48,77 @@ export interface ScanCommandOptions {
   adapter?: SemgrepAdapter;
   /** Used by tests to capture output. */
   stream?: NodeJS.WritableStream;
+  /** Override the directory git/relative paths resolve from (defaults to cwd). */
+  cwd?: string;
 }
 
 export async function runScan(opts: ScanCommandOptions): Promise<number> {
-  const target = resolve(opts.path);
-  const config = await loadConfig(target);
+  const cwd = opts.cwd ?? process.cwd();
+  const config = await loadConfig(cwd);
   const rulesDir = opts.rulesDir ?? config.customRulesDir ?? RULES_ROOT;
   const failOn = opts.failOn ?? config.failOn ?? 'HIGH';
   const format: ScanFormat = opts.format ?? (opts.json ? 'json' : 'pretty');
   const stream = opts.stream ?? process.stdout;
+  const errStream = opts.stream ?? process.stderr;
 
+  // Resolve the set of targets to hand Semgrep. Incremental flags (--diff /
+  // --staged) win and narrow the scan to changed files only; otherwise we scan
+  // the explicit path args (default ['.']).
+  let targets: string[];
+  let incremental = false;
+  try {
+    if (opts.diff !== undefined && opts.diff !== false) {
+      incremental = true;
+      const ref = typeof opts.diff === 'string' ? opts.diff : undefined;
+      targets = await resolveDiffFiles(cwd, ref);
+    } else if (opts.staged) {
+      incremental = true;
+      targets = await resolveStagedFiles(cwd);
+    } else {
+      const requested = opts.paths?.length
+        ? opts.paths
+        : opts.path !== undefined
+          ? [opts.path]
+          : ['.'];
+      targets = requested.map((p) => resolve(cwd, p));
+    }
+  } catch (err) {
+    if (err instanceof GitError) {
+      errStream.write(`${err.message}\n`);
+      return 2;
+    }
+    throw err;
+  }
+
+  // Incremental change set is empty (nothing in a supported language changed).
+  // That's a success, not an error — pre-commit hooks and editors call this
+  // constantly and should exit 0 with a clear note rather than failing.
+  if (incremental && targets.length === 0) {
+    if (format === 'json') {
+      stream.write(`${JSON.stringify({ schemaVersion: 'oauthlint-v1', findings: [] })}\n`);
+    } else if (format === 'sarif') {
+      const empty = await toSarif({
+        findings: [],
+        scannedFiles: 0,
+        durationMs: 0,
+        semgrepVersion: null,
+        errors: [],
+      });
+      stream.write(`${JSON.stringify(empty, null, 2)}\n`);
+    } else {
+      stream.write('No changed files to scan.\n');
+    }
+    return 0;
+  }
+
+  const label = incremental ? `${targets.length} changed file(s)` : targets.join(', ');
   const reporter = new Reporter({ json: format === 'json', stream });
-  if (format === 'pretty') reporter.reportStart(target, await countRuleFiles(rulesDir));
+  if (format === 'pretty') reporter.reportStart(label, await countRuleFiles(rulesDir));
 
   const adapter = opts.adapter ?? new SemgrepAdapter({ configPath: rulesDir });
   let result: Awaited<ReturnType<SemgrepAdapter['scan']>>;
   try {
-    result = await adapter.scan(target, { applyFixes: opts.fix });
+    result = await adapter.scan(targets, { applyFixes: opts.fix });
   } catch (err) {
     if (err instanceof SemgrepNotInstalledError) {
       (opts.stream ?? process.stderr).write(`${err.message}\n`);

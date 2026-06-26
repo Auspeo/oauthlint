@@ -25,6 +25,17 @@ describe('buildProgram', () => {
     const names = program.commands.map((c) => c.name()).sort();
     expect(names).toEqual(['doctor', 'init', 'list', 'scan']);
   });
+
+  it('scan accepts variadic path args and the incremental flags', async () => {
+    const program = await buildProgram();
+    const scan = program.commands.find((c) => c.name() === 'scan');
+    if (!scan) throw new Error('scan command missing');
+    // Variadic positional so multiple files can be passed (pre-commit / editors).
+    expect(scan.registeredArguments[0].variadic).toBe(true);
+    const flags = scan.options.map((o) => o.long);
+    expect(flags).toContain('--diff');
+    expect(flags).toContain('--staged');
+  });
 });
 
 describe('option parsers', () => {

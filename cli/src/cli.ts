@@ -66,8 +66,8 @@ export async function buildProgram(): Promise<Command> {
 
   program
     .command('scan')
-    .argument('[path]', 'Path to scan', '.')
-    .description('Scan a directory for auth misconfigurations')
+    .argument('[paths...]', 'One or more files/directories to scan', ['.'])
+    .description('Scan files or directories for auth misconfigurations')
     .option('--json', 'Emit JSON (shortcut for --format json)')
     .option('--format <fmt>', 'Output format: pretty | json | sarif', parseFormat)
     .option('--severity <level>', 'Only emit findings ≥ this severity', parseSeverity)
@@ -76,11 +76,18 @@ export async function buildProgram(): Promise<Command> {
       'Process exits non-zero if any finding ≥ this severity',
       parseFailOn,
     )
+    .option(
+      '--diff [ref]',
+      'Scan only files changed vs a git ref (default: merge-base with the default branch)',
+    )
+    .option('--staged', 'Scan only git-staged files (useful for pre-commit hooks)')
     .option('--rules-dir <path>', 'Override the bundled rules directory')
     .option('--fix', 'Apply auto-fixes (rewrites source in place where possible)')
-    .action(async (path: string, opts: ScanCliOptions) => {
+    .action(async (paths: string[], opts: ScanCliOptions) => {
       const code = await runScan({
-        path,
+        paths,
+        diff: opts.diff,
+        staged: opts.staged,
         json: opts.json,
         format: opts.format,
         severity: opts.severity,
@@ -124,6 +131,9 @@ interface ScanCliOptions {
   format?: ScanFormat;
   severity?: SeverityName;
   failOn?: SeverityName | 'off';
+  // commander gives `true` for a bare `--diff`, or the string ref for `--diff <ref>`.
+  diff?: string | boolean;
+  staged?: boolean;
   rulesDir?: string;
   fix?: boolean;
 }

@@ -75,7 +75,12 @@ export class SemgrepAdapter {
   }
 
   /**
-   * Run semgrep against `targetPath`, returning a normalised scan result.
+   * Run semgrep against one or more targets, returning a normalised scan
+   * result. `target` may be a single path (directory or file) or an explicit
+   * list of files — Semgrep accepts multiple targets natively, which is how
+   * incremental scanning (`--diff` / `--staged` / explicit file args) only
+   * pays for the files that actually changed.
+   *
    * When `applyFixes` is true, Semgrep rewrites the source files in place
    * using each rule's `fix:` template. The returned report reflects what
    * was matched BEFORE the rewrite — callers should re-scan if they want
@@ -83,8 +88,12 @@ export class SemgrepAdapter {
    *
    * @throws SemgrepNotInstalledError if the binary cannot be found.
    */
-  async scan(targetPath: string, options: { applyFixes?: boolean } = {}): Promise<ScanResult> {
+  async scan(
+    target: string | string[],
+    options: { applyFixes?: boolean } = {},
+  ): Promise<ScanResult> {
     const start = Date.now();
+    const targets = Array.isArray(target) ? target : [target];
     const args = [
       'scan',
       '--config',
@@ -95,7 +104,10 @@ export class SemgrepAdapter {
       '--metrics=off',
     ];
     if (options.applyFixes) args.push('--autofix');
-    args.push(targetPath);
+    // `--` terminates option parsing so a path that starts with `-` is never
+    // mistaken for a flag. Targets are passed as discrete argv entries (never a
+    // shell string), so there is no shell-injection surface.
+    args.push('--', ...targets);
 
     let result: Awaited<ReturnType<typeof execa>>;
     try {
