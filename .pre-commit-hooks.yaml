@@ -1,0 +1,19 @@
+# pre-commit hook definitions for OAuthLint.
+# Docs: https://oauthlint.dev/docs/pre-commit
+#
+# OAuthLint ships as the `oauthlint` npm package, which lives in this
+# monorepo's `cli/` directory. pre-commit's `language: node` installs that
+# published package (pinned via `additional_dependencies`) into an isolated
+# Node environment and exposes its `oauthlint` bin to `entry`. pre-commit
+# appends the staged files as positional args, so each commit scans only the
+# files it is about to capture.
+- id: oauthlint
+  name: oauthlint
+  description: Catch OAuth / OIDC / JWT anti-patterns in staged source files.
+  entry: oauthlint scan
+  language: node
+  additional_dependencies: ['oauthlint@1.0.0']
+  types_or: [javascript, jsx, ts, tsx, python, go, java, rust]
+  pass_filenames: true
+  # Requires Semgrep on PATH (the engine OAuthLint drives) — see the docs.
+  # Add gating yourself, e.g. `args: [--fail-on, HIGH]`, in .pre-commit-config.yaml.
