@@ -1,6 +1,7 @@
 ---
 import '../styles/tokens.css';
 import '../styles/global.css';
+import AnnouncementBar from '../components/AnnouncementBar.astro';
 
 interface Props {
   title: string;
@@ -99,6 +100,11 @@ const jsonLd = {
     />
   </head>
   <body>
+    <!-- Release announcement bar: slim, dismissible, above the nav on every
+         page. Config-driven from src/data/announcement.ts (renders nothing when
+         that exports null). Mounted here so it wraps both the captured marketing
+         partials and the Astro app pages. -->
+    <AnnouncementBar />
     <slot />
 
     <!-- Progressive enhancement: the ported design uses `style-hover="…"` (a
