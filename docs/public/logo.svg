@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="OAuthLint">
-  <rect x="8.5" y="8.5" width="47" height="47" stroke="#46c6d8" stroke-width="4.5"/>
-  <rect x="25" y="25" width="14" height="14" fill="#46c6d8"/>
+  <rect x="13" y="11" width="38" height="27" stroke="#46c6d8" stroke-width="5"/>
+  <path d="M11 50c3-5 6-5 9 0s6 5 9 0 6-5 9 0 6 5 9 0" stroke="#e5484d" stroke-width="5" stroke-linecap="round"/>
 </svg>
