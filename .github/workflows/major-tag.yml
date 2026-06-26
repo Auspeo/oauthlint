@@ -23,9 +23,8 @@ jobs:
           fetch-depth: 0
       - name: Repoint the major tag
         run: |
-          TAG="${GITHUB_REF_NAME}"        # e.g. v1.2.3
-          MAJOR="v${TAG#v}"               # strip a leading v if present
-          MAJOR="v${MAJOR%%.*}"           # -> v1
+          TAG="${GITHUB_REF_NAME}"                    # e.g. v1.2.3
+          MAJOR="v$(echo "${TAG#v}" | cut -d. -f1)"   # -> v1
           echo "Moving $MAJOR -> $TAG ($GITHUB_SHA)"
           git tag -f "$MAJOR" "$GITHUB_SHA"
           git push -f origin "refs/tags/$MAJOR"
