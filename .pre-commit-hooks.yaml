@@ -12,7 +12,7 @@
   description: Catch OAuth / OIDC / JWT anti-patterns in staged source files.
   entry: oauthlint scan
   language: node
-  additional_dependencies: ['oauthlint@1.0.0']
+  additional_dependencies: ['oauthlint@0.3.0']
   types_or: [javascript, jsx, ts, tsx, python, go, java, rust]
   pass_filenames: true
   # Requires Semgrep on PATH (the engine OAuthLint drives) — see the docs.
