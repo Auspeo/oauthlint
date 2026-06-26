@@ -21,6 +21,17 @@ const SEV: Record<Severity, { label: string; color: string }> = {
 // Severity chips, only for severities actually present, in ramp order.
 const sevOrder: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
 const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
+
+// AI (LLM) prevalence — our core differentiator. HIGH means AI coding tools
+// produce this anti-pattern by default. Present as a filter + per-row signal.
+type Prevalence = 'HIGH' | 'MEDIUM' | 'LOW';
+const prevOrder: Prevalence[] = ['HIGH', 'MEDIUM', 'LOW'];
+const PREV: Record<Prevalence, { label: string; color: string }> = {
+  HIGH: { label: 'HIGH', color: 'var(--ol-sev-critical)' },
+  MEDIUM: { label: 'MEDIUM', color: 'var(--ol-sev-high)' },
+  LOW: { label: 'LOW', color: 'var(--ol-text-muted)' },
+};
+const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence === p));
 ---
 <Base
   title="Rules — OAuthLint"
@@ -33,7 +44,11 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
         <span style="font-family:var(--ol-font-mono); font-size:11px; font-weight:500; letter-spacing:0.14em; color:var(--ol-text-muted);">RULES CATALOGUE</span>
       </div>
       <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Every rule earns its place.</h1>
-      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-8);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category or severity.</p>
+      <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:60ch; margin:0 0 var(--ol-space-5);">Each rule maps to a CWE and ships a vulnerable and a safe example. Filter by language, category, severity — or by how often AI coding tools generate it.</p>
+      <div style="display:flex; align-items:center; gap:var(--ol-space-4); flex-wrap:wrap; margin:0 0 var(--ol-space-8);">
+        <a href="/owasp" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">OWASP coverage →</a>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">AI prevalence = how often Copilot / Cursor / Claude generate the anti-pattern by default</span>
+      </div>
 
       <!-- FILTER BAR -->
       <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-bottom:var(--ol-space-5);">
@@ -48,6 +63,10 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
         <select id="rule-cat" aria-label="Filter by category" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none;">
           <option value="all">All categories</option>
           {catOptions.map((o) => <option value={o}>{o}</option>)}
+        </select>
+        <select id="rule-prevalence" aria-label="Filter by AI prevalence" style="height:40px; padding:0 30px 0 12px; background:var(--ol-surface) url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 fill=%22none%22 stroke=%22%236b7480%22 stroke-width=%222%22><path d=%22M2 4l4 4 4-4%22/></svg>') no-repeat right 12px center; border:1px solid var(--ol-border-strong); color:var(--ol-text); font-family:var(--ol-font-mono); font-size:12px; cursor:pointer; appearance:none; -webkit-appearance:none; -moz-appearance:none;">
+          <option value="all">Any AI prevalence</option>
+          {presentPrevs.map((p) => <option value={p}>{PREV[p].label} AI prevalence</option>)}
         </select>
       </div>
 
@@ -77,6 +96,7 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
                 <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">RULE</th>
                 <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">SEVERITY</th>
                 <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">CATEGORY</th>
+                <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);" title="How often AI coding tools generate this anti-pattern by default">AI</th>
                 <th style="text-align:left; font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.08em; color:var(--ol-text-muted); padding:11px 16px; border-bottom:1px solid var(--ol-border);">LANG</th>
               </tr>
             </thead>
@@ -88,6 +108,7 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
                   data-title={r.title.toLowerCase()}
                   data-sev={r.severity}
                   data-cat={r.category}
+                  data-prev={r.llmPrevalence}
                   data-langs={r.languages.join(' ')}
                   style="transition:background var(--ol-dur-fast) var(--ol-ease-standard); cursor:pointer;"
                   onclick={`location.href='/rules/${r.slug}'`}
@@ -101,6 +122,9 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
                   </td>
                   <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);">
                     <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{r.category}</span>
+                  </td>
+                  <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); white-space:nowrap;">
+                    <span title={`AI prevalence: ${PREV[r.llmPrevalence].label}`} style={`font-family:var(--ol-font-mono); font-size:10px; font-weight:600; letter-spacing:0.04em; color:${PREV[r.llmPrevalence].color};`}>● {PREV[r.llmPrevalence].label}</span>
                   </td>
                   <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle);">
                     <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-muted);">{r.languages.join(' · ')}</span>
@@ -128,6 +152,7 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
       const search = document.getElementById('rule-search');
       const langSel = document.getElementById('rule-lang');
       const catSel = document.getElementById('rule-cat');
+      const prevSel = document.getElementById('rule-prevalence');
       const rows = Array.from(document.querySelectorAll('[data-row]'));
       const countLabel = document.getElementById('rule-count-label');
       const empty = document.getElementById('rule-empty');
@@ -144,10 +169,12 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
         const lang = langSel.value;
         const cat = catSel.value;
         const matchQ = !q || row.dataset.id.includes(q) || row.dataset.title.includes(q);
+        const prev = prevSel.value;
         const matchLang = lang === 'all' || row.dataset.langs.split(' ').includes(lang);
         const matchCat = cat === 'all' || row.dataset.cat === cat;
         const matchSev = sev === 'all' || row.dataset.sev === sev;
-        return matchQ && matchLang && matchCat && matchSev;
+        const matchPrev = prev === 'all' || row.dataset.prev === prev;
+        return matchQ && matchLang && matchCat && matchSev && matchPrev;
       }
 
       function setDisabled(btn, disabled) {
@@ -217,6 +244,7 @@ const presentSevs = sevOrder.filter((s) => rules.some((r) => r.severity === s));
       search.addEventListener('input', onFilterChange);
       langSel.addEventListener('change', onFilterChange);
       catSel.addEventListener('change', onFilterChange);
+      prevSel.addEventListener('change', onFilterChange);
 
       // Rows navigate via onclick; some browsers keep the :active / tap-highlight
       // paint on the clicked row when it is restored from bfcache (Back button),

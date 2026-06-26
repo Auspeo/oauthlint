@@ -73,6 +73,21 @@ oauthlint gives you is the work most people never do:
 Use oauthlint when you'd rather not write and maintain an auth rule pack
 yourself. That's the whole pitch.
 
+## Use directly with Semgrep
+
+Prefer to skip the CLI and run the rules through Semgrep yourself? The full pack
+is hosted as a single Semgrep config — one command, no install:
+
+```bash
+semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+```
+
+Per-language bundles are available too (`oauthlint-python.yaml`, `oauthlint-go.yaml`,
+and so on). That URL is always the latest pack; for a pinned, reproducible
+ruleset in CI, use this CLI (`npx oauthlint@<version> scan`) or vendor
+[`oauthlint-rules`](https://www.npmjs.com/package/oauthlint-rules) from npm. Full
+details in [the Semgrep docs](https://oauthlint.dev/docs/semgrep).
+
 ## Quick start
 
 ```bash
