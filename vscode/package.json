@@ -5,8 +5,11 @@
   "version": "0.1.1",
   "icon": "icon.png",
   "publisher": "auspeo",
-  "private": true,
   "type": "commonjs",
+  "galleryBanner": {
+    "color": "#0C0E13",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.95.0",
     "node": ">=20.0.0"

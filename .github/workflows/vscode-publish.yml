@@ -1,0 +1,52 @@
+name: Publish VS Code extension
+
+# Publishes vscode/ to the VS Code Marketplace (and OpenVSX, if its token is set).
+# Trigger it manually from the Actions tab, or by pushing a `vscode-v*` tag.
+# Dormant until the secrets exist: each publish step no-ops (with a warning)
+# when its token is absent, so the run stays green. Set the repo secrets
+# VSCE_PAT (Marketplace publisher `auspeo`) and optionally OVSX_PAT to go live.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['vscode-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Package + publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.26.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build extension
+        run: pnpm --filter oauthlint-vscode build
+      - name: Publish to VS Code Marketplace
+        working-directory: vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::warning::VSCE_PAT not set — skipping Marketplace publish."
+            exit 0
+          fi
+          pnpm dlx @vscode/vsce publish --no-dependencies -p "$VSCE_PAT"
+      - name: Publish to OpenVSX
+        working-directory: vscode
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::warning::OVSX_PAT not set — skipping OpenVSX publish."
+            exit 0
+          fi
+          pnpm dlx ovsx publish --no-dependencies -p "$OVSX_PAT"
