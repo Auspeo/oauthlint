@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OAuthLint/oauthlint-action@v1
+      - uses: Auspeo/oauthlint/action@v1
         with:
           severity: HIGH       # only emit HIGH+ findings
           fail-on: HIGH        # fail the job on HIGH+
@@ -45,7 +45,7 @@ jobs:
 ### Block PRs on CRITICAL only, but still surface MEDIUM+ in logs
 
 ```yaml
-- uses: OAuthLint/oauthlint-action@v1
+- uses: Auspeo/oauthlint/action@v1
   with:
     severity: MEDIUM
     fail-on: CRITICAL
@@ -54,7 +54,7 @@ jobs:
 ### Upload a JSON report as an artifact
 
 ```yaml
-- uses: OAuthLint/oauthlint-action@v1
+- uses: Auspeo/oauthlint/action@v1
   with:
     json: 'true'
     output: 'oauthlint.json'
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: oauthlint
-        uses: OAuthLint/oauthlint-action@v1
+        uses: Auspeo/oauthlint/action@v1
         with:
           sarif: 'true'
           # SARIF is for surfacing findings, not for gating — let the upload
@@ -98,6 +98,10 @@ jobs:
         with:
           sarif_file: ${{ steps.oauthlint.outputs.sarif-file }}
 ```
+
+## Marketplace listing
+
+This Action is consumed via the monorepo path `Auspeo/oauthlint/action@v1` and works as-is. It is **not** on the GitHub Marketplace: GitHub only lists actions whose `action.yml` is at the repository root, and here it lives in `action/`. To list it later, split it into a dedicated `oauthlint-action` repo (or add a root `action.yml`). Tracked in [#23](https://github.com/Auspeo/oauthlint/issues/23).
 
 ## License
 
