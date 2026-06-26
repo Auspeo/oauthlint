@@ -111,3 +111,57 @@ auth-less publish. To enable automated npm releases:
 Once enabled it opens/updates a "Version Packages" PR from pending changesets
 and publishes to npm when that PR is merged. The marketplace artifacts (Action,
 VS Code extension) are always published manually.
+
+## Writing release notes
+
+Every GitHub Release uses one standard structure so notes stay scannable and
+useful. Start from the skeleton at
+[`.github/RELEASE_NOTES_TEMPLATE.md`](.github/RELEASE_NOTES_TEMPLATE.md) and fill
+it in with `gh release edit <tag> --notes "<markdown>"` (or paste into the
+release UI). Source the actual content from the per-package CHANGELOGs
+(`cli/CHANGELOG.md`, `rules/CHANGELOG.md`) and the merged PRs in the release
+window.
+
+**Structure (in order):**
+
+1. **Intro** — 1–2 sentences: what this release is and who it helps.
+2. **Grouped changes** — only the groups that apply, with emoji headers:
+   `### ✨ New`, `### 🐛 Fixes`, `### 🔒 Security`, `### 📚 Docs`,
+   `### 🧰 Internal`. Each bullet states **what** changed **and the problem it
+   solves**, then links the PR as `(#NN)`.
+3. **Install / upgrade** — the exact commands for the artifact this tag ships
+   (`npm i -g oauthlint@<v>` / `npx oauthlint@<v>`, `uses: Auspeo/oauthlint/action@v1`,
+   or the VS Code Marketplace id `auspeo.oauthlint`).
+4. **Full changelog** — a compare link to the previous tag of the *same*
+   artifact: `https://github.com/Auspeo/oauthlint/compare/<prevtag>...<tag>`
+   (for an artifact's first release, link its tree:
+   `https://github.com/Auspeo/oauthlint/tree/<tag>`).
+
+**Checklist before publishing:**
+
+- [ ] Intro sentence present (what + who).
+- [ ] Changes grouped under emoji headers; every bullet carries problem-context.
+- [ ] Every claim links a **real, verified merged PR** — never invent numbers.
+      Confirm with `gh pr view <NN>` / `git log <prevtag>..<tag> --oneline`.
+- [ ] Install / upgrade commands match the artifact and version.
+- [ ] Compare link uses the correct previous tag (per artifact, not just newest).
+- [ ] `gh release view <tag>` renders the final notes; latest-release flag set
+      appropriately.
+
+### Release cadence
+
+OAuthLint ships on a **bi-weekly release train**: accumulated changesets are
+batched and a release is cut **every 2 weeks**, regardless of size. Between
+trains, the only out-of-band releases are **on-demand patch releases for
+security or critical fixes** — nothing else jumps the queue.
+
+Version bumps follow **SemVer**, driven by Changesets:
+
+- **patch** — rules fixes (false-positive/negative tweaks), docs-only republishes.
+- **minor** — new rules (`oauthlint-rules`), new CLI/Action features.
+- **major** — breaking changes (CLI flag/output/exit-code changes, removed
+  rules, Action input/behavior breaks).
+
+The npm packages (`oauthlint`, `oauthlint-rules`) and the marketplace artifacts
+(Action `vX.Y.Z` + moving `v1`, VS Code extension) version **independently** —
+each carries its own tag and compare link in its release notes.

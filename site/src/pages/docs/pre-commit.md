@@ -16,12 +16,12 @@ Add OAuthLint to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/Auspeo/oauthlint
-    rev: oauthlint@0.3.0
+    rev: oauthlint@0.4.0
     hooks:
       - id: oauthlint
 ```
 
-> The pre-commit hook and incremental scanning ship in **oauthlint 0.3.0**. Until that release is published you can point `rev` at `main` to try it.
+> Pin `rev` to a published [release tag](https://github.com/Auspeo/oauthlint/releases) (the hook installs that exact version); point it at `main` only to track unreleased changes.
 
 Then install the hook and you're done:
 
@@ -53,7 +53,7 @@ By default the hook reports findings but stays out of your way. To block commits
 ```yaml
 repos:
   - repo: https://github.com/Auspeo/oauthlint
-    rev: oauthlint@0.3.0
+    rev: oauthlint@0.4.0
     hooks:
       - id: oauthlint
         args: [--fail-on, HIGH]

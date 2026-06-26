@@ -17,7 +17,7 @@ Install **oauthlint** from the [VS Code Marketplace](https://marketplace.visuals
 code --install-extension auspeo.oauthlint-vscode
 ```
 
-Publisher / extension id: **`auspeo.oauthlint-vscode`**. Early (`0.2.x`) but functional.
+Publisher / extension id: **`auspeo.oauthlint-vscode`**.
 
 ### Requirement: the CLI
 

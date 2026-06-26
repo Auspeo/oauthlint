@@ -1,0 +1,169 @@
+---
+/**
+ * Dismissible, site-wide release announcement bar.
+ *
+ * Renders at the very top of <body>, above the sticky nav (mounted in
+ * Base.astro). Config-driven from `src/data/announcement.ts`: when that exports
+ * `null`, this renders NOTHING (no element, no layout shift). When set, a slim
+ * azure-accent bar shows the release and links to its notes.
+ *
+ * Dismissal is JS-enhanced and per-version: the close button stores the current
+ * version under localStorage `ol-announce`. On load, an inline script hides the
+ * bar only when the stored version matches the current one — a new release
+ * (new version) re-surfaces it. With no JS the bar simply shows (and the close
+ * button still scrolls past; it just can't persist).
+ */
+import { announcement } from '../data/announcement';
+
+const external = announcement ? /^https?:\/\//i.test(announcement.href) : false;
+---
+{
+  announcement && (
+    <div
+      id="ol-announce-bar"
+      data-announce
+      data-announce-version={announcement.version}
+      role="region"
+      aria-label="Release announcement"
+      style="
+        position: relative;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--ol-space-2);
+        min-height: 40px;
+        padding: var(--ol-space-2) 44px;
+        background: color-mix(in oklch, var(--ol-accent) 14%, var(--ol-canvas));
+        border-bottom: 1px solid var(--ol-accent-border);
+        font-family: var(--ol-font-ui);
+        font-size: var(--ol-text-body-s);
+        line-height: 1.35;
+        color: var(--ol-text);
+        text-align: center;
+      "
+    >
+      <a
+        href={announcement.href}
+        class="ol-announce-link"
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        style="
+          display: inline-flex;
+          align-items: baseline;
+          gap: 8px;
+          max-width: 100%;
+          color: inherit;
+          text-decoration: none;
+          font-weight: var(--ol-weight-medium);
+        "
+      >
+        <span
+          aria-hidden="true"
+          style="flex: none; width: 6px; height: 6px; border-radius: 999px; background: var(--ol-accent); align-self: center;"
+        />
+        <span
+          style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+        >
+          {announcement.text}
+        </span>
+        <span
+          class="ol-announce-more"
+          style="flex: none; color: var(--ol-accent); font-family: var(--ol-font-mono); font-size: var(--ol-text-mono-s); font-weight: var(--ol-weight-medium);"
+        >
+          Read more →
+        </span>
+      </a>
+
+      <button
+        type="button"
+        data-announce-dismiss
+        aria-label="Dismiss announcement"
+        style="
+          position: absolute;
+          top: 50%;
+          right: 4px;
+          transform: translateY(-50%);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          padding: 0;
+          background: transparent;
+          border: 0;
+          color: var(--ol-text-muted);
+          cursor: pointer;
+          transition: color var(--ol-dur-fast) var(--ol-ease-standard);
+        "
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <line x1="5" y1="5" x2="19" y2="19" />
+          <line x1="19" y1="5" x2="5" y2="19" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+<style>
+  /* Hover affordances (border/colour only; the global prefers-reduced-motion
+     block already neutralises the transitions). */
+  .ol-announce-link:hover .ol-announce-more {
+    color: var(--ol-accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  [data-announce-dismiss]:hover {
+    color: var(--ol-text) !important;
+  }
+  /* On narrow screens drop the "Read more →" tag so the headline keeps the room
+     and the bar never overflows; the whole bar is still a link. */
+  @media (max-width: 560px) {
+    .ol-announce-more {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  import {
+    ANNOUNCEMENT_STORAGE_KEY,
+    shouldShowAnnouncement,
+  } from '../data/announcement';
+
+  const bar = document.querySelector<HTMLElement>('[data-announce]');
+  if (bar) {
+    const current = bar.dataset.announceVersion ?? null;
+    let dismissed: string | null = null;
+    try {
+      dismissed = localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY);
+    } catch {
+      /* private mode / storage blocked: treat as not-dismissed, show the bar */
+    }
+
+    // Same pure rule the unit tests cover: hide only when this exact version
+    // was already dismissed. A new release (new version) re-surfaces it.
+    if (!shouldShowAnnouncement(current, dismissed)) {
+      bar.remove();
+    } else {
+      const dismiss = bar.querySelector<HTMLElement>('[data-announce-dismiss]');
+      dismiss?.addEventListener('click', () => {
+        try {
+          if (current) localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, current);
+        } catch {
+          /* still hide for this session even if we can't persist */
+        }
+        bar.remove();
+      });
+    }
+  }
+</script>
