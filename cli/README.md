@@ -63,8 +63,9 @@ oauthlint gives you is the work most people never do:
   ([validation report](https://oauthlint.dev/VALIDATION)).
 - **One coherent product across every language it covers.** Same concepts, same ID scheme,
   same docs — not a patchwork of community rules with mismatched styles.
-- **Every finding teaches.** All 90 rules link to a fix page with CWE and OWASP
-  mappings. It's a lesson, not a grep hit.
+- **Every finding teaches.** The 100+ rules — across JS/TS · Python · Go · Java
+  · Rust — each link to a fix page with CWE and OWASP mappings. It's a lesson,
+  not a grep hit.
 - **The angle the registry doesn't have:** oauthlint specifically targets the
   auth bugs AI coding tools ship on repeat, encoded in each rule's
   `llm-prevalence` metadata and measured by a [reproducible benchmark](https://github.com/Auspeo/oauthlint/tree/main/benchmark).
@@ -203,6 +204,7 @@ oauthlint list --json           Same, as JSON
 oauthlint init                  Generate .oauthlintrc.yml at cwd
 oauthlint init --force          Overwrite an existing config
 oauthlint doctor                Check your setup (Semgrep, config, …)
+oauthlint --no-update-check     Skip the "update available" check (any command)
 ```
 
 ## Use it in CI
@@ -226,8 +228,20 @@ jobs:
 
 Or just fail the build on HIGH findings: `npx oauthlint scan ./src --fail-on HIGH`.
 
-> A dedicated **GitHub Action** and a **VS Code extension** (inline diagnostics +
-> Quick Fix suppressions) are on the way — follow the [repo](https://github.com/Auspeo/oauthlint) for releases.
+### GitHub Action
+
+Prefer not to wire up the CLI by hand? The **[GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action)** wraps it for you — it's Docker-based, so it runs in any repo regardless of language:
+
+```yaml
+- uses: Auspeo/oauthlint/action@v1
+  with:
+    severity: HIGH
+    fail-on: HIGH
+```
+
+### VS Code extension
+
+Catch findings as you type. Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** (`auspeo.oauthlint-vscode`) from the VS Code Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
 
 ## What it catches
 
@@ -282,6 +296,20 @@ the next reviewer needs to see exactly which lines opted out, and why.
 
 > With `--baseline`, the `--fail-on` gate and these exit codes consider only the
 > **new** (non-baselined) findings.
+
+## Stay up to date
+
+oauthlint occasionally prints a short *"Update available"* notice to **stderr**
+when a newer version is on npm. It's designed to stay out of your way:
+
+- It's **non-blocking** and checks npm at most **once a day** (the result is
+  cached), so it never slows a scan down.
+- It writes to **stderr only** and is **silent** under `--json` / `--format
+  sarif`, when output is piped, in CI, and offline — so it can never corrupt a
+  machine-readable report or nag automated runs.
+
+To turn it off entirely, pass `--no-update-check` or set the standard
+`NO_UPDATE_NOTIFIER=1` environment variable.
 
 ## License
 

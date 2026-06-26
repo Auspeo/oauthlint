@@ -8,6 +8,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runList } from './commands/list.js';
 import { type ScanFormat, runScan } from './commands/scan.js';
+import { maybeNotifyUpdate } from './core/update-notifier.js';
 import { SEVERITIES, type SeverityName } from './types.js';
 
 interface PkgJson {
@@ -34,6 +35,25 @@ async function exitAfterFlush(code: number): Promise<never> {
     });
   await Promise.all([flush(process.stdout), flush(process.stderr)]);
   process.exit(code);
+}
+
+/**
+ * Print the "update available" notice (when allowed) AFTER the command's normal
+ * output, then exit once everything is flushed. The notifier is fire-and-forget
+ * and self-suppressing: it never blocks, never touches stdout, and is silent
+ * under `--json`/`--format sarif`, in CI, when piped, when `NO_UPDATE_NOTIFIER`
+ * is set, or when `--no-update-check` is passed.
+ */
+async function finishWithNotice(
+  code: number,
+  ctx: { version: string; machineReadable: boolean; updateCheck: boolean },
+): Promise<never> {
+  await maybeNotifyUpdate({
+    currentVersion: ctx.version,
+    machineReadable: ctx.machineReadable,
+    disabled: !ctx.updateCheck,
+  });
+  return exitAfterFlush(code);
 }
 
 async function readPackageVersion(): Promise<string> {
@@ -63,7 +83,12 @@ export async function buildProgram(): Promise<Command> {
     .description(
       'OAuthLint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.',
     )
-    .version(version, '-v, --version');
+    .version(version, '-v, --version')
+    .option('--no-update-check', 'Do not check npm for a newer oauthlint version');
+
+  // Resolve the global update-check opt-out once, lazily, from the root program.
+  // Commander sets `updateCheck: false` when `--no-update-check` is given.
+  const updateCheckEnabled = (): boolean => program.opts().updateCheck !== false;
 
   program
     .command('scan')
@@ -101,7 +126,9 @@ export async function buildProgram(): Promise<Command> {
         fix: opts.fix,
         baseline: opts.baseline,
       });
-      await exitAfterFlush(code);
+      const machineReadable =
+        opts.json === true || opts.format === 'json' || opts.format === 'sarif';
+      await finishWithNotice(code, { version, machineReadable, updateCheck: updateCheckEnabled() });
     });
 
   program
@@ -118,7 +145,12 @@ export async function buildProgram(): Promise<Command> {
         output: opts.output,
         rulesDir: opts.rulesDir,
       });
-      await exitAfterFlush(code);
+      // baseline writes a JSON file but its stdout is a human summary.
+      await finishWithNotice(code, {
+        version,
+        machineReadable: false,
+        updateCheck: updateCheckEnabled(),
+      });
     });
 
   program
@@ -126,7 +158,12 @@ export async function buildProgram(): Promise<Command> {
     .description('List every rule the current install ships with')
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
-      await exitAfterFlush(await runList({ json: opts.json }));
+      const code = await runList({ json: opts.json });
+      await finishWithNotice(code, {
+        version,
+        machineReadable: opts.json === true,
+        updateCheck: updateCheckEnabled(),
+      });
     });
 
   program
@@ -134,7 +171,12 @@ export async function buildProgram(): Promise<Command> {
     .description('Generate a .oauthlintrc.yml at the current directory')
     .option('-f, --force', 'Overwrite an existing config file')
     .action(async (opts: { force?: boolean }) => {
-      await exitAfterFlush(await runInit({ cwd: process.cwd(), force: opts.force }));
+      const code = await runInit({ cwd: process.cwd(), force: opts.force });
+      await finishWithNotice(code, {
+        version,
+        machineReadable: false,
+        updateCheck: updateCheckEnabled(),
+      });
     });
 
   program
@@ -142,7 +184,12 @@ export async function buildProgram(): Promise<Command> {
     .description('Diagnose your OAuthLint install (Node, Semgrep, rule pack)')
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
-      await exitAfterFlush(await runDoctor({ json: opts.json }));
+      const code = await runDoctor({ json: opts.json });
+      await finishWithNotice(code, {
+        version,
+        machineReadable: opts.json === true,
+        updateCheck: updateCheckEnabled(),
+      });
     });
 
   program.showHelpAfterError(pc.dim('(run `oauthlint --help` for available commands)'));
