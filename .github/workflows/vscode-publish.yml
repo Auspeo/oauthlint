@@ -39,7 +39,16 @@ jobs:
             echo "::warning::VSCE_PAT not set — skipping Marketplace publish."
             exit 0
           fi
-          pnpm dlx @vscode/vsce publish --no-dependencies -p "$VSCE_PAT"
+          set +e
+          OUT=$(pnpm dlx @vscode/vsce publish --no-dependencies -p "$VSCE_PAT" 2>&1); CODE=$?
+          echo "$OUT"
+          # Idempotent: re-running to publish a new marketplace must not fail
+          # just because this version is already on the VS Code Marketplace.
+          if [ $CODE -ne 0 ]; then
+            echo "$OUT" | grep -qiE 'already exists|already published|same or greater version|is already' \
+              && echo "::notice::Version already on the VS Code Marketplace — skipping." \
+              || exit $CODE
+          fi
       - name: Publish to OpenVSX
         working-directory: vscode
         env:
@@ -49,4 +58,11 @@ jobs:
             echo "::warning::OVSX_PAT not set — skipping OpenVSX publish."
             exit 0
           fi
-          pnpm dlx ovsx publish --no-dependencies -p "$OVSX_PAT"
+          set +e
+          OUT=$(pnpm dlx ovsx publish --no-dependencies -p "$OVSX_PAT" 2>&1); CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ]; then
+            echo "$OUT" | grep -qiE 'already exists|already published' \
+              && echo "::notice::Version already on Open VSX — skipping." \
+              || exit $CODE
+          fi
