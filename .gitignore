@@ -59,6 +59,6 @@ validation-report.md
 # VS Code extension build artifact
 *.vsix
 
-
-
+# Local-only notes / scratch (never committed)
+*.local.md
 .claude/
