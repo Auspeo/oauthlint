@@ -1,0 +1,74 @@
+rules:
+  - id: auth.oauth.token-in-localstorage
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An OAuth/OIDC token is being written to `localStorage` /
+      `sessionStorage` under a token-named key (`access_token`,
+      `refresh_token`, `id_token`, …). Web storage is readable by any
+      script on the origin, so any XSS — including a compromised
+      third-party dependency — can exfiltrate the token via
+      `getItem(...)`. There is no browser-side mitigation, unlike
+      `HttpOnly` cookies.
+
+      Keep access/refresh/id tokens in memory only, or have the server
+      issue them in a `Secure; HttpOnly; SameSite=Strict` cookie.
+      `sessionStorage` is no safer than `localStorage` against XSS — it
+      grants the same attacker capability.
+
+      See CWE-922: Insecure Storage of Sensitive Information.
+    # We scope to common OAuth token KEY NAMES (case-insensitively) so this
+    # stays low-FP: `localStorage.setItem("theme", …)` and other non-token
+    # keys are NOT flagged. The key is bound to a metavariable and constrained
+    # with metavariable-regex `(?i)(access|refresh|id)[_-]?token`, which matches
+    # access_token / refresh_token / id_token and the camelCase accessToken /
+    # refreshToken / idToken. This deliberately overlaps as little as possible
+    # with auth.jwt.localstorage, which keys off the strong word `token`/`jwt`
+    # in either key or value (incl. variable keys); this rule is presence-based
+    # on a fixed set of OAuth/OIDC token key names.
+    pattern-either:
+      # setItem("access_token", v) on localStorage / sessionStorage.
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage.setItem("$KEY", $V)
+              - pattern: sessionStorage.setItem("$KEY", $V)
+              - pattern: window.localStorage.setItem("$KEY", $V)
+              - pattern: window.sessionStorage.setItem("$KEY", $V)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+      # Property assignment: localStorage.accessToken = v
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage.$KEY = $V
+              - pattern: sessionStorage.$KEY = $V
+              - pattern: window.localStorage.$KEY = $V
+              - pattern: window.sessionStorage.$KEY = $V
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+      # Bracket assignment: localStorage["access_token"] = v
+      - patterns:
+          - pattern-either:
+              - pattern: localStorage["$KEY"] = $V
+              - pattern: sessionStorage["$KEY"] = $V
+              - pattern: window.localStorage["$KEY"] = $V
+              - pattern: window.sessionStorage["$KEY"] = $V
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(access|refresh|id)[_-]?token$
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-012
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-token-in-localstorage
+      category: security
+      cwe: CWE-922
+      owasp: A05:2021
+      llm-prevalence: HIGH
+      technology:
+        - localStorage
+        - sessionStorage
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+        - https://cwe.mitre.org/data/definitions/922.html
