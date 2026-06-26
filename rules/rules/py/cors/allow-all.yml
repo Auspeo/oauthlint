@@ -1,0 +1,55 @@
+rules:
+  - id: auth.py.cors.allow-all
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Flask-CORS is configured with `supports_credentials=True` together with a
+      wildcard origin (`origins="*"`, `origins=["*"]`, or — since Flask-CORS
+      defaults to `*` — no `origins` argument at all). The CORS spec forbids the
+      `Access-Control-Allow-Origin: *` + `Access-Control-Allow-Credentials: true`
+      combination, so browsers will block it; the dangerous "fix" is to leave the
+      wildcard in place while keeping credentials on, which exposes credentialed
+      cross-origin access to ANY website (CWE-942). For OAuth/OIDC this leaks
+      cookies, session tokens and CSRF protections cross-origin.
+
+      Credentialed requests must use an explicit allow-list of trusted origins,
+      e.g. `CORS(app, origins=["https://app.example.com"], supports_credentials=True)`.
+      If you genuinely need a public, wildcard endpoint, drop credentials:
+      `CORS(app, origins="*")` (the default, `supports_credentials=False`).
+    # Match presence of `supports_credentials=True` paired with a wildcard origin
+    # (`origins="*"` / `origins=["*"]`) OR no `origins` argument (Flask-CORS then
+    # defaults to `*`). The explicit-wildcard arms fire on `CORS(...)` and the
+    # `@cross_origin(...)` decorator; the default-wildcard arm uses `pattern-not`
+    # to require that NO `origins=...` is present, so an explicit allow-list such
+    # as `origins=["https://app.example.com"]` is never flagged.
+    pattern-either:
+      # Explicit wildcard origin + credentials — CORS(...) call.
+      - pattern: CORS(..., origins="*", ..., supports_credentials=True, ...)
+      - pattern: CORS(..., supports_credentials=True, ..., origins="*", ...)
+      - pattern: CORS(..., origins=["*"], ..., supports_credentials=True, ...)
+      - pattern: CORS(..., supports_credentials=True, ..., origins=["*"], ...)
+      # Explicit wildcard origin + credentials — @cross_origin(...) decorator.
+      - pattern: '@cross_origin(..., origins="*", ..., supports_credentials=True, ...)'
+      - pattern: '@cross_origin(..., supports_credentials=True, ..., origins="*", ...)'
+      - pattern: '@cross_origin(..., origins=["*"], ..., supports_credentials=True, ...)'
+      - pattern: '@cross_origin(..., supports_credentials=True, ..., origins=["*"], ...)'
+      # Credentials on, NO origins argument → Flask-CORS defaults to wildcard.
+      - patterns:
+          - pattern: CORS(..., supports_credentials=True, ...)
+          - pattern-not: CORS(..., origins=$ORIGINS, ...)
+      - patterns:
+          - pattern: '@cross_origin(..., supports_credentials=True, ...)'
+          - pattern-not: '@cross_origin(..., origins=$ORIGINS, ...)'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - flask-cors
+      references:
+        - https://flask-cors.readthedocs.io/en/latest/configuration.html
+        - https://cwe.mitre.org/data/definitions/942.html
