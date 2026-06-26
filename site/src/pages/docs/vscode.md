@@ -17,9 +17,7 @@ Install **oauthlint** from the [VS Code Marketplace](https://marketplace.visuals
 code --install-extension auspeo.oauthlint-vscode
 ```
 
-Publisher / extension id: **`auspeo.oauthlint-vscode`**. It's pre-release (`0.1.x`) — early but functional.
-
-Or in VS Code: **Extensions** view → **⋯** menu → **Install from VSIX…** → pick the built file. Once it lands on the Marketplace you'll be able to search for **oauthlint** there directly.
+Publisher / extension id: **`auspeo.oauthlint-vscode`**. Early (`0.2.x`) but functional.
 
 ### Requirement: the CLI
 
@@ -38,6 +36,7 @@ If the CLI can't be found, the extension shows a one-time warning with a link to
 - **Rule id + docs link on every finding.** Each diagnostic carries its rule id (e.g. `auth.jwt.no-verification`) and a link straight to that rule's page on oauthlint.dev.
 - **Quick Fix → suppress this line.** On any finding, the lightbulb offers **Suppress `<rule-id>` on this line**, which inserts an `// oauthlint-disable-next-line <rule-id>` directive above the offending line — the same auditable comment the CLI honours. See [Suppressing rules](/docs/suppressing).
 - **Quick Fix → open documentation.** A second action, **Open documentation for `<rule-id>`**, opens the rule's docs in your browser.
+- **Status bar item.** A shield in the status bar shows the finding count for the active file, spins while a scan runs, and turns into a warning (pointing at `oauthlint.cliPath`) when the CLI can't be run. Click it to re-scan the current file. It hides for non-JS/TS files.
 
 ## Settings
 
