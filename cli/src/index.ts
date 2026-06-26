@@ -1,5 +1,20 @@
 export { buildProgram } from './cli.js';
 export { runScan, type ScanCommandOptions } from './commands/scan.js';
+export { runBaseline, type BaselineCommandOptions } from './commands/baseline.js';
+export {
+  BASELINE_VERSION,
+  DEFAULT_BASELINE_FILE,
+  type Baseline,
+  type BaselineEntry,
+  type BaselineFile,
+  BaselineNotFoundError,
+  BaselineParseError,
+  buildBaseline,
+  fingerprintFindings,
+  loadBaseline,
+  partitionByBaseline,
+  serialiseBaseline,
+} from './core/baseline.js';
 export { runList, type ListOptions } from './commands/list.js';
 export { runInit, type InitOptions } from './commands/init.js';
 export { runDoctor, type DoctorOptions } from './commands/doctor.js';

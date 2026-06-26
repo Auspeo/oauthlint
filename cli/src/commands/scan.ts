@@ -5,6 +5,13 @@ import {
   SemgrepNotInstalledError,
   SemgrepOutputError,
 } from '../adapters/semgrep.js';
+import {
+  BaselineNotFoundError,
+  BaselineParseError,
+  DEFAULT_BASELINE_FILE,
+  loadBaseline,
+  partitionByBaseline,
+} from '../core/baseline.js';
 import { GitError, resolveDiffFiles, resolveStagedFiles } from '../core/changed-files.js';
 import { loadConfig } from '../core/config.js';
 import { Reporter } from '../core/reporter.js';
@@ -44,6 +51,13 @@ export interface ScanCommandOptions {
    * ship a `fix:` template. Currently the cookie-* rules.
    */
   fix?: boolean;
+  /**
+   * Suppress findings already captured in a baseline file, reporting only NEW
+   * findings. A bare `true` uses the default `.oauthlint-baseline.json`; a
+   * string is treated as an explicit baseline path. A missing file is a clear
+   * error, never silently an empty allow-list.
+   */
+  baseline?: string | boolean;
   /** Used by tests to inject a mock adapter. */
   adapter?: SemgrepAdapter;
   /** Used by tests to capture output. */
@@ -60,6 +74,25 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   const format: ScanFormat = opts.format ?? (opts.json ? 'json' : 'pretty');
   const stream = opts.stream ?? process.stdout;
   const errStream = opts.stream ?? process.stderr;
+
+  // Load the baseline up front so a missing/malformed file fails fast — before
+  // we pay for a full scan — with a clear error rather than a silent no-op.
+  let baseline: Awaited<ReturnType<typeof loadBaseline>> | null = null;
+  if (opts.baseline !== undefined && opts.baseline !== false) {
+    const baselinePath = resolve(
+      cwd,
+      typeof opts.baseline === 'string' ? opts.baseline : DEFAULT_BASELINE_FILE,
+    );
+    try {
+      baseline = await loadBaseline(baselinePath);
+    } catch (err) {
+      if (err instanceof BaselineNotFoundError || err instanceof BaselineParseError) {
+        errStream.write(`${err.message}\n`);
+        return 2;
+      }
+      throw err;
+    }
+  }
 
   // Resolve the set of targets to hand Semgrep. Incremental flags (--diff /
   // --staged) win and narrow the scan to changed files only; otherwise we scan
@@ -143,6 +176,15 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
     findings = findings.filter((f) => meetsThreshold(f.severity, minSeverity));
   }
 
+  // Baseline suppression: drop findings whose fingerprint is already recorded,
+  // so only genuinely NEW findings are reported and gate the exit code.
+  let baselinedCount = 0;
+  if (baseline) {
+    const { newFindings, baselined } = await partitionByBaseline(findings, baseline, cwd);
+    findings = newFindings;
+    baselinedCount = baselined.length;
+  }
+
   if (format === 'sarif') {
     const sarif = await toSarif({ ...result, findings });
     stream.write(`${JSON.stringify(sarif, null, 2)}\n`);
@@ -159,6 +201,13 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
         `\nℹ ${suppressed.length} finding${
           suppressed.length === 1 ? '' : 's'
         } suppressed via inline directives.\n`,
+      );
+    }
+    if (baselinedCount > 0 && format === 'pretty') {
+      stream.write(
+        `\nℹ ${baselinedCount} finding${
+          baselinedCount === 1 ? '' : 's'
+        } already in the baseline (reporting NEW findings only).\n`,
       );
     }
   }
