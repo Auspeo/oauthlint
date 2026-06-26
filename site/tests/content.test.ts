@@ -8,7 +8,7 @@ const htmlDir = join(__dirname, '..', 'src', 'html');
 
 // Marketing pages (rules catalogue is data-driven; pricing was removed with the
 // OAuthHound teaser to keep the public site employer-safe).
-const OWNED_PAGES = ['index.html', 'docs.html', 'about.html', 'notfound.html'];
+const OWNED_PAGES = ['index.html', 'about.html', 'notfound.html'];
 
 function read(page: string): string {
   return readFileSync(join(htmlDir, page), 'utf8');
