@@ -1,0 +1,85 @@
+rules:
+  - id: auth.flow.ssrf
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the URL of an outbound HTTP request.
+      Because the destination is attacker-controlled, this is a Server-Side
+      Request Forgery (CWE-918): an attacker can point the request at internal
+      services behind your firewall, or at the cloud metadata endpoint
+      (http://169.254.169.254/...) to steal IAM/instance credentials and pivot
+      deeper into your infrastructure.
+
+      Never build a request URL straight from a raw `req.query` / `req.body` /
+      `req.params` / `req.cookies` / `req.headers` value. Validate the
+      destination against an explicit allow-list of hosts (resolve the URL and
+      check its host against the allow-list, rejecting private/loopback ranges)
+      before issuing the request.
+    # Taint mode so indirection is caught — `const u = req.query.endpoint;
+    # http.get(u)` flags, not just the direct `fetch(req.query.url)` form.
+    # Passing the value through a host allow-list / validation call
+    # (isAllowedUrl, allowlist.includes, Set.has) clears the taint, so a
+    # genuinely vetted outbound request does not fire.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.cookies.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.cookies[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sanitizers:
+      # Routing the value through a host allow-list / validation helper clears
+      # the taint: only the vetted destination (not the raw request input)
+      # reaches the request. Matched by a conventional validation-helper call,
+      # or by an allow-list membership test (`Set.has` / `Array.includes`) that
+      # the value is passed through.
+      - pattern: isAllowedUrl(...)
+      - pattern: validateUrl(...)
+      - pattern: assertAllowedHost(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($SINK, ...)
+              - pattern: nodeFetch($SINK, ...)
+              - pattern: request($SINK, ...)
+              - pattern: got($SINK, ...)
+              - pattern: axios($SINK)
+              - pattern: axios.get($SINK, ...)
+              - pattern: axios.post($SINK, ...)
+              - pattern: axios.put($SINK, ...)
+              - pattern: axios.delete($SINK, ...)
+              - pattern: "axios.request({..., url: $SINK, ...})"
+              - pattern: http.get($SINK, ...)
+              - pattern: https.get($SINK, ...)
+              - pattern: http.request($SINK, ...)
+              - pattern: https.request($SINK, ...)
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-011
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - express
+        - axios
+        - fetch
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/918.html

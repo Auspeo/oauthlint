@@ -1,0 +1,76 @@
+rules:
+  - id: auth.go.flow.ssrf
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request data flows into the URL of an outbound HTTP request.
+      An attacker who controls the request target (via a query parameter, form
+      field, or request header) can coerce your server into making requests to
+      arbitrary destinations — Server-Side Request Forgery (SSRF). This is
+      routinely abused to reach internal-only services behind your network
+      perimeter and, most damagingly, the cloud instance metadata endpoint
+      (e.g. http://169.254.169.254/...), letting an attacker steal short-lived
+      credentials and pivot into your cloud account.
+
+      Never pass a request-derived value straight into `http.Get`,
+      `http.Post`, `http.NewRequest`, or a client's `Get`/`Post`. Validate the
+      destination host against an explicit allow-list (parse the URL and check
+      the resolved host/scheme), and reject requests to private, loopback, and
+      link-local address ranges before dialing. See CWE-918.
+    # Taint mode so indirection (target := r.FormValue("endpoint");
+    # http.Get(target)) is caught, not just the inline form. The taint is
+    # cleared by an allow-list / host-validation helper, or by a
+    # url.Parse(...)-then-checked flow where the parsed host is vetted before
+    # the request is made.
+    mode: taint
+    pattern-sources:
+      # $R is the *http.Request. Cover the common net/http input shapes.
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+    pattern-sanitizers:
+      # Allow-list / host-validation helper that vets the URL string.
+      - pattern: validateURL(...)
+      - pattern: isAllowedHost(...)
+      - pattern: $ALLOW.MatchString(...)
+      # url.Parse-then-checked: a parsed URL whose host has been inspected is
+      # treated as cleared (the request is built from a vetted destination
+      # rather than the raw untrusted string).
+      - pattern: url.Parse(...)
+    pattern-sinks:
+      # Focus the URL argument so the finding lands on the tainted destination,
+      # not the whole call. The plain call form is used (no aliasing) because
+      # it matches reliably in taint mode.
+      - patterns:
+          - pattern-either:
+              - pattern: http.Get($URL)
+              - pattern: http.Post($URL, ...)
+              - pattern: http.Head($URL)
+              - pattern: http.NewRequest($M, $URL, ...)
+              - pattern: http.NewRequestWithContext($CTX, $M, $URL, ...)
+              - pattern: $CLIENT.Get($URL)
+              - pattern: $CLIENT.Post($URL, ...)
+          # The bare `$CLIENT.Get(...)` shape collides with the request-input
+          # SOURCES that are themselves `.Get(...)` calls (`r.URL.Query().Get(...)`
+          # and `r.Header.Get(...)`), which over-matched the source-assignment
+          # line. Exclude those accessors so each is only ever a source, leaving
+          # `client.Get(url)` as the genuine outbound-request sink.
+          - pattern-not: $Q.Query().Get(...)
+          - pattern-not: $H.Header.Get(...)
+          - focus-metavariable: $URL
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - net/http
+      references:
+        - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+        - https://cwe.mitre.org/data/definitions/918.html
