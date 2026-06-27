@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# python subset — 16 rules.
+# python subset — 17 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -329,6 +329,72 @@ rules:
       - pattern: $SESSION.head(..., verify=False, ...)
       - pattern: $SESSION.options(..., verify=False, ...)
       - pattern: $SESSION.request(..., verify=False, ...)
+  - id: auth.py.flow.secret-in-response
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A server-side secret read from the environment flows into an HTTP
+      response sent back to the client — leaking it (CWE-200). Anything you
+      return from a Flask view (via `jsonify(...)`, `make_response(...)`,
+      `Response(...)`) is visible to every caller, so an env value whose name
+      looks like a credential (`API_KEY`, `CLIENT_SECRET`, `*_TOKEN`,
+      `*_PASSWORD`, a private key, an access key, ...) must never reach it.
+
+      Never send a server secret to the client. Return only the data the
+      caller needs; keep credentials server-side. If a value genuinely must be
+      surfaced, redact or mask it first (`redact(...)` / `mask_secret(...)`),
+      and prefer exposing only public configuration (names prefixed
+      `PUBLIC_` / `NEXT_PUBLIC_` / `VITE_`) to clients.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-secret-in-response
+      category: security
+      cwe: CWE-200
+      owasp: API3:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/200.html
+        - https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/
+      technology:
+        - flask
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: os.environ[$KEY]
+              - pattern: os.environ.get($KEY)
+              - pattern: os.environ.get($KEY, ...)
+              - pattern: os.getenv($KEY)
+              - pattern: os.getenv($KEY, ...)
+              - pattern: environ[$KEY]
+              - pattern: environ.get($KEY)
+              - pattern: environ.get($KEY, ...)
+              - pattern: getenv($KEY)
+              - pattern: getenv($KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^['"]?(?!(?:NEXT_PUBLIC_|VITE_|PUBLIC_))\w*(?:secret|password|passwd|token|api[_-]?key|private[_-]?key|client[_-]?secret|credential|access[_-]?key)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: jsonify(..., $X, ...)
+              - pattern: jsonify(..., $K=$X, ...)
+              - pattern: flask.jsonify(..., $X, ...)
+              - pattern: flask.jsonify(..., $K=$X, ...)
+              - pattern: make_response(..., $X, ...)
+              - pattern: make_response(..., $K=$X, ...)
+              - pattern: flask.make_response(..., $X, ...)
+              - pattern: flask.make_response(..., $K=$X, ...)
+              - pattern: Response(..., $X, ...)
+              - pattern: Response(..., $K=$X, ...)
+              - pattern: flask.Response(..., $X, ...)
+              - pattern: flask.Response(..., $K=$X, ...)
+          - focus-metavariable: $X
+    pattern-sanitizers:
+      - pattern: redact(...)
+      - pattern: mask(...)
+      - pattern: mask_secret(...)
   - id: auth.py.flow.ssrf
     languages:
       - python
