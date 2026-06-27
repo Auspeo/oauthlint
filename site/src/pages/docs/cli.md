@@ -38,7 +38,7 @@ npx oauthlint scan --staged        # git-staged files only
 
 | Flag | Values | Default | Description |
 |------|--------|---------|-------------|
-| `--format <fmt>` | `pretty` \| `json` \| `sarif` | `pretty` | Output format. `sarif` emits a SARIF report for GitHub Code Scanning. |
+| `--format <fmt>` | `pretty` \| `json` \| `sarif` \| `html` | `pretty` | Output format. `sarif` emits a SARIF report for GitHub Code Scanning; `html` emits a standalone, self-contained HTML report (pipe it to a file, e.g. `> report.html`). |
 | `--json` | — | off | Shortcut for `--format json`. When both are set, `--format` wins. |
 | `--severity <level>` | `INFO` \| `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` | none | Only emit findings at or above this severity. Filters output; case-insensitive. |
 | `--fail-on <level>` | `INFO` \| `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` \| `off` | `HIGH` | Exit non-zero when any finding meets or exceeds this severity. `off` never fails the build. Falls back to `failOn` in your config, then `HIGH`. Case-insensitive. |
@@ -46,6 +46,8 @@ npx oauthlint scan --staged        # git-staged files only
 | `--fix` | — | off | Apply auto-fixes, rewriting source in place where a rule ships a fix template (currently the `auth.cookie.*` rules). |
 | `--diff [<ref>]` | git ref | merge-base with the default branch | Scan only files changed versus `<ref>`. Great for CI on large repos — only new code is scanned. Outside a git repo, errors clearly. |
 | `--staged` | — | off | Scan only git-staged files. Used by the [pre-commit hook](/docs/pre-commit). |
+| `--baseline [<file>]` | path | `.oauthlint-baseline.json` | Suppress findings already recorded in a baseline file and report only **new** findings. Capture the baseline with the [`baseline`](#baseline) command. |
+| `--no-update-check` | — | on | Skip the once-a-day check to npm for a newer `oauthlint` version. The check already auto-disables under `--json` / `--format sarif`, in CI, when piped, or when `NO_UPDATE_NOTIFIER` is set. |
 
 A few details worth knowing:
 
@@ -64,6 +66,12 @@ npx oauthlint scan ./src --json
 # SARIF for GitHub Code Scanning
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
+# standalone HTML report to share or attach in CI
+npx oauthlint scan ./src --format html > report.html
+
+# report only NEW findings against a captured baseline
+npx oauthlint scan ./src --baseline
+
 # never fail the build (CI dry-run)
 npx oauthlint scan ./src --fail-on off
 
@@ -75,6 +83,8 @@ npx oauthlint scan ./src --fix
 
 List every rule the current install ships with. Pretty output shows severity, an `LLM↑` marker for rules with high LLM prevalence, the rule id and its OAuthLint id.
 
+The pack is more than pattern matches: it also ships **dataflow (taint) rules** that track untrusted input to a dangerous sink — open-redirect and SSRF detection across JavaScript/TypeScript, Python and Go — so it catches issues a syntactic pattern would miss.
+
 ```bash
 # pretty listing
 npx oauthlint list
@@ -84,6 +94,20 @@ npx oauthlint list --json
 ```
 
 Browse the same catalogue with vulnerable/safe examples and CWE/OWASP mappings in the [rules catalogue](/rules).
+
+## `baseline`
+
+Scan the codebase and write a baseline of the current findings. This is how you adopt OAuthLint on an existing project without fixing everything first: capture today's findings, then have future scans report only **new** ones.
+
+```bash
+# capture the current findings to .oauthlint-baseline.json
+npx oauthlint baseline
+
+# choose where the baseline is written
+npx oauthlint baseline ./src --output .oauthlint-baseline.json
+```
+
+Once a baseline exists, run `scan --baseline` (which reads `.oauthlint-baseline.json` by default) and only findings absent from the baseline are reported — ideal for gating CI on newly introduced issues while the backlog is worked down separately.
 
 ## `init`
 
