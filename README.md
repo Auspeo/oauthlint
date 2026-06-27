@@ -2,9 +2,9 @@
 
 <a href="https://oauthlint.dev"><img src="docs/public/banner.png" alt="OAuthLint — AI ships the auth bug. Catch it before the PR." width="840" /></a>
 
-**Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
+**Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack (JS/TS · Python · Go · Java · Rust, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
+A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Java · Rust, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -22,7 +22,7 @@ npx oauthlint scan ./src
 
 > Requires [Semgrep](https://semgrep.dev) on the machine running the scan (`pipx install semgrep` or `brew install semgrep`).
 
-📖 **Full documentation & rule catalogue: [oauthlint.dev](https://oauthlint.dev)**
+📖 **Full documentation & rule catalogue: [oauthlint.dev](https://oauthlint.dev)** · 🔬 **the empirical case for it: [oauthlint.dev/research](https://oauthlint.dev/research)**
 
 ---
 
@@ -38,6 +38,7 @@ LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) 
 - `/login` POST without rate limiting
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
+- untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** — not just pattern-matching
 - …and 100+ more, across JS/TS · Python · Go · Java · Rust
 
 oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): **free, focused, developer-first.** Every finding links to a page explaining *why it matters* and *how to fix it*.
@@ -51,7 +52,8 @@ What we have is the work most people never do:
 - **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more — and anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the invisible, tedious work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): validated across thousands of files of real auth-library source, with zero false positives on the clean auth libraries.)
 - **One coherent product across every language it covers.** Same concept, same ID scheme, same docs — `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go. Not a patchwork of community rules with mismatched styles.
 - **Every finding teaches.** Every rule links to a fix page with CWE and OWASP mappings. It's a lesson, not a grep hit.
-- **The angle the registry doesn't have:** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat — encoded in each rule's `llm-prevalence` metadata.
+- **Dataflow, not just patterns.** Taint-mode rules trace untrusted input through to dangerous sinks (open-redirect, SSRF), catching bugs a single-line pattern would miss.
+- **The angle the registry doesn't have:** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat — encoded in each rule's `llm-prevalence` metadata and measured by the empirical [/research](https://oauthlint.dev/research) report.
 
 Use OAuthLint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
 
@@ -79,6 +81,9 @@ npx oauthlint scan ./src --json
 # GitHub Code Scanning
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
+# a shareable, self-contained HTML audit report
+npx oauthlint scan ./src --format html > report.html
+
 # auto-apply safe fixes (e.g. cookie flags)
 npx oauthlint scan ./src --fix
 
@@ -104,9 +109,9 @@ Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a confi
 
 The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language.
 
-### VS Code extension
+### VS Code / Cursor / Windsurf
 
-Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
+Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace (or [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) for Cursor / Windsurf) for inline diagnostics on save, a status-bar finding count, plus Quick Fix suppressions.
 
 ### Use directly with Semgrep
 
@@ -129,7 +134,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported �
 
 ## Rules
 
-Rules across OAuth 2.0, OIDC, JWT, cookies, CORS and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust — each mapped to CWE & OWASP, each with a documentation page. The catalogue grows with every release.
+**100+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust — each mapped to CWE & OWASP, each with a documentation page. Some are **taint-mode dataflow rules** (open-redirect, SSRF) that follow untrusted input to its sink rather than matching a single line. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -153,9 +158,9 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Package | What it does |
 |---------|--------------|
 | [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
-| [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor` — pretty + JSON + SARIF output |
-| [`action/`](action) | Docker-based GitHub Action wrapping the CLI |
-| [`vscode/`](vscode) | VS Code extension: diagnostics + Quick Fix suppressions |
+| [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor` — pretty + JSON + SARIF + HTML output |
+| [`action/`](action) | Docker-based GitHub Action wrapping the CLI, with inline PR annotations + job summary |
+| [`vscode/`](vscode) | VS Code / Cursor / Windsurf extension (Marketplace + OpenVSX): diagnostics, status bar + Quick Fix suppressions |
 | [`examples/`](examples) | Deliberately-vulnerable demo apps used for dogfooding |
 
 ## Develop
