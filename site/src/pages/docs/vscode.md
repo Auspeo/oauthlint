@@ -19,6 +19,8 @@ code --install-extension auspeo.oauthlint-vscode
 
 Publisher / extension id: **`auspeo.oauthlint-vscode`**.
 
+Using an editor that pulls from **[Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode)** instead of the VS Code Marketplace — like **Cursor** or **Windsurf**? The extension is published there too under the same `auspeo.oauthlint-vscode` id; search **oauthlint** in the Extensions view.
+
 ### Requirement: the CLI
 
 The extension is a thin front-end over the [`oauthlint` CLI](/docs/cli) — it shells out to it and renders the JSON findings. You need the CLI (and Semgrep) available:

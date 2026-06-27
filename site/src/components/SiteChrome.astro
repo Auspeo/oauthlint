@@ -7,7 +7,7 @@
  */
 interface Props {
   /** Which nav link is the current page, so it renders in the accent colour. */
-  active?: 'docs' | 'rules' | 'about';
+  active?: 'docs' | 'rules' | 'research' | 'about';
 }
 const { active } = Astro.props;
 const year = new Date().getFullYear();
@@ -27,6 +27,7 @@ const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--o
     <div id="site-nav-links" data-navlinks style="display:flex; gap:var(--ol-space-6); align-items:center;">
       <a href="/docs" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
       <a href="/rules" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
+      <a href="/research" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('research')}; text-decoration:none;`}>research</a>
       <a href="/about" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('about')}; text-decoration:none;`}>about</a>
     </div>
     <button type="button" data-nav-toggle aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-nav-links">

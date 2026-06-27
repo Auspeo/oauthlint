@@ -1,8 +1,12 @@
 # oauthlint for VS Code
 
-Catch the OAuth / OIDC / JWT anti-patterns AI coding tools produce, right in your
-editor. oauthlint flags risky auth code as you save, with a one-click fix to
-suppress a line and a link to the explanation for every rule.
+Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools
+produce, right in your editor. oauthlint flags risky auth code as you save, with
+a one-click fix to suppress a line and a link to the explanation for every rule.
+
+Available on the **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)**
+and on **[OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode)** for
+Cursor, Windsurf and other VS Code-compatible editors.
 
 ## What it does
 
@@ -44,6 +48,11 @@ If the CLI is not found, the extension shows a one-time notice with setup steps.
 - **oauthlint: Scan current file**
 - **oauthlint: Scan workspace**
 - **oauthlint: Open rule documentation**
+
+The editor integration scans JavaScript and TypeScript; the full oauthlint rule
+pack covers **100+ rules across JS/TS · Python · Go · Java · Rust** — including
+dataflow (taint) rules for open-redirect and SSRF — runnable from the
+[CLI](https://www.npmjs.com/package/oauthlint) and [GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action).
 
 ## Learn more
 
