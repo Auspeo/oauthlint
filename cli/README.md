@@ -2,15 +2,16 @@
 
 # oauthlint
 
-**Catch the OAuth / OIDC / JWT anti-patterns AI coding tools systematically produce.**
+**Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Java · Rust (and growing) · CLI + GitHub Action + VS Code · free & MIT
+A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Java · Rust · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
+[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg)](https://semgrep.dev)
 
 </div>
 
@@ -20,73 +21,9 @@ npx oauthlint scan ./src
 
 > Requires [Semgrep](https://semgrep.dev/docs/getting-started/) on the machine running the scan (`pipx install semgrep` or `brew install semgrep`). The CLI invokes it under the hood and normalises the output for humans and CI.
 
-📖 **Full documentation & rule catalogue → [oauthlint.dev](https://oauthlint.dev)**
+📖 **Full docs & rule catalogue → [oauthlint.dev/docs](https://oauthlint.dev/docs)** · 🔬 **the research behind it → [oauthlint.dev/research](https://oauthlint.dev/research)**
 
 ---
-
-## The problem
-
-LLM coding assistants — Cursor, Claude, GitHub Copilot, Gemini — ship the *same*
-OAuth/JWT mistakes across every project they touch:
-
-- a JWT verified with `alg: none` accepted
-- `client_secret` hard-coded in source
-- an OAuth flow with no `state` and no PKCE
-- a token written to `localStorage`, readable by any XSS
-- `redirect_uri` allow-listed with a `*` wildcard
-- a `/login` POST with no rate limiting
-- a password persisted in plaintext
-- `Math.random()` used for a CSRF token
-
-oauthlint is the layer between generic SAST and an enterprise IAM program:
-**free, focused, developer-first.** Every finding names the rule, the exact
-`file:line`, *why* it's dangerous, and *how* to fix it — with CWE/OWASP mappings.
-
-<div align="center">
-
-![oauthlint scanning a project and flagging JWT auth issues](https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/public/demo.gif)
-
-</div>
-
-## Why oauthlint, and not just Semgrep?
-
-Honest answer: nothing stops you from writing these rules yourself. Semgrep is
-open source — it's the engine we run — and a capable engineer could reproduce a
-lot of this. There's no technical moat and we won't pretend otherwise. What
-oauthlint gives you is the work most people never do:
-
-- **Low false positives, validated against real auth libraries.** The rules are
-  run against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`,
-  Spring Security and more. Anything that fires on mature library source goes to
-  a triage queue, not to you — validated across thousands of files of real
-  auth-library source, with **zero false positives** on the clean libraries
-  ([validation report](https://oauthlint.dev/VALIDATION)).
-- **One coherent product across every language it covers.** Same concepts, same ID scheme,
-  same docs — not a patchwork of community rules with mismatched styles.
-- **Every finding teaches.** The 100+ rules — across JS/TS · Python · Go · Java
-  · Rust — each link to a fix page with CWE and OWASP mappings. It's a lesson,
-  not a grep hit.
-- **The angle the registry doesn't have:** oauthlint specifically targets the
-  auth bugs AI coding tools ship on repeat, encoded in each rule's
-  `llm-prevalence` metadata and measured by a [reproducible benchmark](https://github.com/Auspeo/oauthlint/tree/main/benchmark).
-
-Use oauthlint when you'd rather not write and maintain an auth rule pack
-yourself. That's the whole pitch.
-
-## Use directly with Semgrep
-
-Prefer to skip the CLI and run the rules through Semgrep yourself? The full pack
-is hosted as a single Semgrep config — one command, no install:
-
-```bash
-semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
-```
-
-Per-language bundles are available too (`oauthlint-python.yaml`, `oauthlint-go.yaml`,
-and so on). That URL is always the latest pack; for a pinned, reproducible
-ruleset in CI, use this CLI (`npx oauthlint@<version> scan`) or vendor
-[`oauthlint-rules`](https://www.npmjs.com/package/oauthlint-rules) from npm. Full
-details in [the Semgrep docs](https://oauthlint.dev/docs/semgrep).
 
 ## Quick start
 
@@ -97,267 +34,49 @@ npx oauthlint scan ./src
 # fail CI on HIGH severity and above
 npx oauthlint scan ./src --fail-on HIGH
 
-# machine-readable output
-npx oauthlint scan ./src --json
-
-# GitHub Code Scanning
+# GitHub Code Scanning (SARIF) or a shareable HTML audit report
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
-
-# a shareable, self-contained HTML audit report
-npx oauthlint scan ./src --format html > oauthlint-report.html
-
-# auto-apply safe fixes (e.g. cookie flags)
-npx oauthlint scan ./src --fix
-
-# scan several explicit paths (e.g. a list of changed files)
-npx oauthlint scan src/auth.ts src/session.ts
-
-# scan only what changed vs the default branch (fast, incremental)
-npx oauthlint scan --diff
-
-# scan only git-staged files (ideal in a pre-commit hook)
-npx oauthlint scan --staged
-
-# adopt on a large existing codebase: snapshot today's findings…
-npx oauthlint baseline ./src
-# …then only get alerted on NEW findings from here on
-npx oauthlint scan ./src --baseline --fail-on HIGH
+npx oauthlint scan ./src --format html  > report.html
 ```
 
-## Adopting on an existing codebase (baseline)
-
-Turning a linter on for the first time on a large repo usually drowns you in
-pre-existing findings. A **baseline** snapshots the findings that exist *today*
-so `scan` only alerts on **new** ones — letting you adopt OAuthLint without
-fixing everything up front.
-
-```bash
-# 1. capture the current findings into .oauthlint-baseline.json (commit this file)
-oauthlint baseline ./src
-
-# 2. from now on, scan reports only findings NOT in the baseline
-oauthlint scan ./src --baseline --fail-on HIGH
-```
-
-- **`oauthlint baseline [paths...]`** scans and writes
-  `.oauthlint-baseline.json` (override with `-o, --output <file>`). It prints how
-  many findings were baselined. Commit the file so the whole team shares it.
-- **`oauthlint scan --baseline [file]`** runs a normal scan, then suppresses any
-  finding already in the baseline and reports only the rest. `--fail-on` and the
-  exit code consider **only the new findings**. With no value it defaults to
-  `.oauthlint-baseline.json`; a missing baseline file is a **clear error**
-  (exit `2`), never silently treated as empty.
-
-**How a finding is fingerprinted.** Each finding gets a stable fingerprint —
-`sha256(oauthlintRuleId + repo-relative path + a whitespace-normalised snapshot
-of the matched code)`. Crucially the **raw line number is not part of the hash**,
-so moving a finding up or down (adding imports, reformatting) keeps it
-baselined, while **changing the flagged code** surfaces it as new. The same
-fingerprint occurring multiple times in one file is disambiguated by a
-deterministic occurrence index. Paths are normalised to repo/cwd-relative
-(POSIX separators) so a baseline is portable across machines, and unreadable
-files (deleted/binary) degrade gracefully instead of crashing. The baseline
-JSON is small, sorted and human-diffable (a `version`, a `generatedAt`, and the
-fingerprint list).
-
-## Incremental scanning
-
-For pre-commit hooks and editor integrations, scanning the whole tree on every
-keystroke is wasteful. OAuthLint can scan **only the files that changed**:
-
-```bash
-# files changed vs the merge-base with the repo's default branch
-oauthlint scan --diff
-
-# files changed vs an explicit ref (branch, tag, or commit)
-oauthlint scan --diff origin/main
-oauthlint scan --diff HEAD~5
-
-# only git-staged files — drop this in a pre-commit hook
-oauthlint scan --staged --fail-on HIGH
-```
-
-How the change set is resolved:
-
-- **`--diff [ref]`** — when no `ref` is given, the base is the merge-base with the
-  repo's default branch (`origin/HEAD` → `origin/main` → `origin/master`, falling
-  back to `HEAD` when there's no remote). The change set is everything Added /
-  Copied / Modified / Renamed since that base, plus uncommitted work-tree and
-  staged changes, plus new untracked files. Deleted files are skipped.
-- **`--staged`** — only the staged set (`git diff --cached`), the same files a
-  commit is about to capture.
-- Explicit path args (`oauthlint scan a.ts b.ts`) scan exactly those paths.
-
-In every mode, files in a language the rule pack doesn't cover (Markdown,
-lockfiles, images, …) are filtered out automatically, and an **empty change set
-exits `0`** with a `No changed files to scan.` note — it never fails your commit.
-Outside a git repository, `--diff` / `--staged` print a clear error and exit `2`
-instead of crashing. Git is always invoked with arguments passed as an array
-(never a shell string), so a ref name can't inject a shell command.
-
-Example pre-commit hook (`.git/hooks/pre-commit`):
-
-```bash
-#!/bin/sh
-npx oauthlint scan --staged --fail-on HIGH
-```
-
-## Commands
-
-```
-oauthlint scan [paths...]       Scan files/directories (default: current dir)
-oauthlint scan a.ts b.ts        Scan an explicit list of paths
-oauthlint scan --diff [ref]     Scan only files changed vs a git ref
-oauthlint scan --staged         Scan only git-staged files (pre-commit)
-oauthlint scan --json           Emit machine-readable JSON
-oauthlint scan --format sarif   Emit SARIF for GitHub Code Scanning
-oauthlint scan --format html    Emit a self-contained HTML audit report
-oauthlint scan --severity HIGH  Only show findings ≥ HIGH
-oauthlint scan --fail-on off    Never fail the build (CI dry-run)
-oauthlint scan --fix            Auto-apply safe fixes
-oauthlint scan --baseline       Report only findings NOT in the baseline
-oauthlint baseline [paths...]   Snapshot current findings to a baseline file
-oauthlint baseline -o <file>    Write the baseline to a custom path
-oauthlint list                  List every shipped rule
-oauthlint list --json           Same, as JSON
-oauthlint init                  Generate .oauthlintrc.yml at cwd
-oauthlint init --force          Overwrite an existing config
-oauthlint doctor                Check your setup (Semgrep, config, …)
-oauthlint --no-update-check     Skip the "update available" check (any command)
-```
-
-## Use it in CI
-
-Run the CLI in a workflow and upload SARIF to **GitHub Code Scanning** so
-findings appear inline on the PR:
-
-```yaml
-# .github/workflows/oauthlint.yml
-jobs:
-  oauthlint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pipx install semgrep          # the engine oauthlint runs
-      - run: npx oauthlint scan ./src --format sarif > oauthlint.sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: oauthlint.sarif
-```
-
-Or just fail the build on HIGH findings: `npx oauthlint scan ./src --fail-on HIGH`.
-
-## Shareable HTML report
-
-For a security review, a stakeholder summary, or a CI build artifact, render a
-**self-contained HTML report** — a single file you can email, attach to a PR, or
-open straight from disk:
-
-```bash
-npx oauthlint scan ./src --format html > oauthlint-report.html
-```
-
-The report:
-
-- is **fully self-contained** — all CSS is inlined, there are **no external
-  requests and no JavaScript**, so it works offline and prints cleanly;
-- opens with a header (title, scanned target, generated timestamp) and a
-  per-severity summary (e.g. *9 HIGH · 5 MEDIUM · 1 INFO*);
-- lists every finding grouped by severity (worst first) with a colour-coded
-  severity badge, the rule id (`oauthlintRuleId` + `ruleId`), the `file:line`,
-  the message, the flagged source line, and a link to the rule's docs;
-- shows a clean **"No issues found"** page when nothing fires.
-
-The HTML document goes to **stdout** and nothing else — any human notes (e.g. the
-"update available" notice or suppression counts) are written to **stderr**, so
-`> report.html` always captures a valid document. Every interpolated value
-(paths, messages, rule text, and the flagged source code) is **HTML-escaped**, so
-hostile code under scan can never inject executable markup into the report.
-
-### GitHub Action
-
-Prefer not to wire up the CLI by hand? The **[GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action)** wraps it for you — it's Docker-based, so it runs in any repo regardless of language:
-
-```yaml
-- uses: Auspeo/oauthlint/action@v1
-  with:
-    severity: HIGH
-    fail-on: HIGH
-```
-
-### VS Code extension
-
-Catch findings as you type. Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** (`auspeo.oauthlint-vscode`) from the VS Code Marketplace for inline diagnostics on save, plus Quick Fix suppressions.
+Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--staged`, or adopt on a large repo with a [baseline](https://oauthlint.dev/docs/baseline) (`oauthlint baseline ./src` then `scan --baseline`) so you're alerted on **new** findings only. Other commands: `list`, `init`, `doctor`. Run `oauthlint --help` or see the [full CLI reference](https://oauthlint.dev/docs/cli).
 
 ## What it catches
 
-Rules across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene —
-each mapped to CWE & OWASP, each with a documentation page. Languages covered
-today (more on the way):
+LLM coding assistants — Cursor, Claude, Copilot, Gemini — ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-| Language | Libraries |
-|----------|-----------|
-| JavaScript / TypeScript | jose, jsonwebtoken, NextAuth, express, … |
-| Python | PyJWT, Authlib, requests, Flask, Django |
-| Java | Spring Security, jjwt, nimbus-jose-jwt |
-| Go | golang-jwt, crypto/tls, net/http |
-| Rust | jsonwebtoken, reqwest, actix/tower |
+- **100+ rules** across **JS/TS · Python · Go · Java · Rust**, each mapped to CWE/OWASP with a fix page — a lesson, not a grep hit.
+- **Dataflow (taint) analysis** — beyond pattern-matching, the pack traces untrusted input through to dangerous sinks to catch **open-redirect** and **SSRF**.
+- **HTML report** — `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.
+- Plus **SARIF** for Code Scanning, `--fix` for safe auto-fixes, incremental `--diff`/`--staged`, and a [baseline](https://oauthlint.dev/docs/baseline) for existing codebases.
 
-👉 **Browse the full, always-current catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
+👉 **Browse the always-current catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
-## Configuration
+## Use directly with Semgrep — no install
 
-Generate a `.oauthlintrc.yml` at your repo root with `oauthlint init`:
+Already have [Semgrep](https://semgrep.dev)? Run the full pack with one command, no config file:
 
-```yaml
-version: 1
-include:
-  - "src/**/*.{ts,tsx,js,jsx}"
-exclude:
-  - "**/*.test.ts"
-rules:
-  auth.cookie.no-samesite: warn
-  auth.session.id-in-url: off
-failOn: HIGH
+```bash
+semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
 ```
 
-### Inline suppression
+Per-language bundles exist too (`oauthlint-python.yaml`, `oauthlint-go.yaml`, …). That URL is always the latest pack; for a pinned ruleset in CI, use this CLI (`npx oauthlint@<version> scan`) or vendor [`oauthlint-rules`](https://www.npmjs.com/package/oauthlint-rules). See [the Semgrep docs](https://oauthlint.dev/docs/semgrep).
 
-```ts
-// oauthlint-disable-next-line auth.jwt.alg-none -- legacy code, replaced in Q2
-return jwt.verify(token, key, { algorithms: ['RS256', 'none'] });
-```
+## Why oauthlint, and not just Semgrep?
 
-Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported —
-the next reviewer needs to see exactly which lines opted out, and why.
+Honest answer: nothing stops you writing these rules yourself — Semgrep is open source and it's the engine we run. There's no technical moat. What oauthlint gives you is the work most people never do:
 
-## Exit codes
+- **Low false positives, validated against real auth libraries** — `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring Security and more. Anything that fires on mature library source goes to a triage queue, not to you ([validation report](https://oauthlint.dev/VALIDATION)).
+- **One coherent product across every language** — same concepts, same ID scheme, same docs; not a patchwork of community rules.
+- **The angle the registry doesn't have** — it targets the auth bugs AI tools ship on repeat, encoded in each rule's `llm-prevalence` metadata and measured by a reproducible benchmark ([the research](https://oauthlint.dev/research)).
 
-| Code | When |
-|:----:|------|
-| `0` | No finding at or above the `--fail-on` threshold |
-| `1` | At least one **HIGH** finding |
-| `2` | At least one **CRITICAL** finding, a scan whose output could not be parsed (it never silently exits clean), or a missing/malformed `--baseline` file |
-| `127` | Semgrep is not installed |
+Use oauthlint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
 
-> With `--baseline`, the `--fail-on` gate and these exit codes consider only the
-> **new** (non-baselined) findings.
+## Also available
 
-## Stay up to date
-
-oauthlint occasionally prints a short *"Update available"* notice to **stderr**
-when a newer version is on npm. It's designed to stay out of your way:
-
-- It's **non-blocking** and checks npm at most **once a day** (the result is
-  cached), so it never slows a scan down.
-- It writes to **stderr only** and is **silent** under `--json` / `--format
-  sarif`, when output is piped, in CI, and offline — so it can never corrupt a
-  machine-readable report or nag automated runs.
-
-To turn it off entirely, pass `--no-update-check` or set the standard
-`NO_UPDATE_NOTIFIER=1` environment variable.
+- **GitHub Action** — `Auspeo/oauthlint/action@v1`, Docker-based (any language), with inline PR annotations + a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
+- **VS Code / Cursor / Windsurf** — [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, and Quick Fix suppressions.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE).
-Built and maintained by [Auspeo](https://github.com/Auspeo).
+MIT — see [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).
