@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# go subset — 14 rules.
+# go subset — 15 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -232,6 +232,63 @@ rules:
     pattern-sanitizers:
       - pattern: validateRedirect(...)
       - pattern: isAllowedRedirect(...)
+      - pattern: $ALLOW.MatchString(...)
+      - pattern: url.Parse(...)
+  - id: auth.go.flow.ssrf
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request data flows into the URL of an outbound HTTP request.
+      An attacker who controls the request target (via a query parameter, form
+      field, or request header) can coerce your server into making requests to
+      arbitrary destinations — Server-Side Request Forgery (SSRF). This is
+      routinely abused to reach internal-only services behind your network
+      perimeter and, most damagingly, the cloud instance metadata endpoint
+      (e.g. http://169.254.169.254/...), letting an attacker steal short-lived
+      credentials and pivot into your cloud account.
+
+      Never pass a request-derived value straight into `http.Get`,
+      `http.Post`, `http.NewRequest`, or a client's `Get`/`Post`. Validate the
+      destination host against an explicit allow-list (parse the URL and check
+      the resolved host/scheme), and reject requests to private, loopback, and
+      link-local address ranges before dialing. See CWE-918.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      references:
+        - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+        - https://cwe.mitre.org/data/definitions/918.html
+      technology:
+        - net/http
+    mode: taint
+    pattern-sources:
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Get($URL)
+              - pattern: http.Post($URL, ...)
+              - pattern: http.Head($URL)
+              - pattern: http.NewRequest($M, $URL, ...)
+              - pattern: http.NewRequestWithContext($CTX, $M, $URL, ...)
+              - pattern: $CLIENT.Get($URL)
+              - pattern: $CLIENT.Post($URL, ...)
+          - pattern-not: $Q.Query().Get(...)
+          - pattern-not: $H.Header.Get(...)
+          - focus-metavariable: $URL
+    pattern-sanitizers:
+      - pattern: validateURL(...)
+      - pattern: isAllowedHost(...)
       - pattern: $ALLOW.MatchString(...)
       - pattern: url.Parse(...)
   - id: auth.go.flow.weak-rand
