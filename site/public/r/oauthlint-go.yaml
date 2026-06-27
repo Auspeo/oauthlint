@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# go subset — 15 rules.
+# go subset — 16 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -234,6 +234,57 @@ rules:
       - pattern: isAllowedRedirect(...)
       - pattern: $ALLOW.MatchString(...)
       - pattern: url.Parse(...)
+  - id: auth.go.flow.secret-in-response
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A server-side secret read from the environment flows into an HTTP
+      response body, leaking it to the client. Values such as an API key,
+      client secret, access key, or private key are meant to stay on the
+      server; writing one to the `http.ResponseWriter` (via `Write`,
+      `fmt.Fprint(f)`, `io.WriteString`, or a JSON encoder) publishes it to
+      every caller — including attackers probing your endpoints.
+
+      Never return a credential to the client. Send only the data the caller
+      legitimately needs; if a secret must appear in a debug/diagnostic path,
+      redact or mask it first. Read secrets exclusively in server-internal
+      code and keep them out of any response payload. See CWE-200.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-secret-in-response
+      category: security
+      cwe: CWE-200
+      owasp: API3:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/200.html
+        - https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/
+      technology:
+        - net/http
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: os.Getenv($KEY)
+              - pattern: os.LookupEnv($KEY)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: (?i)^(?!"?(next_)?public_)"?.*(secret|password|passwd|token|api[_-]?key|private[_-]?key|client[_-]?secret|credential|access[_-]?key).*"?$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $W.Write($X)
+              - pattern: fmt.Fprint($W, $X)
+              - pattern: fmt.Fprintf($W, $FMT, $X)
+              - pattern: io.WriteString($W, $X)
+              - pattern: json.NewEncoder($W).Encode($X)
+          - pattern-not: os.Getenv(...)
+          - pattern-not: os.LookupEnv(...)
+          - focus-metavariable: $X
+    pattern-sanitizers:
+      - pattern: redact(...)
+      - pattern: mask(...)
   - id: auth.go.flow.ssrf
     languages:
       - go
