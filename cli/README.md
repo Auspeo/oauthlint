@@ -103,6 +103,9 @@ npx oauthlint scan ./src --json
 # GitHub Code Scanning
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 
+# a shareable, self-contained HTML audit report
+npx oauthlint scan ./src --format html > oauthlint-report.html
+
 # auto-apply safe fixes (e.g. cookie flags)
 npx oauthlint scan ./src --fix
 
@@ -208,6 +211,7 @@ oauthlint scan --diff [ref]     Scan only files changed vs a git ref
 oauthlint scan --staged         Scan only git-staged files (pre-commit)
 oauthlint scan --json           Emit machine-readable JSON
 oauthlint scan --format sarif   Emit SARIF for GitHub Code Scanning
+oauthlint scan --format html    Emit a self-contained HTML audit report
 oauthlint scan --severity HIGH  Only show findings ≥ HIGH
 oauthlint scan --fail-on off    Never fail the build (CI dry-run)
 oauthlint scan --fix            Auto-apply safe fixes
@@ -242,6 +246,33 @@ jobs:
 ```
 
 Or just fail the build on HIGH findings: `npx oauthlint scan ./src --fail-on HIGH`.
+
+## Shareable HTML report
+
+For a security review, a stakeholder summary, or a CI build artifact, render a
+**self-contained HTML report** — a single file you can email, attach to a PR, or
+open straight from disk:
+
+```bash
+npx oauthlint scan ./src --format html > oauthlint-report.html
+```
+
+The report:
+
+- is **fully self-contained** — all CSS is inlined, there are **no external
+  requests and no JavaScript**, so it works offline and prints cleanly;
+- opens with a header (title, scanned target, generated timestamp) and a
+  per-severity summary (e.g. *9 HIGH · 5 MEDIUM · 1 INFO*);
+- lists every finding grouped by severity (worst first) with a colour-coded
+  severity badge, the rule id (`oauthlintRuleId` + `ruleId`), the `file:line`,
+  the message, the flagged source line, and a link to the rule's docs;
+- shows a clean **"No issues found"** page when nothing fires.
+
+The HTML document goes to **stdout** and nothing else — any human notes (e.g. the
+"update available" notice or suppression counts) are written to **stderr**, so
+`> report.html` always captures a valid document. Every interpolated value
+(paths, messages, rule text, and the flagged source code) is **HTML-escaped**, so
+hostile code under scan can never inject executable markup into the report.
 
 ### GitHub Action
 

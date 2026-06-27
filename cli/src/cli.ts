@@ -95,7 +95,7 @@ export async function buildProgram(): Promise<Command> {
     .argument('[paths...]', 'One or more files/directories to scan', ['.'])
     .description('Scan files or directories for auth misconfigurations')
     .option('--json', 'Emit JSON (shortcut for --format json)')
-    .option('--format <fmt>', 'Output format: pretty | json | sarif', parseFormat)
+    .option('--format <fmt>', 'Output format: pretty | json | sarif | html', parseFormat)
     .option('--severity <level>', 'Only emit findings ≥ this severity', parseSeverity)
     .option(
       '--fail-on <level>',
@@ -127,7 +127,10 @@ export async function buildProgram(): Promise<Command> {
         baseline: opts.baseline,
       });
       const machineReadable =
-        opts.json === true || opts.format === 'json' || opts.format === 'sarif';
+        opts.json === true ||
+        opts.format === 'json' ||
+        opts.format === 'sarif' ||
+        opts.format === 'html';
       await finishWithNotice(code, { version, machineReadable, updateCheck: updateCheckEnabled() });
     });
 
@@ -229,7 +232,7 @@ function parseFailOn(v: string): SeverityName | 'off' {
   return parseSeverity(v);
 }
 
-const FORMATS = ['pretty', 'json', 'sarif'] as const;
+const FORMATS = ['pretty', 'json', 'sarif', 'html'] as const;
 function parseFormat(v: string): ScanFormat {
   const lower = v.toLowerCase() as ScanFormat;
   if (!(FORMATS as readonly string[]).includes(lower)) {

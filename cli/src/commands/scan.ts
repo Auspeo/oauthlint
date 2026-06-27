@@ -18,9 +18,10 @@ import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
 import { exitCodeFor, highestSeverity, meetsThreshold } from '../core/severity.js';
 import { applySuppressions } from '../core/suppress.js';
+import { renderHtmlReport } from '../formatters/html.js';
 import type { Finding, SeverityName } from '../types.js';
 
-export type ScanFormat = 'pretty' | 'json' | 'sarif';
+export type ScanFormat = 'pretty' | 'json' | 'sarif' | 'html';
 
 export interface ScanCommandOptions {
   /**
@@ -138,6 +139,13 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
         errors: [],
       });
       stream.write(`${JSON.stringify(empty, null, 2)}\n`);
+    } else if (format === 'html') {
+      const html = await renderHtmlReport(
+        { findings: [], scannedFiles: 0, durationMs: 0, semgrepVersion: null, errors: [] },
+        { target: 'changed files (none)' },
+      );
+      stream.write(html);
+      errStream.write('No changed files to scan.\n');
     } else {
       stream.write('No changed files to scan.\n');
     }
@@ -188,6 +196,26 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   if (format === 'sarif') {
     const sarif = await toSarif({ ...result, findings });
     stream.write(`${JSON.stringify(sarif, null, 2)}\n`);
+  } else if (format === 'html') {
+    // HTML is the report artifact → stdout only. Any human chatter (e.g. the
+    // update notice, suppression counts) stays on stderr so the document is
+    // never corrupted and `> report.html` is always valid.
+    const html = await renderHtmlReport({ ...result, findings }, { target: label });
+    stream.write(html);
+    if (suppressed.length > 0) {
+      errStream.write(
+        `ℹ ${suppressed.length} finding${
+          suppressed.length === 1 ? '' : 's'
+        } suppressed via inline directives.\n`,
+      );
+    }
+    if (baselinedCount > 0) {
+      errStream.write(
+        `ℹ ${baselinedCount} finding${
+          baselinedCount === 1 ? '' : 's'
+        } already in the baseline (reporting NEW findings only).\n`,
+      );
+    }
   } else {
     reporter.reportResult({ ...result, findings });
     if (opts.fix && format === 'pretty') {
