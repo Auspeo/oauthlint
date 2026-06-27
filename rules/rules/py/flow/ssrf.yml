@@ -1,0 +1,118 @@
+rules:
+  - id: auth.py.flow.ssrf
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request data flows into an outbound HTTP request without
+      validation — a Server-Side Request Forgery (SSRF, CWE-918). An attacker
+      who controls the target URL can make your server reach internal-only
+      services (admin panels, databases, other microservices behind your
+      firewall) or the cloud metadata endpoint (e.g. http://169.254.169.254/),
+      stealing IAM/instance credentials and pivoting deeper into your network.
+
+      Never pass a raw `request.args`/`request.form`/`request.values`/
+      `request.json`/`request.cookies`/`request.headers` value to
+      `requests`/`urllib`/`httpx`/`aiohttp`. Validate the destination host
+      against an explicit allow-list (`is_allowed_url(...)` /
+      `validate_host(...)` / `url_has_allowed_host_and_scheme(...)`) before the
+      request, and reject link-local / private / metadata addresses.
+    # Taint mode so indirection (url = request.json['endpoint']; httpx.get(url))
+    # and `.get(...)` accessors are caught, not just the direct form. Passing the
+    # value through an allow-list / host validator clears the taint. The sink
+    # focuses the URL argument of each HTTP client call.
+    mode: taint
+    pattern-sources:
+      - pattern: flask.request.args
+      - pattern: flask.request.form
+      - pattern: flask.request.values
+      - pattern: flask.request.json
+      - pattern: flask.request.cookies
+      - pattern: flask.request.headers
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.json
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.args.get(...)
+      - pattern: request.form.get(...)
+      - pattern: request.values.get(...)
+      - pattern: request.json.get(...)
+      - pattern: request.cookies.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.args[$K]
+      - pattern: request.form[$K]
+      - pattern: request.values[$K]
+      - pattern: request.json[$K]
+      - pattern: request.cookies[$K]
+      - pattern: request.headers[$K]
+    pattern-sanitizers:
+      # Allow-list / host validators used as a guard:
+      #   if is_allowed_url(url): requests.get(url)
+      # A value used inside such an `if` body is treated as validated, so the
+      # guarded request does not fire. `by-side-effect` is unsupported on
+      # semgrep 1.157, so we use the `pattern-inside` if-guard approach.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if is_allowed_url($V):
+                  ...
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if validate_host($V):
+                  ...
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if url_has_allowed_host_and_scheme($V, ...):
+                  ...
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: 'requests.get($URL, ...)'
+              - pattern: 'requests.post($URL, ...)'
+              - pattern: 'requests.put($URL, ...)'
+              - pattern: 'requests.delete($URL, ...)'
+              - pattern: 'requests.patch($URL, ...)'
+              - pattern: 'requests.head($URL, ...)'
+              - pattern: 'requests.request(..., $URL, ...)'
+              - pattern: 'urllib.request.urlopen($URL, ...)'
+              - pattern: urllib.request.urlopen($URL)
+              - pattern: 'httpx.get($URL, ...)'
+              - pattern: 'httpx.post($URL, ...)'
+              - pattern: 'httpx.put($URL, ...)'
+              - pattern: 'httpx.delete($URL, ...)'
+              - pattern: 'httpx.patch($URL, ...)'
+              - pattern: 'httpx.head($URL, ...)'
+              # httpx.Client()/aiohttp session calls. Excluding a `request`
+              # receiver keeps these from matching the `request.X.get(...)`
+              # SOURCE accessors (which would otherwise self-report).
+              - patterns:
+                  - pattern-either:
+                      - pattern: '$CLIENT.get($URL, ...)'
+                      - pattern: '$CLIENT.post($URL, ...)'
+                      - pattern: '$CLIENT.put($URL, ...)'
+                      - pattern: '$CLIENT.delete($URL, ...)'
+                      - pattern: '$CLIENT.patch($URL, ...)'
+                      - pattern: '$CLIENT.head($URL, ...)'
+                      - pattern: '$CLIENT.request(..., $URL, ...)'
+                  - metavariable-regex:
+                      metavariable: $CLIENT
+                      regex: '^(?!request(\.|$)).*'
+          - focus-metavariable: $URL
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - flask
+        - requests
+        - httpx
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/918.html
