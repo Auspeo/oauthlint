@@ -1,5 +1,23 @@
 # oauthlint-rules
 
+## 0.2.5
+
+### Patch Changes
+
+- a8d7db8: feat(rules): dataflow (taint-mode) open-redirect detection — JS/TS, Python, Go
+
+  The pack's first taint-mode rules: they trace untrusted request input to a redirect sink
+  (open redirect, CWE-601), a top OAuth threat. `auth.flow.open-redirect` (Express),
+  `auth.py.flow.open-redirect` (Flask), `auth.go.flow.open-redirect` (net/http). Allow-list /
+  `url_for` / validation sanitizers keep them low-FP.
+
+- f6e6da2: feat(rules): dataflow (taint-mode) SSRF detection — JS/TS, Python, Go
+
+  Trace untrusted request input into an outbound HTTP request URL (Server-Side Request Forgery,
+  CWE-918 / OWASP API7:2023) — the path that lets an attacker reach internal services or the cloud
+  metadata endpoint to steal IAM credentials. `auth.flow.ssrf` (fetch/axios/http), `auth.py.flow.ssrf`
+  (requests/httpx/urllib), `auth.go.flow.ssrf` (net/http). Allow-list / host-validation sanitizers keep them low-FP.
+
 ## 0.2.4
 
 ### Patch Changes
