@@ -1,0 +1,58 @@
+rules:
+  - id: auth.go.flow.open-redirect
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request data flows into an HTTP redirect destination. An
+      attacker who controls the redirect target (via a query parameter, form
+      field, or request header) can forward the victim to an arbitrary
+      external site while the link still appears to point at your trusted
+      domain — a classic open redirect, commonly abused to bypass OAuth
+      `redirect_uri` checks and to mount convincing phishing.
+
+      Do not pass request-derived values straight into `http.Redirect(...)`
+      or a `Location` header. Validate the destination against an explicit
+      allow-list, or restrict it to a known relative path (reject absolute
+      URLs, scheme-relative `//host` values, and back-references) before
+      redirecting. See CWE-601.
+    # Taint mode so indirection (dest := r.FormValue("url"); http.Redirect(w,
+    # r, dest, ...)) is caught, not just the inline form. The taint is cleared
+    # by an allow-list / validation helper that vets the destination, or by a
+    # url.Parse(...)-then-checked flow where the parsed value is inspected
+    # before use.
+    mode: taint
+    pattern-sources:
+      # $R is the *http.Request. Cover the common net/http input shapes.
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+    pattern-sanitizers:
+      # Allow-list / validation helper that vets the destination string.
+      - pattern: validateRedirect(...)
+      - pattern: isAllowedRedirect(...)
+      - pattern: $ALLOW.MatchString(...)
+      # url.Parse-then-checked: a parsed URL that has been inspected is treated
+      # as cleared (the result is rebuilt/validated rather than reflected raw).
+      - pattern: url.Parse(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Redirect($W, $R, $DEST, $CODE)
+              - pattern: $W.Header().Set("Location", $DEST)
+          - focus-metavariable: $DEST
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - net/http
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html

@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# typescript subset — 47 rules.
+# typescript subset — 48 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -515,6 +515,71 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ^['"][^'"]*\/(?:login|signin|sign-in|signup|sign-up|authenticate|auth|reset-password|forgot-password)(?![a-z-])[^'"]*['"]$
+  - id: auth.flow.open-redirect
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into a redirect destination. Because the
+      target URL is attacker-controlled, this is an open redirect (CWE-601):
+      an attacker can craft a link to your trusted host that bounces the victim
+      to an arbitrary external site. That fuels phishing, and in OAuth flows it
+      can be chained to steal authorization codes or access tokens by sending
+      the victim (and their callback) to a server you do not control.
+
+      Never redirect to a raw `req.query` / `req.body` / `req.params` /
+      `req.cookies` / `req.headers` value. Validate the destination against an
+      explicit allow-list of hosts or route names, or only allow relative paths
+      you control (reject anything containing a scheme or `//`).
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - express
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.cookies.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.cookies[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($SINK)
+              - pattern: $RES.redirect($CODE, $SINK)
+              - pattern: $RES.location($SINK)
+              - pattern: $RES.set('Location', $SINK)
+              - pattern: $RES.set("Location", $SINK)
+              - pattern: $RES.setHeader('Location', $SINK)
+              - pattern: $RES.setHeader("Location", $SINK)
+              - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: isAllowedUrl(...)
+      - pattern: validateRedirect(...)
+      - pattern: sanitizeRedirect(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
   - id: auth.flow.password-min-length
     languages:
       - javascript

@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 100 rules across every supported language.
+# Full pack — 103 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -515,6 +515,71 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ^['"][^'"]*\/(?:login|signin|sign-in|signup|sign-up|authenticate|auth|reset-password|forgot-password)(?![a-z-])[^'"]*['"]$
+  - id: auth.flow.open-redirect
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into a redirect destination. Because the
+      target URL is attacker-controlled, this is an open redirect (CWE-601):
+      an attacker can craft a link to your trusted host that bounces the victim
+      to an arbitrary external site. That fuels phishing, and in OAuth flows it
+      can be chained to steal authorization codes or access tokens by sending
+      the victim (and their callback) to a server you do not control.
+
+      Never redirect to a raw `req.query` / `req.body` / `req.params` /
+      `req.cookies` / `req.headers` value. Validate the destination against an
+      explicit allow-list of hosts or route names, or only allow relative paths
+      you control (reject anything containing a scheme or `//`).
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-010
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - express
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.cookies
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.cookies.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.cookies[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.redirect($SINK)
+              - pattern: $RES.redirect($CODE, $SINK)
+              - pattern: $RES.location($SINK)
+              - pattern: $RES.set('Location', $SINK)
+              - pattern: $RES.set("Location", $SINK)
+              - pattern: $RES.setHeader('Location', $SINK)
+              - pattern: $RES.setHeader("Location", $SINK)
+              - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: isAllowedUrl(...)
+      - pattern: validateRedirect(...)
+      - pattern: sanitizeRedirect(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
   - id: auth.flow.password-min-length
     languages:
       - javascript
@@ -1115,6 +1180,54 @@ rules:
       - metavariable-regex:
           metavariable: $PW
           regex: (?i).*(password|passwd|pwd).*
+  - id: auth.go.flow.open-redirect
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request data flows into an HTTP redirect destination. An
+      attacker who controls the redirect target (via a query parameter, form
+      field, or request header) can forward the victim to an arbitrary
+      external site while the link still appears to point at your trusted
+      domain — a classic open redirect, commonly abused to bypass OAuth
+      `redirect_uri` checks and to mount convincing phishing.
+
+      Do not pass request-derived values straight into `http.Redirect(...)`
+      or a `Location` header. Validate the destination against an explicit
+      allow-list, or restrict it to a known relative path (reject absolute
+      URLs, scheme-relative `//host` values, and back-references) before
+      redirecting. See CWE-601.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - net/http
+    mode: taint
+    pattern-sources:
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Redirect($W, $R, $DEST, $CODE)
+              - pattern: $W.Header().Set("Location", $DEST)
+          - focus-metavariable: $DEST
+    pattern-sanitizers:
+      - pattern: validateRedirect(...)
+      - pattern: isAllowedRedirect(...)
+      - pattern: $ALLOW.MatchString(...)
+      - pattern: url.Parse(...)
   - id: auth.go.flow.weak-rand
     languages:
       - go
@@ -3002,6 +3115,78 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i).*(token|secret|password|passwd|otp|nonce|api_?key|reset|verification).*
+  - id: auth.py.flow.open-redirect
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request data flows into a Flask `redirect(...)` without
+      validation — an open redirect (CWE-601). An attacker can craft a link
+      to your trusted domain that bounces the victim to an attacker-controlled
+      site, enabling phishing and OAuth redirect/authorization-code abuse (the
+      victim trusts your URL, then lands on the attacker's page).
+
+      Never redirect to a raw `request.args`/`request.form`/`request.values`/
+      `request.cookies`/`request.headers` value. Build the destination with
+      `url_for(...)` (safe by construction), or validate the target against an
+      explicit allow-list / an `is_safe_url(...)`-style same-host check before
+      redirecting.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - flask
+    mode: taint
+    pattern-sources:
+      - pattern: flask.request.args
+      - pattern: flask.request.form
+      - pattern: flask.request.values
+      - pattern: flask.request.cookies
+      - pattern: flask.request.headers
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.args.get(...)
+      - pattern: request.form.get(...)
+      - pattern: request.values.get(...)
+      - pattern: request.cookies.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.args[$K]
+      - pattern: request.form[$K]
+      - pattern: request.values[$K]
+      - pattern: request.cookies[$K]
+      - pattern: request.headers[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: redirect($SINK)
+              - pattern: redirect($SINK, ...)
+              - pattern: flask.redirect($SINK)
+              - pattern: flask.redirect($SINK, ...)
+              - pattern: 'Response(..., headers={..., "Location": $SINK, ...}, ...)'
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: url_for(...)
+      - pattern: flask.url_for(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if is_safe_url($V):
+                  ...
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if url_has_allowed_host_and_scheme($V, ...):
+                  ...
   - id: auth.py.flow.requests-verify-disabled
     languages:
       - python

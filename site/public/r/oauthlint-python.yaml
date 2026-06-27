@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# python subset — 14 rules.
+# python subset — 15 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -211,6 +211,78 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i).*(token|secret|password|passwd|otp|nonce|api_?key|reset|verification).*
+  - id: auth.py.flow.open-redirect
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request data flows into a Flask `redirect(...)` without
+      validation — an open redirect (CWE-601). An attacker can craft a link
+      to your trusted domain that bounces the victim to an attacker-controlled
+      site, enabling phishing and OAuth redirect/authorization-code abuse (the
+      victim trusts your URL, then lands on the attacker's page).
+
+      Never redirect to a raw `request.args`/`request.form`/`request.values`/
+      `request.cookies`/`request.headers` value. Build the destination with
+      `url_for(...)` (safe by construction), or validate the target against an
+      explicit allow-list / an `is_safe_url(...)`-style same-host check before
+      redirecting.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLOW-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - flask
+    mode: taint
+    pattern-sources:
+      - pattern: flask.request.args
+      - pattern: flask.request.form
+      - pattern: flask.request.values
+      - pattern: flask.request.cookies
+      - pattern: flask.request.headers
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.cookies
+      - pattern: request.headers
+      - pattern: request.args.get(...)
+      - pattern: request.form.get(...)
+      - pattern: request.values.get(...)
+      - pattern: request.cookies.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.args[$K]
+      - pattern: request.form[$K]
+      - pattern: request.values[$K]
+      - pattern: request.cookies[$K]
+      - pattern: request.headers[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: redirect($SINK)
+              - pattern: redirect($SINK, ...)
+              - pattern: flask.redirect($SINK)
+              - pattern: flask.redirect($SINK, ...)
+              - pattern: 'Response(..., headers={..., "Location": $SINK, ...}, ...)'
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: url_for(...)
+      - pattern: flask.url_for(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if is_safe_url($V):
+                  ...
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if url_has_allowed_host_and_scheme($V, ...):
+                  ...
   - id: auth.py.flow.requests-verify-disabled
     languages:
       - python

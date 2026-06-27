@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# go subset — 13 rules.
+# go subset — 14 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -186,6 +186,54 @@ rules:
       - metavariable-regex:
           metavariable: $PW
           regex: (?i).*(password|passwd|pwd).*
+  - id: auth.go.flow.open-redirect
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request data flows into an HTTP redirect destination. An
+      attacker who controls the redirect target (via a query parameter, form
+      field, or request header) can forward the victim to an arbitrary
+      external site while the link still appears to point at your trusted
+      domain — a classic open redirect, commonly abused to bypass OAuth
+      `redirect_uri` checks and to mount convincing phishing.
+
+      Do not pass request-derived values straight into `http.Redirect(...)`
+      or a `Location` header. Validate the destination against an explicit
+      allow-list, or restrict it to a known relative path (reject absolute
+      URLs, scheme-relative `//host` values, and back-references) before
+      redirecting. See CWE-601.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - net/http
+    mode: taint
+    pattern-sources:
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Redirect($W, $R, $DEST, $CODE)
+              - pattern: $W.Header().Set("Location", $DEST)
+          - focus-metavariable: $DEST
+    pattern-sanitizers:
+      - pattern: validateRedirect(...)
+      - pattern: isAllowedRedirect(...)
+      - pattern: $ALLOW.MatchString(...)
+      - pattern: url.Parse(...)
   - id: auth.go.flow.weak-rand
     languages:
       - go
