@@ -1,5 +1,21 @@
 # oauthlint
 
+## 0.5.0
+
+### Minor Changes
+
+- a8d7db8: feat(cli): self-contained HTML report — `oauthlint scan --format html`
+
+  A shareable, printable audit artifact (inline CSS, no JS, no external requests): summary by
+  severity, findings grouped worst-first with rule id, file:line, message, code line, and a doc
+  link. All interpolated values are HTML-escaped (injection-tested).
+
+### Patch Changes
+
+- Updated dependencies [a8d7db8]
+- Updated dependencies [f6e6da2]
+  - oauthlint-rules@0.2.5
+
 ## 0.4.0
 
 ### Minor Changes
