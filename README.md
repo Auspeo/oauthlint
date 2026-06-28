@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://oauthlint.dev"><img src="docs/public/banner.png" alt="OAuthLint — AI ships the auth bug. Catch it before the PR." width="840" /></a>
+<a href="https://oauthlint.dev"><img src="docs/public/banner.png" alt="OAuthLint: AI ships the auth bug. Catch it before the PR." width="840" /></a>
 
 **Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
@@ -38,10 +38,10 @@ LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) 
 - `/login` POST without rate limiting
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
-- untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** — not just pattern-matching
+- untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
 - …and 100+ more, across JS/TS · Python · Go · Java · Rust
 
-oauthlint is the missing layer between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): **free, focused, developer-first.** Every finding links to a page explaining *why it matters* and *how to fix it*.
+oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
 ## Why OAuthLint and not just Semgrep?
 
@@ -49,11 +49,11 @@ Honest answer: nothing stops you from writing these rules yourself. Semgrep is o
 
 What we have is the work most people never do:
 
-- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more — and anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the invisible, tedious work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): validated across thousands of files of real auth-library source, with zero false positives on the clean auth libraries.)
-- **One coherent product across every language it covers.** Same concept, same ID scheme, same docs — `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go. Not a patchwork of community rules with mismatched styles.
-- **Every finding teaches.** Every rule links to a fix page with CWE and OWASP mappings. It's a lesson, not a grep hit.
-- **Dataflow, not just patterns.** Taint-mode rules trace untrusted input through to dangerous sinks (open-redirect, SSRF), catching bugs a single-line pattern would miss.
-- **The angle the registry doesn't have:** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat — encoded in each rule's `llm-prevalence` metadata and measured by the empirical [/research](https://oauthlint.dev/research) report.
+- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more. Anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the tedious, invisible work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): thousands of files of real auth-library source, zero false positives on the clean libraries.)
+- **One coherent product across every language it covers.** Same concept, same ID scheme, same docs. `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go, instead of a patchwork of community rules with mismatched styles.
+- **Every finding teaches.** Every rule links to a fix page with CWE and OWASP mappings, so a finding is a lesson rather than a grep hit.
+- **Dataflow, not only patterns.** Taint-mode rules trace untrusted input through to dangerous sinks (open-redirect, SSRF), catching bugs a single-line pattern would miss.
+- **The angle the registry doesn't have.** OAuthLint targets the OAuth/JWT bugs AI coding tools ship on repeat. Each rule encodes that in its `llm-prevalence` metadata, and the empirical [/research](https://oauthlint.dev/research) report measures it.
 
 Use OAuthLint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
 
@@ -115,7 +115,7 @@ Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo
 
 ### Use directly with Semgrep
 
-Already have [Semgrep](https://semgrep.dev)? Run the **full pack** with one command — no install, no config file:
+Already have [Semgrep](https://semgrep.dev)? Run the **full pack** with one command, no install and no config file:
 
 ```bash
 semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -130,17 +130,17 @@ Per-language bundles are available too (e.g. `oauthlint-python.yaml`, `oauthlint
 return jwt.verify(token, key, { algorithms: ['RS256', 'none'] });
 ```
 
-Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported — the next reviewer needs to see exactly which lines opted out.
+Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. The next reviewer needs to see exactly which lines opted out.
 
 ## Rules
 
-**100+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust — each mapped to CWE & OWASP, each with a documentation page. Some are **taint-mode dataflow rules** (open-redirect, SSRF) that follow untrusted input to its sink rather than matching a single line. The catalogue grows with every release.
+**100+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust. Each is mapped to CWE & OWASP and has a documentation page. Some are **taint-mode dataflow rules** (open-redirect, SSRF) that follow untrusted input to its sink rather than matching a single line. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
 ## Language support
 
-oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language-agnostic**. The rules are plain YAML data, so adding a language is a matter of **writing rule packs** — not re-architecting anything.
+oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language-agnostic**. The rules are plain YAML data, so adding a language means **writing rule packs**, not re-architecting anything.
 
 | Language | Status |
 |----------|:------:|
@@ -151,14 +151,14 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping |
 | More (open an issue to request your stack) | 🔜 planned |
 
-**Why JS/TS first?** That's where AI coding tools generate the most code — and therefore the most OAuth/JWT bugs. It's the highest-density beachhead, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
+**Why JS/TS first?** That's where AI coding tools generate the most code, and so the most OAuth/JWT bugs. It's the densest place to start, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
 
 ## What's in this repo
 
 | Package | What it does |
 |---------|--------------|
 | [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
-| [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor` — pretty + JSON + SARIF + HTML output |
+| [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor`, with pretty + JSON + SARIF + HTML output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI, with inline PR annotations + job summary |
 | [`vscode/`](vscode) | VS Code / Cursor / Windsurf extension (Marketplace + OpenVSX): diagnostics, status bar + Quick Fix suppressions |
 | [`examples/`](examples) | Deliberately-vulnerable demo apps used for dogfooding |
@@ -180,17 +180,17 @@ pnpm --filter oauthlint-site dev     # preview the docs site locally
 
 - **[Conventional Commits](https://www.conventionalcommits.org)** are enforced (`feat:`, `fix:`, `docs:`, `chore:`, …) via a `commit-msg` hook.
 - **Git hooks** (husky): `pre-commit` runs Biome on staged files; `pre-push` runs typecheck + the full test suite.
-- **Releases** use [Changesets](https://github.com/changesets/changesets) — see [RELEASE.md](RELEASE.md).
+- **Releases** use [Changesets](https://github.com/changesets/changesets); see [RELEASE.md](RELEASE.md).
 
 ## Contributing
 
 The most useful contribution is telling us when a rule is wrong: open a
 [false-positive issue](https://github.com/Auspeo/oauthlint/issues/new/choose).
 Want a new anti-pattern caught, or want to write the rule yourself? See
-**[CONTRIBUTING.md](CONTRIBUTING.md)** — a rule is one YAML file plus a
+**[CONTRIBUTING.md](CONTRIBUTING.md)**. A rule is one YAML file plus a
 `vulnerable.ts` / `safe.ts` fixture pair. By participating you agree to the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).
+MIT. See [LICENSE](LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).

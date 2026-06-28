@@ -7,7 +7,7 @@ section: "github-action"
 
 # GitHub Action
 
-Drop OAuthLint into any repository's CI to catch OAuth / OIDC / JWT anti-patterns on every push and pull request — no language setup required.
+Drop OAuthLint into any repository's CI to catch OAuth / OIDC / JWT anti-patterns on every push and pull request, with no language setup required.
 
 ## Quick usage
 
@@ -21,9 +21,9 @@ Add one step after checking out your code:
     fail-on: HIGH    # fail the job on HIGH+
 ```
 
-The action is **Docker-based** — it runs the OAuthLint CLI inside a prebuilt image, so it works in any repo regardless of the project's language and needs no Node/toolchain setup of your own.
+The action is **Docker-based**. It runs the OAuthLint CLI inside a prebuilt image, so it works in any repo regardless of the project's language and needs no Node or toolchain setup of your own.
 
-`Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint. The original subpath form `Auspeo/oauthlint/action@v1` still works and behaves identically — the root action is a thin composite that delegates to it.
+`Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint. The original subpath form `Auspeo/oauthlint/action@v1` still works and behaves identically; the root action is a thin composite that delegates to it.
 
 ## Complete workflow
 
@@ -59,11 +59,11 @@ jobs:
 
 ## PR annotations
 
-The action posts **inline annotations on the changed lines** of a pull request out of the box — each finding shows up in the **Files changed** tab and the checks summary, with a per-severity job summary. This is on by default; set the `annotations` input to `'false'` to turn it off. No extra permissions or steps are needed.
+The action posts **inline annotations on the changed lines** of a pull request out of the box. Each finding shows up in the **Files changed** tab and the checks summary, with a per-severity job summary. This is on by default; set the `annotations` input to `'false'` to turn it off. No extra permissions or steps are needed.
 
-For the richer **Security → Code scanning** experience as well, set `sarif: 'true'` and feed the action's `sarif-file` output to [`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action) (as shown above) — this lists findings under code scanning and requires `security-events: write` permission.
+For the richer **Security → Code scanning** experience as well, set `sarif: 'true'` and feed the action's `sarif-file` output to [`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action) (as shown above). This lists findings under code scanning and requires `security-events: write` permission.
 
-The SARIF pass always runs with `--fail-on off` internally and its exit code is swallowed, so generating the report never fails the job on its own — gating is controlled solely by the `fail-on` input.
+The SARIF pass always runs with `--fail-on off` internally and its exit code is swallowed, so generating the report never fails the job on its own. Gating is controlled solely by the `fail-on` input.
 
 ## Inputs
 
@@ -72,7 +72,7 @@ All inputs are optional.
 | Name | Default | Description |
 |------|---------|-------------|
 | `path` | `.` | Path to scan. Defaults to the repo root. |
-| `severity` | *(none)* | Filter floor — only emit findings at this severity or above: `INFO` / `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`. Empty means emit all. |
+| `severity` | *(none)* | Filter floor. Only emit findings at this severity or above: `INFO` / `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`. Empty means emit all. |
 | `fail-on` | `HIGH` | Fail the job if any finding is at this severity or above. Use `off` to never fail. |
 | `json` | `false` | When `true`, also write a JSON report. |
 | `output` | `oauthlint-report.json` | Path to write the JSON report (only used when `json=true`). |
@@ -117,5 +117,5 @@ The `findings` and `highest-severity` outputs are available in later steps via `
 
 ## See also
 
-- [CLI reference](/docs/cli) — every flag the action runs under the hood.
-- [Configuration](/docs/configuration) — pin a severity floor, scope paths, and toggle rules with an `.oauthlintrc.yml` that the action picks up automatically.
+- [CLI reference](/docs/cli): every flag the action runs under the hood.
+- [Configuration](/docs/configuration): pin a severity floor, scope paths, and toggle rules with an `.oauthlintrc.yml` that the action picks up automatically.

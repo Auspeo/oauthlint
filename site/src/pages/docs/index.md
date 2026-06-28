@@ -7,7 +7,7 @@ section: "getting-started"
 
 # Getting started
 
-OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / CORS anti-patterns that AI coding assistants ship by default — and flags them with a fix, before they reach a pull request.
+OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / CORS anti-patterns that AI coding assistants ship by default. It flags each one with a fix, before the code reaches a pull request.
 
 ## Run your first scan
 
@@ -17,7 +17,7 @@ No install, no config, no account. Point it at your source:
 npx oauthlint scan ./src
 ```
 
-It scans the directory, prints every finding it's confident about, and exits non-zero if anything fired. On clean, idiomatic auth code it stays silent — that's the whole point.
+It scans the directory, prints every finding it's confident about, and exits non-zero if anything fired. On clean, idiomatic auth code it stays silent, which is the whole point.
 
 ## Read a finding
 
@@ -29,9 +29,9 @@ CRITICAL  auth.jwt.no-verification  src/auth/session.ts:42
   ✓ Fix: jwt.verify(token, key, { algorithms: ['RS256'] })
 ```
 
-- **Severity** — `critical` · `high` · `medium` · `low` · `info`. Use it to decide what blocks CI.
-- **Rule id** — e.g. `auth.jwt.no-verification`. Every rule has a page in the [rules catalogue](/rules) with a vulnerable and a safe example, mapped to CWE/OWASP.
-- **Location** — `file:line`, so it's clickable in your terminal and editor.
+- **Severity**: `critical` · `high` · `medium` · `low` · `info`. Use it to decide what blocks CI.
+- **Rule id**, for example `auth.jwt.no-verification`. Every rule has a page in the [rules catalogue](/rules) with a vulnerable and a safe example, mapped to CWE/OWASP.
+- **Location**: `file:line`, so it's clickable in your terminal and editor.
 
 ## Fail CI on real issues
 
@@ -48,13 +48,13 @@ See every flag in the [CLI reference](/docs/cli).
 
 OAuthLint meets your code where it already lives:
 
-- **CLI / CI** — `npx oauthlint scan`, locally or in any pipeline. → [CLI reference](/docs/cli)
-- **GitHub Action** — PR annotations and SARIF upload to GitHub code scanning, Docker-based so it runs for any language. → [GitHub Action](/docs/github-action)
-- **VS Code** — inline diagnostics as you type, with Quick Fix suppressions. → [VS Code extension](/docs/vscode)
+- **CLI / CI**: `npx oauthlint scan`, locally or in any pipeline. → [CLI reference](/docs/cli)
+- **GitHub Action**: PR annotations and SARIF upload to GitHub code scanning. It's Docker-based, so it runs for any language. → [GitHub Action](/docs/github-action)
+- **VS Code**: inline diagnostics as you type, with Quick Fix suppressions. → [VS Code extension](/docs/vscode)
 
 ## Tune it to your project
 
-- **[Configuration](/docs/configuration)** — pin a severity floor, scope paths, and toggle rules with an `.oauthlintrc.yml`.
-- **[Suppressing rules](/docs/suppressing)** — silence a single line with an auditable inline comment when you've made a deliberate exception.
+- **[Configuration](/docs/configuration)**: pin a severity floor, scope paths, and toggle rules with an `.oauthlintrc.yml`.
+- **[Suppressing rules](/docs/suppressing)**: silence a single line with an auditable inline comment when you've made a deliberate exception.
 
-> New here? Run `npx oauthlint scan ./src` on a real project first — the output is the fastest way to understand what OAuthLint catches.
+> New here? Run `npx oauthlint scan ./src` on a real project first. The output is the fastest way to understand what OAuthLint catches.
