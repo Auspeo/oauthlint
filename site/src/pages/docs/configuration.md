@@ -24,7 +24,7 @@ oauthlint.config.cjs
 package.json   (under an "oauthlint" key)
 ```
 
-The list above is the precedence order — the first match wins. Put the file at your repo root so it applies to the whole project.
+The list above is the precedence order; the first match wins. Put the file at your repo root so it applies to the whole project.
 
 ## Scaffold a config
 
@@ -34,7 +34,7 @@ Generate a starter `.oauthlintrc.yml` in the current directory:
 npx oauthlint init
 ```
 
-It refuses to clobber an existing file — pass `--force` to overwrite:
+It won't overwrite an existing file. Pass `--force` if you want it to:
 
 ```bash
 npx oauthlint init --force
@@ -94,9 +94,9 @@ failOn: HIGH
 
 ### `rules` values
 
-- `off` — disable the rule; it never fires.
-- `warn` — keep emitting the finding, but it never contributes to the failing exit code (regardless of `failOn`).
-- a severity (`INFO` / `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`) — override the rule's built-in severity, which in turn affects whether it crosses your `failOn` threshold.
+- `off` disables the rule; it never fires.
+- `warn` keeps emitting the finding, but it never contributes to the failing exit code (regardless of `failOn`).
+- a severity (`INFO` / `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`) overrides the rule's built-in severity, which in turn affects whether it crosses your `failOn` threshold.
 
 ## Config vs CLI flags
 
@@ -111,5 +111,5 @@ See the [CLI reference](/docs/cli) for every flag.
 
 ## Related
 
-- [CLI reference](/docs/cli) — every command and flag.
-- [Suppressing rules](/docs/suppressing) — silence a single line with an auditable inline comment instead of disabling a rule project-wide.
+- [CLI reference](/docs/cli): every command and flag.
+- [Suppressing rules](/docs/suppressing): silence a single line with an auditable inline comment instead of disabling a rule project-wide.

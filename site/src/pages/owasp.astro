@@ -18,7 +18,7 @@ const sevRank: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low
 
 // Human-readable titles for the OWASP codes the pack actually carries. Unknown
 // codes fall back to the raw identifier, so the page never breaks if a rule
-// adds a category we haven't named yet — it just shows the code.
+// adds a category we haven't named yet. It falls through to the raw code.
 const OWASP_TITLES: Record<string, string> = {
   'API1:2023': 'Broken Object Level Authorization',
   'API2:2023': 'Broken Authentication',
@@ -43,7 +43,7 @@ function editionOf(code: string): { key: string; label: string; order: number } 
   return { key: 'other', label: 'Other', order: 2 };
 }
 
-// Derive coverage straight from the rule pack — no frozen counts.
+// Derive coverage straight from the rule pack, with no frozen counts.
 interface OwaspGroup {
   code: string;
   title: string;
@@ -102,7 +102,7 @@ const editionCount = editionList.length;
       </div>
       <h1 style="font-family:var(--ol-font-display); font-weight:700; font-size:var(--ol-text-display-l); letter-spacing:-0.03em; margin:0 0 var(--ol-space-4);">Mapped to the risks that matter.</h1>
       <p style="font-size:var(--ol-text-body-l); line-height:var(--ol-leading-relaxed); color:var(--ol-text-secondary); max-width:62ch; margin:0 0 var(--ol-space-8);">
-        Every OAuthLint rule maps to an OWASP risk. This page is derived from the shipped rule pack — it shows exactly which OWASP API Security and Web Application Top 10 categories the rules cover, and which auth anti-patterns sit under each.
+        Every OAuthLint rule maps to an OWASP risk. This page is built from the shipped rule pack, so it shows exactly which OWASP API Security and Web Application Top 10 categories the rules cover, and which auth anti-patterns sit under each.
       </p>
 
       <!-- COVERAGE SUMMARY -->
@@ -162,7 +162,7 @@ const editionCount = editionList.length;
 
       <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-top:var(--ol-space-4);">
         <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;">← all rules</a>
-        <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">Coverage derived from the shipped rule pack — it grows with the rules.</span>
+        <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">Coverage is derived from the shipped rule pack, so it grows with the rules.</span>
       </div>
     </main>
   </SiteChrome>

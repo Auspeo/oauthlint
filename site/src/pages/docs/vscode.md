@@ -11,7 +11,7 @@ OAuthLint surfaces auth findings as native VS Code diagnostics, with a one-click
 
 ## Install
 
-Install **oauthlint** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) — search **oauthlint** in the Extensions view (⇧⌘X / Ctrl+Shift+X), or from a terminal:
+Install **oauthlint** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode). Search **oauthlint** in the Extensions view (⇧⌘X / Ctrl+Shift+X), or install it from a terminal:
 
 ```bash
 code --install-extension auspeo.oauthlint-vscode
@@ -19,11 +19,11 @@ code --install-extension auspeo.oauthlint-vscode
 
 Publisher / extension id: **`auspeo.oauthlint-vscode`**.
 
-Using an editor that pulls from **[Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode)** instead of the VS Code Marketplace — like **Cursor** or **Windsurf**? The extension is published there too under the same `auspeo.oauthlint-vscode` id; search **oauthlint** in the Extensions view.
+Using an editor that pulls from **[Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode)** instead of the VS Code Marketplace, like **Cursor** or **Windsurf**? The extension is published there too under the same `auspeo.oauthlint-vscode` id; search **oauthlint** in the Extensions view.
 
 ### Requirement: the CLI
 
-The extension is a thin front-end over the [`oauthlint` CLI](/docs/cli) — it shells out to it and renders the JSON findings. You need the CLI (and Semgrep) available:
+The extension is a thin front-end over the [`oauthlint` CLI](/docs/cli): it shells out to the CLI and renders the JSON findings. You need the CLI (and Semgrep) available:
 
 ```bash
 npm install -g oauthlint        # or point oauthlint.cliPath at a local install
@@ -36,7 +36,7 @@ If the CLI can't be found, the extension shows a one-time warning with a link to
 
 - **Inline diagnostics** for JavaScript, JSX, TypeScript and TSX. A scan runs when you **save** or **open** a file (debounced, and re-run when you change a setting). Severity maps to the editor's familiar squiggles: `CRITICAL` and `HIGH` show as errors, `MEDIUM` as a warning, `LOW` and `INFO` as information.
 - **Rule id + docs link on every finding.** Each diagnostic carries its rule id (e.g. `auth.jwt.no-verification`) and a link straight to that rule's page on oauthlint.dev.
-- **Quick Fix → suppress this line.** On any finding, the lightbulb offers **Suppress `<rule-id>` on this line**, which inserts an `// oauthlint-disable-next-line <rule-id>` directive above the offending line — the same auditable comment the CLI honours. See [Suppressing rules](/docs/suppressing).
+- **Quick Fix → suppress this line.** On any finding, the lightbulb offers **Suppress `<rule-id>` on this line**, which inserts an `// oauthlint-disable-next-line <rule-id>` directive above the offending line, the same auditable comment the CLI honours. See [Suppressing rules](/docs/suppressing).
 - **Quick Fix → open documentation.** A second action, **Open documentation for `<rule-id>`**, opens the rule's docs in your browser.
 - **Status bar item.** A shield in the status bar shows the finding count for the active file, spins while a scan runs, and turns into a warning (pointing at `oauthlint.cliPath`) when the CLI can't be run. Click it to re-scan the current file. It hides for non-JS/TS files.
 
@@ -63,7 +63,7 @@ Available from the Command Palette (all prefixed **OAuthLint:**):
 
 ## Relationship to the CLI and config
 
-The extension runs `oauthlint scan <target> --json` with the workspace folder as the working directory, so it uses the **same rule pack and the same [`.oauthlintrc`](/docs/configuration)** the CLI would pick up there — no separate configuration. Two differences to note:
+The extension runs `oauthlint scan <target> --json` with the workspace folder as the working directory, so it uses the **same rule pack and the same [`.oauthlintrc`](/docs/configuration)** the CLI would pick up there, with no separate configuration. Two differences to note:
 
 - It scans with `--fail-on off` (the editor never needs an exit code), so your config's `failOn` doesn't affect what the extension shows. Use `oauthlint.minSeverity` to set the editor's noise floor instead.
 - `oauthlint.rulesDir` is forwarded as `--rules-dir`, mirroring the CLI flag for custom rule packs.

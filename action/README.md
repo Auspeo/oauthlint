@@ -1,10 +1,10 @@
-# OAuthLint — GitHub Action
+# OAuthLint GitHub Action
 
 Catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce,
 right inside your CI.
 
 Out of the box, every finding shows up **inline on the PR's _Files changed_ tab**
-and in a **job summary** — no token, no extra permission, no SARIF upload required.
+and in a **job summary**, with no token, no extra permission, and no SARIF upload required.
 
 ## Quick start
 
@@ -25,8 +25,8 @@ jobs:
 
 > **Which `uses:` line?** `Auspeo/oauthlint@v1` (repo root) is the
 > Marketplace-listed entrypoint and the recommended one. The original
-> `Auspeo/oauthlint/action@v1` (subpath) still works and is fully supported —
-> the root action is a thin composite that delegates to it, so behaviour is
+> `Auspeo/oauthlint/action@v1` (subpath) still works and is fully supported.
+> The root action is a thin composite that delegates to it, so behaviour is
 > identical. Use whichever you already have pinned.
 
 ## Inputs
@@ -57,8 +57,8 @@ jobs:
 
 By default (`annotations: true`) the Action surfaces findings in two places, using
 only [GitHub workflow commands](https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions)
-and the [job summary](https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary)
-— **neither needs a token or any extra permission**, and they're additive to the
+and the [job summary](https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary).
+**Neither needs a token or any extra permission**, and they're additive to the
 SARIF / JSON / `fail-on` behaviour.
 
 **Inline annotations.** Each finding becomes a workflow-command annotation so it
@@ -119,7 +119,7 @@ reasonable size with a `…and N more` note rather than silently truncating.
 
 Enable `html: true` to write a self-contained HTML report (the `--format html`
 output of the CLI), then upload it as an artifact so anyone can download a single
-file and open it in a browser — no SARIF tab or token required. Like SARIF, the
+file and open it in a browser, no SARIF tab or token required. Like SARIF, the
 HTML pass runs with `--fail-on off` and can never fail the job; use `fail-on` to
 gate the build independently.
 
@@ -170,7 +170,7 @@ jobs:
         uses: Auspeo/oauthlint/action@v1
         with:
           sarif: 'true'
-          # SARIF is for surfacing findings, not for gating — let the upload
+          # SARIF is for surfacing findings, not for gating. Let the upload
           # decide what to do. Use fail-on to gate the job independently.
           fail-on: 'off'
 
@@ -182,10 +182,10 @@ jobs:
 
 ## Marketplace listing
 
-GitHub only lists actions whose `action.yml` is at the **repository root**, but the real logic of this Action lives here in `action/`. To make it listable without breaking existing `Auspeo/oauthlint/action@v1` users, the repo root carries a thin **composite** [`action.yml`](../action.yml) whose single step is `uses: ./action` — it delegates to this Docker action, mirroring every input/default/output. So:
+GitHub only lists actions whose `action.yml` is at the **repository root**, but the real logic of this Action lives here in `action/`. To make it listable without breaking existing `Auspeo/oauthlint/action@v1` users, the repo root carries a thin **composite** [`action.yml`](../action.yml) whose single step is `uses: ./action`. It delegates to this Docker action, mirroring every input/default/output. So:
 
-- `Auspeo/oauthlint@v1` — the Marketplace-facing entrypoint (root composite).
-- `Auspeo/oauthlint/action@v1` — the Docker action directly (unchanged, still supported).
+- `Auspeo/oauthlint@v1`: the Marketplace-facing entrypoint (root composite).
+- `Auspeo/oauthlint/action@v1`: the Docker action directly (unchanged, still supported).
 
 Both run identical logic; the composite just forwards inputs and re-exposes outputs.
 
@@ -193,4 +193,4 @@ Both run identical logic; the composite just forwards inputs and re-exposes outp
 
 ## License
 
-MIT — see [LICENSE](../../LICENSE).
+MIT. See [LICENSE](../../LICENSE).

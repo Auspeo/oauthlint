@@ -31,8 +31,8 @@ The repo publishes two npm packages plus two marketplace artifacts:
    # local preview: pnpm --filter oauthlint-site dev
    ```
 
-2. **Cut versions with Changesets.** *(Skip for the very first 0.1.0 publish —
-   the packages are already at 0.1.0; go straight to step 3. Use changesets from
+2. **Cut versions with Changesets.** *(Skip for the very first 0.1.0 publish:
+   the packages are already at 0.1.0, so go straight to step 3. Use changesets from
    the next release onward.)*
    ```bash
    pnpm changeset            # describe the change(s); pick bump levels
@@ -40,7 +40,7 @@ The repo publishes two npm packages plus two marketplace artifacts:
    git commit -am "release: version packages" && git push
    ```
 
-3. **Publish to npm** (rules first — the CLI depends on it).
+3. **Publish to npm** (rules first, since the CLI depends on it).
    ```bash
    pnpm build
    pnpm release              # = pnpm build && changeset publish (publishes both, in order)
@@ -63,7 +63,7 @@ The repo publishes two npm packages plus two marketplace artifacts:
 
 ## Post-publish smoke tests
 
-> **Mandatory — this catches monorepo hoisting bugs.** Always test a *clean
+> **Mandatory. This catches monorepo hoisting bugs.** Always test a *clean
 > external install*, not the workspace. v0.1.0 shipped broken because
 > `oauthlint-rules` listed `fast-glob` as a devDependency; it resolved via
 > workspace hoisting in every local test, then crashed on real installs with
@@ -94,7 +94,7 @@ Sanity-check every published package's runtime imports are in `dependencies`
 - **Migrate to Trusted Publishing:** now that the packages exist on npm,
   configure OIDC Trusted Publishing per package (npm package settings → linked to
   this repo + `release.yml`), then revoke the long-lived token. Can't be done for
-  a brand-new package's first publish — only after it exists.
+  a brand-new package's first publish, only after it exists.
 - **GitHub Marketplace (Action) + repo visibility:** publishing the Action to
   Marketplace requires a **public** repo. The repo is currently private; make it
   public (the OSS wedge anyway) to list the Action.
@@ -115,24 +115,26 @@ VS Code extension) are always published manually.
 ## Writing release notes
 
 Every GitHub Release uses one standard structure so notes stay scannable and
-useful. Start from the skeleton at
+useful. Write like a person telling a teammate what changed and why. Avoid
+em-dashes and AI-sounding filler (no "seamlessly", "robust", "powerful",
+"leverage", and so on). Start from the skeleton at
 [`.github/RELEASE_NOTES_TEMPLATE.md`](.github/RELEASE_NOTES_TEMPLATE.md) and fill
 it in with `gh release edit <tag> --notes "<markdown>"` (or paste into the
-release UI). Source the actual content from the per-package CHANGELOGs
+release UI). Pull the actual content from the per-package CHANGELOGs
 (`cli/CHANGELOG.md`, `rules/CHANGELOG.md`) and the merged PRs in the release
 window.
 
 **Structure (in order):**
 
-1. **Intro** — 1–2 sentences: what this release is and who it helps.
-2. **Grouped changes** — only the groups that apply, with emoji headers:
+1. **Intro**: 1-2 sentences on what this release is and who it helps.
+2. **Grouped changes**: only the groups that apply, with emoji headers:
    `### ✨ New`, `### 🐛 Fixes`, `### 🔒 Security`, `### 📚 Docs`,
    `### 🧰 Internal`. Each bullet states **what** changed **and the problem it
    solves**, then links the PR as `(#NN)`.
-3. **Install / upgrade** — the exact commands for the artifact this tag ships
+3. **Install / upgrade**: the exact commands for the artifact this tag ships
    (`npm i -g oauthlint@<v>` / `npx oauthlint@<v>`, `uses: Auspeo/oauthlint/action@v1`,
    or the VS Code Marketplace id `auspeo.oauthlint`).
-4. **Full changelog** — a compare link to the previous tag of the *same*
+4. **Full changelog**: a compare link to the previous tag of the *same*
    artifact: `https://github.com/Auspeo/oauthlint/compare/<prevtag>...<tag>`
    (for an artifact's first release, link its tree:
    `https://github.com/Auspeo/oauthlint/tree/<tag>`).
@@ -141,7 +143,7 @@ window.
 
 - [ ] Intro sentence present (what + who).
 - [ ] Changes grouped under emoji headers; every bullet carries problem-context.
-- [ ] Every claim links a **real, verified merged PR** — never invent numbers.
+- [ ] Every claim links a **real, verified merged PR**. Never invent numbers.
       Confirm with `gh pr view <NN>` / `git log <prevtag>..<tag> --oneline`.
 - [ ] Install / upgrade commands match the artifact and version.
 - [ ] Compare link uses the correct previous tag (per artifact, not just newest).
@@ -153,15 +155,15 @@ window.
 OAuthLint ships on a **bi-weekly release train**: accumulated changesets are
 batched and a release is cut **every 2 weeks**, regardless of size. Between
 trains, the only out-of-band releases are **on-demand patch releases for
-security or critical fixes** — nothing else jumps the queue.
+security or critical fixes**. Nothing else jumps the queue.
 
 Version bumps follow **SemVer**, driven by Changesets:
 
-- **patch** — rules fixes (false-positive/negative tweaks), docs-only republishes.
-- **minor** — new rules (`oauthlint-rules`), new CLI/Action features.
-- **major** — breaking changes (CLI flag/output/exit-code changes, removed
+- **patch**: rules fixes (false-positive/negative tweaks), docs-only republishes.
+- **minor**: new rules (`oauthlint-rules`), new CLI/Action features.
+- **major**: breaking changes (CLI flag/output/exit-code changes, removed
   rules, Action input/behavior breaks).
 
 The npm packages (`oauthlint`, `oauthlint-rules`) and the marketplace artifacts
-(Action `vX.Y.Z` + moving `v1`, VS Code extension) version **independently** —
-each carries its own tag and compare link in its release notes.
+(Action `vX.Y.Z` plus the moving `v1`, VS Code extension) version
+**independently**. Each carries its own tag and compare link in its release notes.

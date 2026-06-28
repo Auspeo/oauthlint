@@ -39,11 +39,11 @@ jobs:
           sarif_file: ${{ steps.oauthlint.outputs.sarif-file }}
 ```
 
-> The SARIF pass never fails the job on its own — gating is controlled solely by `fail-on`. `if: always()` ensures the upload still runs when findings exist.
+> The SARIF pass never fails the job on its own; gating is controlled solely by `fail-on`. `if: always()` ensures the upload still runs when findings exist.
 
 ## GitHub Action — inline PR annotations
 
-Annotations are **on by default** (`annotations: 'true'`) — no token, no extra permission, no SARIF upload required.
+Annotations are **on by default** (`annotations: 'true'`), with no token, no extra permission, and no SARIF upload required.
 
 ```yaml
 - uses: actions/checkout@v4
@@ -71,7 +71,7 @@ repos:
 
 ## Run from Semgrep — no install
 
-Already have [Semgrep](https://semgrep.dev)? Run the entire pack with one command — no install, no config file, no account:
+Already have [Semgrep](https://semgrep.dev)? Run the entire pack with one command. No install, no config file, no account:
 
 ```bash
 semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -130,7 +130,7 @@ npx oauthlint scan ./src --format html > oauthlint-report.html
 
 ## Use in any CI (Docker, no Node project changes)
 
-No `package.json` change needed — run the published CLI on demand with `npx`:
+No `package.json` change needed. Run the published CLI on demand with `npx`:
 
 ```bash
 pipx install semgrep                              # the engine OAuthLint drives
@@ -141,7 +141,7 @@ npx oauthlint@latest scan ./src --fail-on HIGH
 
 ## Cursor / Windsurf
 
-Editors that pull extensions from [Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) — like Cursor and Windsurf — get the same extension as VS Code. Search **oauthlint** in the Extensions view, or:
+Editors that pull extensions from [Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode), like Cursor and Windsurf, get the same extension as VS Code. Search **oauthlint** in the Extensions view, or:
 
 ```bash
 code --install-extension auspeo.oauthlint-vscode

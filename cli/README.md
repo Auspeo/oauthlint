@@ -38,7 +38,7 @@ npx oauthlint scan ./src --fail-on HIGH
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 npx oauthlint scan ./src --format html  > report.html
 
-# learn a rule in the terminal — the why, the fix, and vulnerable/safe examples
+# learn a rule in the terminal: the why, the fix, and vulnerable/safe examples
 npx oauthlint explain auth.jwt.alg-none
 ```
 
@@ -46,20 +46,20 @@ Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--
 
 ### Every finding teaches
 
-Each finding ends with a hint — `↳ run \`oauthlint explain <rule-id>\` for details + the fix`. `oauthlint explain` brings the rule docs into your terminal, offline, from the bundled pack: severity, CWE/OWASP with canonical links, `llm-prevalence`, the why + how-to-fix, and side-by-side **vulnerable** vs **safe** code. It resolves a rule by id (`auth.jwt.alg-none`), slug (`jwt-alg-none`), or oauthlint-rule-id (`AUTH-JWT-001`); add `--json` for the structured rule object.
+Each finding ends with a hint, `↳ run \`oauthlint explain <rule-id>\` for details + the fix`. `oauthlint explain` brings the rule docs into your terminal, offline, from the bundled pack: severity, CWE/OWASP with canonical links, `llm-prevalence`, the why + how-to-fix, and side-by-side **vulnerable** vs **safe** code. It resolves a rule by id (`auth.jwt.alg-none`), slug (`jwt-alg-none`), or oauthlint-rule-id (`AUTH-JWT-001`); add `--json` for the structured rule object.
 
 ## What it catches
 
-LLM coding assistants — Cursor, Claude, Copilot, Gemini — ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
+LLM coding assistants (Cursor, Claude, Copilot, Gemini) ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-- **100+ rules** across **JS/TS · Python · Go · Java · Rust**, each mapped to CWE/OWASP with a fix page — a lesson, not a grep hit.
-- **Dataflow (taint) analysis** — beyond pattern-matching, the pack traces untrusted input through to dangerous sinks to catch **open-redirect** and **SSRF**.
-- **HTML report** — `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.
+- **100+ rules** across **JS/TS · Python · Go · Java · Rust**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit).
+- **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks to catch **open-redirect** and **SSRF**.
+- **HTML report.** `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.
 - Plus **SARIF** for Code Scanning, `--fix` for safe auto-fixes, incremental `--diff`/`--staged`, and a [baseline](https://oauthlint.dev/docs/baseline) for existing codebases.
 
 👉 **Browse the always-current catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
-## Use directly with Semgrep — no install
+## Use directly with Semgrep, no install
 
 Already have [Semgrep](https://semgrep.dev)? Run the full pack with one command, no config file:
 
@@ -71,19 +71,19 @@ Per-language bundles exist too (`oauthlint-python.yaml`, `oauthlint-go.yaml`, �
 
 ## Why oauthlint, and not just Semgrep?
 
-Honest answer: nothing stops you writing these rules yourself — Semgrep is open source and it's the engine we run. There's no technical moat. What oauthlint gives you is the work most people never do:
+Honest answer: nothing stops you writing these rules yourself. Semgrep is open source and it's the engine we run, so there's no technical moat. What oauthlint gives you is the work most people never do:
 
-- **Low false positives, validated against real auth libraries** — `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring Security and more. Anything that fires on mature library source goes to a triage queue, not to you ([validation report](https://oauthlint.dev/VALIDATION)).
-- **One coherent product across every language** — same concepts, same ID scheme, same docs; not a patchwork of community rules.
-- **The angle the registry doesn't have** — it targets the auth bugs AI tools ship on repeat, encoded in each rule's `llm-prevalence` metadata and measured by a reproducible benchmark ([the research](https://oauthlint.dev/research)).
+- **Low false positives, validated against real auth libraries.** `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring Security and more. Anything that fires on mature library source goes to a triage queue, not to you ([validation report](https://oauthlint.dev/VALIDATION)).
+- **One coherent product across every language.** Same concepts, same ID scheme, same docs, not a patchwork of community rules.
+- **The angle the registry doesn't have.** It targets the auth bugs AI tools ship on repeat, encoded in each rule's `llm-prevalence` metadata and measured by a reproducible benchmark ([the research](https://oauthlint.dev/research)).
 
 Use oauthlint when you'd rather not write and maintain an auth rule pack yourself. That's the whole pitch.
 
 ## Also available
 
-- **GitHub Action** — `Auspeo/oauthlint/action@v1`, Docker-based (any language), with inline PR annotations + a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
-- **VS Code / Cursor / Windsurf** — [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, and Quick Fix suppressions.
+- **GitHub Action.** `Auspeo/oauthlint/action@v1`, Docker-based (any language), with inline PR annotations and a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
+- **VS Code / Cursor / Windsurf.** [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, and Quick Fix suppressions.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).
+MIT. See [LICENSE](https://github.com/Auspeo/oauthlint/blob/main/LICENSE). Built and maintained by [Auspeo](https://github.com/Auspeo).

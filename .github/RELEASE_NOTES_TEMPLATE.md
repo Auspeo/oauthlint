@@ -5,34 +5,35 @@ every guidance comment + unused placeholder before publishing. See the "Writing
 release notes" section of RELEASE.md for the checklist and cadence.
 -->
 
-<!-- INTRO: 1–2 sentences — what this release is, and who it helps. -->
+<!-- INTRO: 1-2 sentences. What this release is, and who it helps. -->
+<!-- Write like a person. Avoid em-dashes and AI-sounding filler. -->
 <One- or two-sentence summary of the release and its audience.>
 
 <!--
 GROUPED CHANGES: include only the groups below that apply, in this order.
 Each bullet = WHAT changed + the PROBLEM it solves, then the PR link `(#NN)`.
-Use real, verified merged PR numbers only — never invent them.
+Use real, verified merged PR numbers only. Never invent them.
 -->
 
 ### ✨ New
 <!-- New features / rules / capabilities. -->
-- <What shipped> — <the problem it solves / why it matters>. (#NN)
+- <What shipped>: <the problem it solves, or why it matters>. (#NN)
 
 ### 🐛 Fixes
 <!-- Bug fixes; name the symptom users saw. -->
-- <What was broken and is now fixed> — <impact>. (#NN)
+- <What was broken and is now fixed>: <impact>. (#NN)
 
 ### 🔒 Security
 <!-- Security-relevant changes: new detections, hardening, advisories. -->
-- <The security change> — <the risk it addresses>. (#NN)
+- <The security change>: <the risk it addresses>. (#NN)
 
 ### 📚 Docs
 <!-- User-facing docs, README, site, examples. -->
-- <Doc change> — <what it clarifies or unblocks>. (#NN)
+- <Doc change>: <what it clarifies or unblocks>. (#NN)
 
 ### 🧰 Internal
-<!-- CI, build, deps, refactors — only if user-visible or notable. -->
-- <Internal change> — <why it matters>. (#NN)
+<!-- CI, build, deps, refactors. Only if user-visible or notable. -->
+- <Internal change>: <why it matters>. (#NN)
 
 <!--
 INSTALL / UPGRADE: exact commands for the artifact this tag ships.

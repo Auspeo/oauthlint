@@ -1,7 +1,8 @@
 # Contributing to oauthlint
 
-Thanks for helping make AI-written auth code safer. Whether you are reporting a
-false positive, requesting a rule, or writing one, this guide gets you set up.
+Thanks for helping make AI-written auth code safer. Maybe you hit a false
+positive, want a rule that does not exist yet, or want to write one. This guide
+gets you set up.
 
 ## Ways to contribute
 
@@ -16,11 +17,11 @@ false positive, requesting a rule, or writing one, this guide gets you set up.
 ## Project layout
 
 ```
-rules/       oauthlint-rules — the Semgrep pack
+rules/       oauthlint-rules, the Semgrep pack
   rules/<category>/*.yml        one file per rule
   tests/fixtures/<slug>/        vulnerable.ts + safe.ts per rule
   src/                          loader + schema
-cli/         oauthlint — the CLI (scan, list, init, doctor)
+cli/         oauthlint, the CLI (scan, list, init, doctor)
 action/      Docker-based GitHub Action wrapping the CLI
 vscode/      VS Code extension
 examples/    deliberately-vulnerable demo app used for dogfooding
@@ -74,10 +75,10 @@ The **slug** is the id without the `auth.` prefix, dots turned into dashes:
 
 **2. Add fixtures** at `rules/tests/fixtures/<slug>/`:
 
-- `vulnerable.ts` — annotate every line the rule should flag with a
+- `vulnerable.ts`: annotate every line the rule should flag with a
   `// ruleid: auth.<category>.<name>` comment on the line above it.
-- `safe.ts` — correct code that must produce **zero** findings (this is how we
-  keep false positives out).
+- `safe.ts`: correct code that must produce **zero** findings. This is how we
+  keep false positives out.
 
 ```ts
 // vulnerable.ts
@@ -93,7 +94,7 @@ pnpm test:run
 ```
 
 **4. Docs are automatic:** the docs site (`site/`) generates each rule's page
-directly from the rule pack and fixtures at build time — there's nothing to
+directly from the rule pack and fixtures at build time, so there's nothing to
 regenerate by hand. Preview locally with `pnpm --filter oauthlint-site dev`.
 
 **5. Add a changeset:** `pnpm changeset` (pick a `patch` for a new rule), then
