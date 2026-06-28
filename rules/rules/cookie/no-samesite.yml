@@ -41,7 +41,11 @@ rules:
                     - pattern: "{..., sameSite: 'None', ...}"
                     - pattern: '{..., sameSite: "None", ...}'
                 - pattern-not: '{..., secure: true, ...}'
-    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, sameSite: 'strict' })"
+    # No autofix. The correct `SameSite` value is context-dependent — `Strict`
+    # suits most auth flows but breaks OAuth callbacks, which need `Lax`, while a
+    # cookie deliberately set cross-site needs `None` plus `Secure`. The tool
+    # cannot know which, and a spread template would also corrupt the 2-arg form
+    # (unbound `$OPTS`). So this rule deliberately ships no `fix:`.
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-003
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-samesite

@@ -39,11 +39,14 @@ rules:
           - metavariable-regex:
               metavariable: $NAME
               regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
-    # Auto-fix applies to the first (3-arg) pattern: spread the existing
-    # options object and inject secure:true. Verbose but always-correct;
-    # users can run prettier afterwards. The 2-arg branch is left alone
-    # because rewriting it requires inserting a brand-new argument.
-    fix: '$RES.cookie($NAME, $VAL, { ...$OPTS, secure: true })'
+    # No autofix. A single rule-level `fix:` cannot be made safe here: this rule
+    # matches three shapes — an options object missing `secure`, the 2-arg form
+    # with no options object at all, and an explicit `secure: false`. A spread
+    # template like `{ ...$OPTS, secure: true }` corrupts the 2-arg form (`$OPTS`
+    # is unbound, so Semgrep emits the literal text `$OPTS`) and leaves an
+    # explicit `secure: false` key in place (the finding re-fires). Inserting a
+    # brand-new argument/key is not a clean literal replacement, so we ship no
+    # `fix:` rather than a rewrite that can break source.
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-001
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-secure
