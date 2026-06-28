@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
+import { type FindingHoverData, buildFindingHoverMarkdown } from './hover.js';
 import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
 import { type StatusBarState, computeStatusBar } from './statusbar.js';
 import { buildDisableNextLineDirective, leadingIndent } from './suppressions.js';
@@ -32,6 +33,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const statusBar = new StatusBarController(diagnostics);
   context.subscriptions.push(diagnostics, output, statusBar);
 
+  // Associate each diagnostic we publish with the full finding behind it, so the
+  // hover can surface richer context (full message, CWE, oauthlintRuleId) than
+  // the squiggle's first-line summary. Keyed by the live Diagnostic object the
+  // collection hands back, so entries fall away with their diagnostics.
+  const findingByDiagnostic = new WeakMap<vscode.Diagnostic, OAuthLintFinding>();
+
   const debounceTimers = new Map<string, NodeJS.Timeout>();
 
   const scheduleScan = (uri: vscode.Uri) => {
@@ -43,7 +50,7 @@ export function activate(context: vscode.ExtensionContext): void {
       uri.toString(),
       setTimeout(() => {
         debounceTimers.delete(uri.toString());
-        void scanUri(uri, diagnostics, output, statusBar);
+        void scanUri(uri, diagnostics, output, statusBar, findingByDiagnostic);
       }, SCAN_DEBOUNCE_MS),
     );
   };
@@ -74,28 +81,39 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('oauthlint.scanFile', async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;
-      await scanUri(editor.document.uri, diagnostics, output, statusBar);
+      await scanUri(editor.document.uri, diagnostics, output, statusBar, findingByDiagnostic);
     }),
     vscode.commands.registerCommand('oauthlint.scanWorkspace', async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];
       if (!folder) return;
-      await scanUri(folder.uri, diagnostics, output, statusBar);
+      await scanUri(folder.uri, diagnostics, output, statusBar, findingByDiagnostic);
     }),
     vscode.commands.registerCommand('oauthlint.openDoc', (url: string) => {
       if (typeof url === 'string') vscode.env.openExternal(vscode.Uri.parse(url));
     }),
   );
 
+  const documentSelectors: vscode.DocumentSelector = [
+    { language: 'javascript', scheme: 'file' },
+    { language: 'javascriptreact', scheme: 'file' },
+    { language: 'typescript', scheme: 'file' },
+    { language: 'typescriptreact', scheme: 'file' },
+  ];
+
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
-      [
-        { language: 'javascript', scheme: 'file' },
-        { language: 'javascriptreact', scheme: 'file' },
-        { language: 'typescript', scheme: 'file' },
-        { language: 'typescriptreact', scheme: 'file' },
-      ],
+      documentSelectors,
       new OAuthLintCodeActionProvider(),
-      { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
+      {
+        providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
+      },
+    ),
+    // Rich hover for OAuthLint findings — reuses the diagnostics we already
+    // publish (matched by position) and the finding behind each one. Disposed
+    // with the rest of our subscriptions on deactivate.
+    vscode.languages.registerHoverProvider(
+      documentSelectors,
+      new OAuthLintHoverProvider(diagnostics, findingByDiagnostic),
     ),
   );
 
@@ -191,6 +209,7 @@ async function scanUri(
   diagnostics: vscode.DiagnosticCollection,
   output: vscode.OutputChannel,
   statusBar: StatusBarController,
+  findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>,
 ): Promise<void> {
   if (uri.scheme !== 'file') return;
   const cfg = vscode.workspace.getConfiguration('oauthlint');
@@ -265,6 +284,7 @@ async function scanUri(
         f.docUrl ?? `https://oauthlint.dev/rules/${f.ruleId.replace(/^auth\./, '')}`,
       ),
     };
+    findingByDiagnostic.set(diag, f);
     let bucket = byFile.get(path);
     if (!bucket) {
       bucket = [];
@@ -343,4 +363,81 @@ class OAuthLintCodeActionProvider implements vscode.CodeActionProvider {
     }
     return actions;
   }
+}
+
+/**
+ * Surfaces a Markdown hover when the cursor is over a range covered by one of
+ * our diagnostics. The matching is driven entirely by the diagnostics
+ * collection we own; the finding stored against each diagnostic supplies the
+ * richer fields (full message, CWE, oauthlintRuleId) that the squiggle omits.
+ */
+class OAuthLintHoverProvider implements vscode.HoverProvider {
+  constructor(
+    private readonly diagnostics: vscode.DiagnosticCollection,
+    private readonly findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>,
+  ) {}
+
+  provideHover(document: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
+    const diags = this.diagnostics.get(document.uri);
+    const hit = diags?.find((d) => d.source === DIAG_SOURCE && d.range.contains(position));
+    if (!hit) return undefined;
+
+    const data = hoverDataFor(hit, this.findingByDiagnostic.get(hit));
+    if (!data) return undefined;
+
+    const markdown = new vscode.MarkdownString(buildFindingHoverMarkdown(data));
+    // Plain Markdown only (links + emphasis) — no command URIs to trust.
+    markdown.isTrusted = false;
+    return new vscode.Hover(markdown, hit.range);
+  }
+}
+
+/**
+ * Project a diagnostic (plus the finding behind it, when present) onto the
+ * data the hover renders. Prefers the finding for the full message + metadata,
+ * falling back to the diagnostic's own code/message when no finding is mapped.
+ */
+function hoverDataFor(
+  diag: vscode.Diagnostic,
+  finding: OAuthLintFinding | undefined,
+): FindingHoverData | undefined {
+  if (finding) {
+    return {
+      ruleId: finding.ruleId,
+      oauthlintRuleId: finding.oauthlintRuleId,
+      severity: finding.severity,
+      message: finding.message,
+      docUrl: finding.docUrl ?? docUrlFromCode(diag.code),
+      cwe: finding.cwe,
+      // `owasp` is not emitted by the CLI today — omitted rather than fabricated.
+    };
+  }
+
+  const ruleId = ruleIdFromCode(diag.code);
+  if (!ruleId) return undefined;
+  return {
+    ruleId,
+    severity: SEVERITY_LABELS[diag.severity],
+    message: typeof diag.message === 'string' ? diag.message : '',
+    docUrl: docUrlFromCode(diag.code),
+  };
+}
+
+/** Reverse of `SEVERITY_TO_VSCODE`, for the (rare) finding-less fallback. */
+const SEVERITY_LABELS: Record<vscode.DiagnosticSeverity, string> = {
+  [vscode.DiagnosticSeverity.Error]: 'HIGH',
+  [vscode.DiagnosticSeverity.Warning]: 'MEDIUM',
+  [vscode.DiagnosticSeverity.Information]: 'LOW',
+  [vscode.DiagnosticSeverity.Hint]: 'INFO',
+};
+
+function ruleIdFromCode(code: vscode.Diagnostic['code']): string | null {
+  if (typeof code === 'object' && code && 'value' in code) return String(code.value);
+  if (typeof code === 'string') return code;
+  return null;
+}
+
+function docUrlFromCode(code: vscode.Diagnostic['code']): string | undefined {
+  if (typeof code === 'object' && code && 'target' in code) return code.target.toString();
+  return undefined;
 }
