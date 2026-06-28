@@ -37,9 +37,16 @@ npx oauthlint scan ./src --fail-on HIGH
 # GitHub Code Scanning (SARIF) or a shareable HTML audit report
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 npx oauthlint scan ./src --format html  > report.html
+
+# learn a rule in the terminal — the why, the fix, and vulnerable/safe examples
+npx oauthlint explain auth.jwt.alg-none
 ```
 
-Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--staged`, or adopt on a large repo with a [baseline](https://oauthlint.dev/docs/baseline) (`oauthlint baseline ./src` then `scan --baseline`) so you're alerted on **new** findings only. Other commands: `list`, `init`, `doctor`. Run `oauthlint --help` or see the [full CLI reference](https://oauthlint.dev/docs/cli).
+Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--staged`, or adopt on a large repo with a [baseline](https://oauthlint.dev/docs/baseline) (`oauthlint baseline ./src` then `scan --baseline`) so you're alerted on **new** findings only. Other commands: `list`, `explain`, `init`, `doctor`. Run `oauthlint --help` or see the [full CLI reference](https://oauthlint.dev/docs/cli).
+
+### Every finding teaches
+
+Each finding ends with a hint — `↳ run \`oauthlint explain <rule-id>\` for details + the fix`. `oauthlint explain` brings the rule docs into your terminal, offline, from the bundled pack: severity, CWE/OWASP with canonical links, `llm-prevalence`, the why + how-to-fix, and side-by-side **vulnerable** vs **safe** code. It resolves a rule by id (`auth.jwt.alg-none`), slug (`jwt-alg-none`), or oauthlint-rule-id (`AUTH-JWT-001`); add `--json` for the structured rule object.
 
 ## What it catches
 
