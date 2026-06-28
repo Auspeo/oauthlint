@@ -16,6 +16,9 @@ Cursor, Windsurf and other VS Code-compatible editors.
   (`$(sync~spin) OAuthLint: scanning…`), turns into a `$(warning)` warning when
   the CLI can't be run (with a tooltip pointing at `oauthlint.cliPath`), and
   re-scans the current file when clicked. It hides for non-JS/TS files.
+- **Rich hover** on a finding showing the rule id, severity, the full message
+  (the why + the fix), any CWE the rule carries, and a **View documentation**
+  link to the rule's page on oauthlint.dev.
 - **Quick Fix** to insert an `// oauthlint-disable-next-line` directive when a
   finding is a deliberate, reviewed choice.
 - **Open rule docs** straight from a finding (each links to oauthlint.dev).

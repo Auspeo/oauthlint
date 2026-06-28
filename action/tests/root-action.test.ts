@@ -92,4 +92,19 @@ describe('root action.yml (Marketplace entrypoint)', () => {
       expect(withMap[name], `input ${name} not forwarded`).toBe(`\${{ inputs.${name} }}`);
     }
   });
+
+  it('forwards the new html input(s) and re-exposes the html-file output', async () => {
+    const root = await load<DockerActionYml>(rootActionPath);
+    // Inputs exist on the composite with the mirrored defaults.
+    expect(root.inputs?.html?.default).toBe('false');
+    expect(root.inputs?.['html-file']?.default).toBe('oauthlint-report.html');
+    // They are forwarded to the delegated Docker action.
+    const delegate = (root.runs.steps ?? []).find((s) => s.uses === './action');
+    expect(delegate?.with?.html).toBe('${{ inputs.html }}');
+    expect(delegate?.with?.['html-file']).toBe('${{ inputs.html-file }}');
+    // And the html-file output is re-exposed from the delegated step.
+    expect(root.outputs?.['html-file']?.value).toBe(
+      `\${{ steps.${delegate?.id}.outputs.html-file }}`,
+    );
+  });
 });

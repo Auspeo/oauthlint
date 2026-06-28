@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import pc from 'picocolors';
 import { runBaseline } from './commands/baseline.js';
 import { runDoctor } from './commands/doctor.js';
+import { runExplain } from './commands/explain.js';
 import { runInit } from './commands/init.js';
 import { runList } from './commands/list.js';
 import { type ScanFormat, runScan } from './commands/scan.js';
@@ -178,6 +179,20 @@ export async function buildProgram(): Promise<Command> {
       await finishWithNotice(code, {
         version,
         machineReadable: false,
+        updateCheck: updateCheckEnabled(),
+      });
+    });
+
+  program
+    .command('explain')
+    .argument('<rule>', 'A rule id (auth.jwt.alg-none), slug (jwt-alg-none), or AUTH-JWT-001')
+    .description('Explain one rule — why it matters, the fix, and vulnerable/safe examples')
+    .option('--json', 'Emit the structured rule object instead of pretty output')
+    .action(async (rule: string, opts: { json?: boolean }) => {
+      const code = await runExplain({ rule, json: opts.json });
+      await finishWithNotice(code, {
+        version,
+        machineReadable: opts.json === true,
         updateCheck: updateCheckEnabled(),
       });
     });

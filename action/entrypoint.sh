@@ -10,6 +10,10 @@
 #   $6  sarif       — "true" to also write a SARIF 2.1.0 report
 #   $7  sarif-file  — SARIF output path (when sarif=true)
 #   $8  annotations — "true" to emit inline PR annotations + a job summary
+#   $9  html        — "true" to also write a self-contained HTML report
+#   $10 html-file   — HTML output path (when html=true)
+#
+# New args are appended at the END so existing positions ($1..$8) never shift.
 set -euo pipefail
 
 PATH_TO_SCAN="${1:-.}"
@@ -20,6 +24,8 @@ OUTPUT_PATH="${5:-oauthlint-report.json}"
 EMIT_SARIF="${6:-false}"
 SARIF_PATH="${7:-oauthlint.sarif}"
 EMIT_ANNOTATIONS="${8:-true}"
+EMIT_HTML="${9:-false}"
+HTML_PATH="${10:-oauthlint-report.html}"
 
 # Directory of this script, so we can locate the annotate helper regardless of cwd.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -82,6 +88,22 @@ if [[ "$EMIT_SARIF" == "true" ]]; then
   set -e
   echo "SARIF report written to $SARIF_PATH"
   echo "sarif-file=$SARIF_PATH" >> "$GITHUB_OUTPUT"
+  echo "::endgroup::"
+fi
+
+if [[ "$EMIT_HTML" == "true" ]]; then
+  echo "::group::Generating HTML report"
+  # The HTML report is a shareable audit artifact, not a gate: --fail-on off and
+  # we swallow the exit code so this extra pass can never fail the job.
+  HTML_ARGS=( scan "$PATH_TO_SCAN" --format html --fail-on off )
+  if [[ -n "$SEVERITY" ]]; then
+    HTML_ARGS+=( --severity "$SEVERITY" )
+  fi
+  set +e
+  oauthlint "${HTML_ARGS[@]}" > "$HTML_PATH"
+  set -e
+  echo "HTML report written to $HTML_PATH"
+  echo "html-file=$HTML_PATH" >> "$GITHUB_OUTPUT"
   echo "::endgroup::"
 fi
 

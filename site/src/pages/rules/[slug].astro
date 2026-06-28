@@ -79,6 +79,42 @@ const PREV: Record<'HIGH' | 'MEDIUM' | 'LOW', { label: string; color: string; wh
 };
 const prev = PREV[rule.llmPrevalence];
 
+// Dataflow (taint) rules — OAuthLint's differentiator: these trace data from a
+// source to a dangerous sink rather than matching a single line. The rule
+// loader (`lib/rules.ts`) does not surface each rule's analysis `mode`, so the
+// taint set is derived here, read-only, from the shipped rule ids (the rules
+// carrying `mode: taint` in their YAML). Wiring `mode` into RuleView would make
+// this data-driven. The source→sink summary is keyed off the rule's CWE, which
+// the loader does expose.
+const TAINT_RULE_IDS = new Set<string>([
+  'auth.flow.open-redirect',
+  'auth.flow.secret-in-response',
+  'auth.flow.ssrf',
+  'auth.go.flow.open-redirect',
+  'auth.go.flow.secret-in-response',
+  'auth.go.flow.ssrf',
+  'auth.oauth.open-redirect-callback',
+  'auth.py.flow.open-redirect',
+  'auth.py.flow.secret-in-response',
+  'auth.py.flow.ssrf',
+]);
+const isTaint = TAINT_RULE_IDS.has(rule.id);
+const FLOW_NOTE: Record<string, { source: string; sink: string }> = {
+  'CWE-918': {
+    source: 'untrusted request input (query, body, params, cookies, headers)',
+    sink: 'the URL of an outbound HTTP request',
+  },
+  'CWE-601': {
+    source: 'untrusted request input (query, body, params)',
+    sink: 'an HTTP redirect destination',
+  },
+  'CWE-200': {
+    source: 'a hardcoded secret, token or credential',
+    sink: 'the HTTP response body',
+  },
+};
+const flowNote = isTaint && rule.cwe ? FLOW_NOTE[rule.cwe] : undefined;
+
 // The message: first line is the title (rendered in the masthead); the rest is
 // the "what / why" body. Split into paragraphs on blank lines.
 const messageLines = rule.message.split('\n');
@@ -140,6 +176,12 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
                 ? <a href={owaspHref} rel="noopener noreferrer" target="_blank" class="ol-ref-badge" style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px; text-decoration:none;">OWASP {rule.owasp}</a>
                 : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">OWASP {rule.owasp}</span>)}
               <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary); border:1px solid var(--ol-border-strong); padding:3px 9px;">{langBadge}</span>
+              {isTaint && (
+                <span title="Dataflow rule — traces untrusted/sensitive data from source to a dangerous sink" style="display:inline-flex; align-items:center; gap:5px; font-family:var(--ol-font-mono); font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--ol-accent); border:1px solid var(--ol-accent-800); padding:3px 9px;">
+                  <svg width="15" height="9" viewBox="0 0 20 12" fill="none" aria-hidden="true"><circle cx="3" cy="6" r="2.2" fill="currentColor"></circle><path d="M5.4 6h8.2" stroke="currentColor" stroke-width="1.6"></path><path d="M12.6 2.6L16.4 6l-3.8 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>
+                  DATAFLOW
+                </span>
+              )}
             </div>
             <div style="display:flex; align-items:flex-start; gap:8px; margin-top:var(--ol-space-4);">
               <span aria-hidden="true" style={`flex:none; width:6px; height:6px; margin-top:6px; background:${prev.color};`}></span>
@@ -147,6 +189,13 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
             </div>
           </div>
         </div>
+
+        {isTaint && (
+          <div style="display:flex; align-items:flex-start; gap:12px; border:1px solid var(--ol-border-strong); border-left:3px solid var(--ol-accent); background:var(--ol-surface); padding:14px 16px; margin:0 0 var(--ol-space-8);">
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true" style="flex:none; margin-top:3px; color:var(--ol-accent);"><circle cx="3" cy="6" r="2.2" fill="currentColor"></circle><path d="M5.4 6h8.2" stroke="currentColor" stroke-width="1.3"></path><path d="M12.6 2.6L16.4 6l-3.8 3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>
+            <p style="font-size:var(--ol-text-body-s); line-height:1.65; color:var(--ol-text-secondary); margin:0;"><span style="color:var(--ol-text); font-weight:600;">Dataflow rule.</span> This is a taint-mode rule: it traces {flowNote ? <><span style="color:var(--ol-text);">{flowNote.source}</span> through your code to <span style="color:var(--ol-text);">{flowNote.sink}</span></> : 'data from source to sink'}, so indirection across multiple lines is caught — not just the direct one-line form. Routing the value through a recognised validation / allow-list sanitizer clears the taint and suppresses the finding. <a href="/research" style="color:var(--ol-accent); text-decoration:none; white-space:nowrap;">Why dataflow →</a></p>
+          </div>
+        )}
 
         <h2 style="font-family:var(--ol-font-ui); font-weight:600; font-size:var(--ol-text-heading-l); margin:0 0 var(--ol-space-3);">Why this matters</h2>
         {bodyParagraphs.map((p) => (
@@ -209,6 +258,7 @@ const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
               : <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.owasp}</span>}</div>}
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Category</span><span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-secondary);">{rule.category}</span></div>
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">AI prevalence</span><span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:${prev.color};`}>● {prev.label}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--ol-text-muted);">Analysis</span><span style={`font-family:var(--ol-font-mono); font-size:11px; font-weight:600; color:${isTaint ? 'var(--ol-accent)' : 'var(--ol-text-secondary)'};`}>{isTaint ? 'Dataflow' : 'Pattern'}</span></div>
           </div>
         </div>
         <a href="/rules" style="display:inline-flex; align-items:center; gap:8px; font-family:var(--ol-font-mono); font-weight:500; font-size:12px; color:var(--ol-text-secondary); background:var(--ol-surface); border:1px solid var(--ol-border-strong); height:38px; padding:0 16px; text-decoration:none; justify-content:center;">← all rules</a>

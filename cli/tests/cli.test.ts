@@ -20,10 +20,18 @@ describe('buildProgram', () => {
     expect(program.version()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it('registers the scan, baseline, list, init and doctor commands', async () => {
+  it('registers the scan, baseline, list, init, doctor and explain commands', async () => {
     const program = await buildProgram();
     const names = program.commands.map((c) => c.name()).sort();
-    expect(names).toEqual(['baseline', 'doctor', 'init', 'list', 'scan']);
+    expect(names).toEqual(['baseline', 'doctor', 'explain', 'init', 'list', 'scan']);
+  });
+
+  it('explain takes a required <rule> arg and a --json flag', async () => {
+    const program = await buildProgram();
+    const explain = program.commands.find((c) => c.name() === 'explain');
+    if (!explain) throw new Error('explain command missing');
+    expect(explain.registeredArguments[0]?.required).toBe(true);
+    expect(explain.options.map((o) => o.long)).toContain('--json');
   });
 
   it('scan accepts variadic path args and the incremental/baseline flags', async () => {

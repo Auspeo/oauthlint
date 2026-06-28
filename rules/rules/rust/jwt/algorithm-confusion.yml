@@ -1,0 +1,50 @@
+rules:
+  - id: auth.rust.jwt.algorithm-confusion
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A `jsonwebtoken` `Validation` accepts a list of algorithms that MIXES an
+      HMAC family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
+      (`Algorithm::RS*`/`ES*`/`PS*`). This is the "algorithm confusion" attack:
+      when both families are accepted, an attacker takes your RSA/EC PUBLIC key
+      (which is not secret) and signs a forged token with HS*, using the public
+      key bytes as the HMAC shared secret. `decode` then verifies that forged
+      token as valid, letting the attacker mint arbitrary identities and claims.
+
+      Pin `validation.algorithms` to a SINGLE family you actually use, e.g.
+      `validation.algorithms = vec![Algorithm::RS256];` when your issuer signs
+      with RSA, or `vec![Algorithm::HS256]` for a genuinely symmetric secret.
+      Never accept an HMAC algorithm alongside an asymmetric one.
+
+      CWE-327: use of a broken or risky cryptographic algorithm/configuration.
+    # Algorithm confusion = the accepted-algorithm list mixes an HMAC variant
+    # (HS*) with an asymmetric variant (RS*/ES*/PS*). We bind the algorithm list
+    # expression to $VEC — set either via the public `algorithms` field or via a
+    # `set_algorithms(...)` call — and require, with two ANDed metavariable-regex
+    # constraints, that its source text contains BOTH an `Algorithm::HS*` AND an
+    # `Algorithm::RS*|ES*|PS*` variant. Order-independent (no ellipsis-in-macro
+    # fragility) and inherently low-FP: a single-family list such as
+    # `vec![Algorithm::RS256]` fails the HS* constraint and is never flagged.
+    patterns:
+      - pattern-either:
+          - pattern: $V.algorithms = $VEC;
+          - pattern: $V.set_algorithms($VEC)
+      - metavariable-regex:
+          metavariable: $VEC
+          regex: '(?s).*Algorithm::HS(256|384|512)'
+      - metavariable-regex:
+          metavariable: $VEC
+          regex: '(?s).*Algorithm::(RS|ES|PS)(256|384|512)'
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jsonwebtoken
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/

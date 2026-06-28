@@ -34,6 +34,14 @@ inputs:
     description: 'Path to write the SARIF report (only used when sarif=true).'
     required: false
     default: 'oauthlint.sarif'
+  html:
+    description: 'When true, emit a self-contained HTML audit report you can share or upload as an artifact.'
+    required: false
+    default: 'false'
+  html-file:
+    description: 'Path to write the HTML report (only used when html=true).'
+    required: false
+    default: 'oauthlint-report.html'
   annotations:
     description: 'Emit inline PR annotations + a Markdown job summary for each finding. Set to "false" to opt out.'
     required: false
@@ -49,6 +57,9 @@ outputs:
   sarif-file:
     description: Path to the generated SARIF report (only set when sarif=true).
     value: ${{ steps.run.outputs.sarif-file }}
+  html-file:
+    description: Path to the generated HTML report (only set when html=true).
+    value: ${{ steps.run.outputs.html-file }}
 
 runs:
   using: docker
@@ -62,3 +73,6 @@ runs:
     - ${{ inputs.sarif }}
     - ${{ inputs.sarif-file }}
     - ${{ inputs.annotations }}
+    # New args are appended at the END so existing positions ($1..$8) never shift.
+    - ${{ inputs.html }}
+    - ${{ inputs.html-file }}

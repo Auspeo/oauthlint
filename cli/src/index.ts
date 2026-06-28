@@ -19,6 +19,11 @@ export { runList, type ListOptions } from './commands/list.js';
 export { runInit, type InitOptions } from './commands/init.js';
 export { runDoctor, type DoctorOptions } from './commands/doctor.js';
 export {
+  runExplain,
+  type ExplainOptions,
+  type ExplainedRule,
+} from './commands/explain.js';
+export {
   applySuppressions,
   isSuppressed,
   loadSuppressionMap,

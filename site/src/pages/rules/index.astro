@@ -32,6 +32,29 @@ const PREV: Record<Prevalence, { label: string; color: string }> = {
   LOW: { label: 'LOW', color: 'var(--ol-text-muted)' },
 };
 const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence === p));
+
+// Dataflow (taint) rules — OAuthLint's technical differentiator: these rules
+// trace untrusted/sensitive data from a source to a dangerous sink (taint
+// mode) rather than matching a single line. The rule loader (`lib/rules.ts`)
+// does not yet surface each rule's analysis `mode`, so we derive the taint set
+// here, read-only, from the shipped rule ids. Keep in sync with the rules that
+// carry `mode: taint` in their YAML (10 today: open-redirect, SSRF and
+// secret-in-response across JS/TS, Python and Go, plus the OAuth callback
+// open-redirect). Wiring `mode` into RuleView would let this be data-driven.
+const TAINT_RULE_IDS = new Set<string>([
+  'auth.flow.open-redirect',
+  'auth.flow.secret-in-response',
+  'auth.flow.ssrf',
+  'auth.go.flow.open-redirect',
+  'auth.go.flow.secret-in-response',
+  'auth.go.flow.ssrf',
+  'auth.oauth.open-redirect-callback',
+  'auth.py.flow.open-redirect',
+  'auth.py.flow.secret-in-response',
+  'auth.py.flow.ssrf',
+]);
+const isTaint = (id: string): boolean => TAINT_RULE_IDS.has(id);
+const taintCount = rules.filter((r) => isTaint(r.id)).length;
 ---
 <Base
   title="Rules — OAuthLint"
@@ -49,6 +72,18 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
         <a href="/owasp" style="display:inline-flex; align-items:center; gap:7px; font-family:var(--ol-font-mono); font-size:12px; color:var(--ol-accent); text-decoration:none;">OWASP coverage →</a>
         <span style="font-family:var(--ol-font-mono); font-size:11px; color:var(--ol-text-faint);">AI prevalence = how often Copilot / Cursor / Claude generate the anti-pattern by default</span>
       </div>
+
+      <!-- DATAFLOW EXPLAINER -->
+      {taintCount > 0 && (
+        <div style="display:flex; align-items:flex-start; gap:12px; border:1px solid var(--ol-border-strong); border-left:3px solid var(--ol-accent); background:var(--ol-surface); padding:14px 16px; margin:0 0 var(--ol-space-6); max-width:80ch;">
+          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true" style="flex:none; margin-top:3px; color:var(--ol-accent);">
+            <circle cx="3" cy="6" r="2.2" fill="currentColor"></circle>
+            <path d="M5.4 6h8.2" stroke="currentColor" stroke-width="1.3"></path>
+            <path d="M12.6 2.6L16.4 6l-3.8 3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+          </svg>
+          <p style="font-size:var(--ol-text-body-s); line-height:1.6; color:var(--ol-text-secondary); margin:0;"><span style="color:var(--ol-text); font-weight:600;">Dataflow analysis.</span> {taintCount} rules run in dataflow (taint) mode — OAuthLint traces untrusted input and sensitive data from source to a dangerous sink, catching multi-line bugs that pattern rules miss. <a href="/research" style="color:var(--ol-accent); text-decoration:none; white-space:nowrap;">See the proof →</a></p>
+        </div>
+      )}
 
       <!-- FILTER BAR -->
       <div style="display:flex; flex-wrap:wrap; gap:var(--ol-space-3); align-items:center; margin-bottom:var(--ol-space-5);">
@@ -68,6 +103,12 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
           <option value="all">Any AI prevalence</option>
           {presentPrevs.map((p) => <option value={p}>{PREV[p].label} AI prevalence</option>)}
         </select>
+        {taintCount > 0 && (
+          <button id="rule-flow" type="button" aria-pressed="false" title="Show only dataflow (taint) rules — those that trace source to sink" style="display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; background:transparent; border:1px solid var(--ol-border-strong); color:var(--ol-text-secondary); font-family:var(--ol-font-mono); font-size:12px; font-weight:600; letter-spacing:0.04em; cursor:pointer; transition:all var(--ol-dur-fast) var(--ol-ease-standard);">
+            <svg width="18" height="11" viewBox="0 0 20 12" fill="none" aria-hidden="true"><circle cx="3" cy="6" r="2.2" fill="currentColor"></circle><path d="M5.4 6h8.2" stroke="currentColor" stroke-width="1.3"></path><path d="M12.6 2.6L16.4 6l-3.8 3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>
+            DATAFLOW
+          </button>
+        )}
       </div>
 
       <!-- SEVERITY CHIPS -->
@@ -109,12 +150,21 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
                   data-sev={r.severity}
                   data-cat={r.category}
                   data-prev={r.llmPrevalence}
+                  data-flow={isTaint(r.id) ? 'true' : 'false'}
                   data-langs={r.languages.join(' ')}
                   style="transition:background var(--ol-dur-fast) var(--ol-ease-standard); cursor:pointer;"
                   onclick={`location.href='/rules/${r.slug}'`}
                 >
                   <td style={`padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); border-left:3px solid ${SEV[r.severity].color};`}>
-                    <a href={`/rules/${r.slug}`} style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-accent); text-decoration:none; display:block; margin-bottom:2px;">{r.id}</a>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+                      <a href={`/rules/${r.slug}`} style="font-family:var(--ol-font-mono); font-size:12.5px; color:var(--ol-accent); text-decoration:none;">{r.id}</a>
+                      {isTaint(r.id) && (
+                        <span title="Dataflow rule — traces untrusted/sensitive data from source to a dangerous sink" style="display:inline-flex; align-items:center; gap:4px; font-family:var(--ol-font-mono); font-size:9px; font-weight:600; letter-spacing:0.06em; color:var(--ol-accent); border:1px solid var(--ol-accent-800); padding:1px 5px; line-height:1.4;">
+                          <svg width="13" height="8" viewBox="0 0 20 12" fill="none" aria-hidden="true"><circle cx="3" cy="6" r="2.2" fill="currentColor"></circle><path d="M5.4 6h8.2" stroke="currentColor" stroke-width="1.6"></path><path d="M12.6 2.6L16.4 6l-3.8 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg>
+                          DATAFLOW
+                        </span>
+                      )}
+                    </div>
                     <div style="font-size:12.5px; color:var(--ol-text-secondary);">{r.title}</div>
                   </td>
                   <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); white-space:nowrap;">
@@ -153,6 +203,7 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
       const langSel = document.getElementById('rule-lang');
       const catSel = document.getElementById('rule-cat');
       const prevSel = document.getElementById('rule-prevalence');
+      const flowBtn = document.getElementById('rule-flow');
       const rows = Array.from(document.querySelectorAll('[data-row]'));
       const countLabel = document.getElementById('rule-count-label');
       const empty = document.getElementById('rule-empty');
@@ -162,6 +213,7 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
       const nextBtn = document.getElementById('rule-next');
       const pageIndicator = document.getElementById('rule-page-indicator');
       let sev = 'all';
+      let flowOnly = false;
       let page = 1;
 
       function matches(row) {
@@ -174,7 +226,8 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
         const matchCat = cat === 'all' || row.dataset.cat === cat;
         const matchSev = sev === 'all' || row.dataset.sev === sev;
         const matchPrev = prev === 'all' || row.dataset.prev === prev;
-        return matchQ && matchLang && matchCat && matchSev && matchPrev;
+        const matchFlow = !flowOnly || row.dataset.flow === 'true';
+        return matchQ && matchLang && matchCat && matchSev && matchPrev && matchFlow;
       }
 
       function setDisabled(btn, disabled) {
@@ -245,6 +298,18 @@ const presentPrevs = prevOrder.filter((p) => rules.some((r) => r.llmPrevalence =
       langSel.addEventListener('change', onFilterChange);
       catSel.addEventListener('change', onFilterChange);
       prevSel.addEventListener('change', onFilterChange);
+
+      // Dataflow toggle: an on/off chip that narrows to taint (source→sink) rules.
+      if (flowBtn) {
+        flowBtn.addEventListener('click', () => {
+          flowOnly = !flowOnly;
+          flowBtn.setAttribute('aria-pressed', String(flowOnly));
+          flowBtn.style.background = flowOnly ? 'var(--ol-accent)' : 'transparent';
+          flowBtn.style.borderColor = flowOnly ? 'var(--ol-accent)' : 'var(--ol-border-strong)';
+          flowBtn.style.color = flowOnly ? 'var(--ol-accent-fg)' : 'var(--ol-text-secondary)';
+          onFilterChange();
+        });
+      }
 
       // Rows navigate via onclick; some browsers keep the :active / tap-highlight
       // paint on the clicked row when it is restored from bfcache (Back button),

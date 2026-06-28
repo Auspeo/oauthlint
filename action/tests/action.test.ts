@@ -37,6 +37,8 @@ describe('action.yml', () => {
       'output',
       'sarif',
       'sarif-file',
+      'html',
+      'html-file',
       'annotations',
     ]) {
       expect(inputNames, `missing input: ${expected}`).toContain(expected);
@@ -49,20 +51,28 @@ describe('action.yml', () => {
     expect(yml.inputs?.['sarif-file']?.default).toBe('oauthlint.sarif');
   });
 
+  it('defaults html to disabled and html-file to oauthlint-report.html', async () => {
+    const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
+    expect(yml.inputs?.html?.default).toBe('false');
+    expect(yml.inputs?.['html-file']?.default).toBe('oauthlint-report.html');
+  });
+
   it('defaults annotations ON (opt-out, not opt-in)', async () => {
     const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
     expect(yml.inputs?.annotations?.default).toBe('true');
   });
 
-  it('declares findings, highest-severity, and sarif-file as outputs', async () => {
+  it('declares findings, highest-severity, sarif-file, and html-file as outputs', async () => {
     const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
     expect(Object.keys(yml.outputs ?? {})).toEqual(
-      expect.arrayContaining(['findings', 'highest-severity', 'sarif-file']),
+      expect.arrayContaining(['findings', 'highest-severity', 'sarif-file', 'html-file']),
     );
   });
 
-  it('forwards inputs as args in the documented order', async () => {
+  it('forwards inputs as args in the documented order (html appended at the end)', async () => {
     const yml = parseYaml(await readFile(actionPath, 'utf8')) as ActionYml;
+    // New html/html-file args MUST be appended at the END so existing positions
+    // ($1..$8) never shift and pre-html callers keep working.
     expect(yml.runs.args).toEqual([
       '${{ inputs.path }}',
       '${{ inputs.severity }}',
@@ -72,6 +82,8 @@ describe('action.yml', () => {
       '${{ inputs.sarif }}',
       '${{ inputs.sarif-file }}',
       '${{ inputs.annotations }}',
+      '${{ inputs.html }}',
+      '${{ inputs.html-file }}',
     ]);
   });
 });
@@ -87,6 +99,9 @@ describe('entrypoint.sh', () => {
     expect(sh).toMatch(/EMIT_SARIF="\$\{6:-/);
     expect(sh).toMatch(/SARIF_PATH="\$\{7:-/);
     expect(sh).toMatch(/EMIT_ANNOTATIONS="\$\{8:-/);
+    // New args are appended at the END so $1..$8 keep their meaning.
+    expect(sh).toMatch(/EMIT_HTML="\$\{9:-/);
+    expect(sh).toMatch(/HTML_PATH="\$\{10:-/);
   });
 
   it('runs the annotate helper only when annotations are enabled', async () => {
@@ -119,6 +134,19 @@ describe('entrypoint.sh', () => {
   it('emits SARIF with --format sarif and never gates the job on it', async () => {
     const sh = await readFile(entrypointPath, 'utf8');
     expect(sh).toMatch(/SARIF_ARGS=\(\s*scan "\$PATH_TO_SCAN" --format sarif --fail-on off/);
+  });
+
+  it('generates HTML only when enabled and exposes its path as an output', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    expect(sh).toMatch(/if\s+\[\[\s+"\$EMIT_HTML"\s+==\s+"true"\s+\]\]/);
+    expect(sh).toMatch(/oauthlint "\$\{HTML_ARGS\[@\]\}"\s*>\s*"\$HTML_PATH"/);
+    expect(sh).toMatch(/html-file=\$HTML_PATH"?\s*>>\s*"?\$GITHUB_OUTPUT/);
+  });
+
+  it('emits HTML with --format html and never gates the job on it', async () => {
+    const sh = await readFile(entrypointPath, 'utf8');
+    // Mirrors the SARIF pass: --fail-on off + swallowed exit so it can't fail the job.
+    expect(sh).toMatch(/HTML_ARGS=\(\s*scan "\$PATH_TO_SCAN" --format html --fail-on off/);
   });
 
   it('invokes the CLI directly, isolated from the scanned repo (not via npx)', async () => {
