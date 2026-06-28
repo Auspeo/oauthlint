@@ -40,6 +40,8 @@ jobs:
 | `output` | no | `oauthlint-report.json` | Path of the JSON report (when `json=true`) |
 | `sarif` | no | `false` | When true, also write a SARIF 2.1.0 report for GitHub Code Scanning |
 | `sarif-file` | no | `oauthlint.sarif` | Path of the SARIF report (when `sarif=true`) |
+| `html` | no | `false` | When true, also write a self-contained HTML audit report you can share or upload as an artifact |
+| `html-file` | no | `oauthlint-report.html` | Path of the HTML report (when `html=true`) |
 | `annotations` | no | `true` | Emit inline PR annotations + a Markdown job summary. Set to `false` to opt out. |
 
 ## Outputs
@@ -49,6 +51,7 @@ jobs:
 | `findings` | Number of findings (after filtering) |
 | `highest-severity` | Highest severity in the run |
 | `sarif-file` | Path to the generated SARIF report (only set when `sarif=true`) |
+| `html-file` | Path to the generated HTML report (only set when `html=true`) |
 
 ## Inline PR annotations & job summary
 
@@ -110,6 +113,37 @@ reasonable size with a `…and N more` note rather than silently truncating.
   with:
     name: oauthlint-report
     path: oauthlint.json
+```
+
+### Produce a shareable HTML audit report
+
+Enable `html: true` to write a self-contained HTML report (the `--format html`
+output of the CLI), then upload it as an artifact so anyone can download a single
+file and open it in a browser — no SARIF tab or token required. Like SARIF, the
+HTML pass runs with `--fail-on off` and can never fail the job; use `fail-on` to
+gate the build independently.
+
+```yaml
+name: OAuthLint
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: oauthlint
+        uses: Auspeo/oauthlint/action@v1
+        with:
+          html: 'true'
+          html-file: 'oauthlint-report.html'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oauthlint-html-report
+          path: ${{ steps.oauthlint.outputs.html-file }}
 ```
 
 ### Upload findings to GitHub Code Scanning (SARIF)
