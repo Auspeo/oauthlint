@@ -121,6 +121,10 @@ export class Reporter {
     const firstLine = f.message.split('\n')[0]?.trim() ?? '';
     if (firstLine) this.line(pc.dim('  → ') + firstLine);
     if (f.docUrl) this.line(pc.dim(`  📖 ${f.docUrl}`));
+    // Teaching hint: every finding points at the offline explainer. Pretty mode
+    // only — reportResult returns early under `--json`, and SARIF/HTML never
+    // touch the Reporter, so machine-readable output stays uncorrupted.
+    this.line(pc.dim(`  ↳ run \`oauthlint explain ${f.ruleId}\` for details + the fix`));
     this.line('');
   }
 
