@@ -1,5 +1,12 @@
 # oauthlint-vscode
 
+## 0.3.0
+
+### Minor Changes
+
+- Added a rich hover on findings. Hover an OAuthLint diagnostic to see the rule
+  id, the full message, the CWE when available, and a link to the rule's docs.
+
 ## 0.2.0
 
 ### Minor Changes
