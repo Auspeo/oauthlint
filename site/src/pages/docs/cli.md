@@ -43,7 +43,8 @@ npx oauthlint scan --staged        # git-staged files only
 | `--severity <level>` | `INFO` \| `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` | none | Only emit findings at or above this severity. Filters output; case-insensitive. |
 | `--fail-on <level>` | `INFO` \| `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` \| `off` | `HIGH` | Exit non-zero when any finding meets or exceeds this severity. `off` never fails the build. Falls back to `failOn` in your config, then `HIGH`. Case-insensitive. |
 | `--rules-dir <path>` | filesystem path | bundled rules | Override the bundled rule pack with a custom rules directory. |
-| `--fix` | none | off | Apply auto-fixes, rewriting source in place where a rule ships a fix template (currently the `auth.cookie.*` rules). |
+| `--fix` | none | off | Apply auto-fixes, rewriting source in place where a rule ships a safe fix template (the TLS/certificate-verification flag flips for Rust `reqwest` and Go `crypto/tls`, and the Go `http.Cookie` `Secure`/`HttpOnly` flips). Each fix is a deterministic literal replacement; running `--fix` twice is a no-op. After fixing, it prints a summary of which files changed. |
+| `--fix-dry-run` | none | off | Preview what `--fix` would change as a unified diff per file, **without writing anything**. Takes precedence over `--fix` when both are given. |
 | `--diff [<ref>]` | git ref | merge-base with the default branch | Scan only files changed versus `<ref>`. Great for CI on large repos, since only new code is scanned. Outside a git repo, errors clearly. |
 | `--staged` | none | off | Scan only git-staged files. Used by the [pre-commit hook](/docs/pre-commit). |
 | `--baseline [<file>]` | path | `.oauthlint-baseline.json` | Suppress findings already recorded in a baseline file and report only **new** findings. Capture the baseline with the [`baseline`](#baseline) command. |
@@ -75,7 +76,10 @@ npx oauthlint scan ./src --baseline
 # never fail the build (CI dry-run)
 npx oauthlint scan ./src --fail-on off
 
-# auto-apply safe fixes
+# preview the safe fixes as a diff, without touching any files
+npx oauthlint scan ./src --fix-dry-run
+
+# auto-apply safe fixes (idempotent; prints a summary of changed files)
 npx oauthlint scan ./src --fix
 ```
 
