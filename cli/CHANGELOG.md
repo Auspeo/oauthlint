@@ -1,5 +1,16 @@
 # oauthlint
 
+## 0.6.1
+
+### Patch Changes
+
+- docs: fix broken links on the npm/README page
+
+  The package README pointed at `/docs/baseline` (which 404s) and the old uppercase
+  `/VALIDATION` URL. Point them at `/docs/cli#baseline` and `/validation`, and make
+  the AI-tool naming inclusive ("tools like GitHub Copilot, Cursor, and Claude Code,
+  and others") instead of a closed list.
+
 ## 0.6.0
 
 ### Minor Changes
