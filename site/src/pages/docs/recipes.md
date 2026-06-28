@@ -139,9 +139,9 @@ npx oauthlint@latest scan ./src --fail-on HIGH
 
 > Semgrep must be on `PATH` (`pipx install semgrep` or `brew install semgrep`); without it the scan exits `127`. For a turnkey, Docker-based job with SARIF upload, prefer the [GitHub Action](/docs/github-action).
 
-## Cursor / Windsurf
+## AI coding editors (Cursor, Windsurf, and others)
 
-Editors that pull extensions from [Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode), like Cursor and Windsurf, get the same extension as VS Code. Search **oauthlint** in the Extensions view, or:
+AI coding editors that pull extensions from [Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode), like Cursor and Windsurf, get the same extension as VS Code. Search **oauthlint** in the Extensions view, or:
 
 ```bash
 code --install-extension auspeo.oauthlint-vscode

@@ -193,4 +193,4 @@ Both run identical logic; the composite just forwards inputs and re-exposes outp
 
 ## License
 
-MIT. See [LICENSE](../../LICENSE).
+MIT. See [LICENSE](../LICENSE).
