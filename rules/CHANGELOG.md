@@ -1,5 +1,22 @@
 # oauthlint-rules
 
+## 0.2.6
+
+### Patch Changes
+
+- 267d3e9: feat(rules): JWT algorithm-confusion detection for Python and Rust
+
+  `auth.py.jwt.algorithm-confusion` (PyJWT) and `auth.rust.jwt.algorithm-confusion` (jsonwebtoken)
+  flag an `algorithms` allowlist that mixes a symmetric (HS*) with an asymmetric (RS*/ES*/PS*) family
+  — the classic key-confusion forgery (CWE-327). Parity with the JS/TS rule.
+
+- 8abda65: feat(rules): dataflow (taint-mode) secret-in-response detection — JS/TS, Python, Go
+
+  Trace a server secret (an env value whose name looks like a credential) into an HTTP response body
+  (CWE-200 / OWASP API3:2023) — i.e. the server leaking its own secrets to the client. `auth.flow.secret-in-response`
+  (Express), `auth.py.flow.secret-in-response` (Flask), `auth.go.flow.secret-in-response` (net/http). Deliberately
+  client-public vars (`NEXT_PUBLIC_`/`PUBLIC_`/`VITE_`/…) are excluded to stay low-FP.
+
 ## 0.2.5
 
 ### Patch Changes
