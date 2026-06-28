@@ -1,0 +1,48 @@
+rules:
+  - id: auth.py.jwt.algorithm-confusion
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT is decoded with an `algorithms` allowlist that mixes a symmetric
+      HMAC algorithm (HS256/HS384/HS512) with an asymmetric one (RS*/ES*/PS*).
+      This enables the "algorithm confusion" attack: an attacker who knows your
+      RSA/EC PUBLIC key can sign a forged token with HMAC, using that public key
+      string as the shared secret. Because HS* is also accepted, PyJWT verifies
+      the forgery with the public key as the HMAC secret and treats it as valid
+      — a complete authentication bypass.
+
+      Allow only ONE algorithm family — the one you actually use. If you issue
+      RS256 tokens, pin `jwt.decode(token, public_key, algorithms=["RS256"])`
+      and never also accept an HS* algorithm with the same verification key.
+
+      CWE-327: Use of a Broken or Risky Cryptographic Algorithm.
+    # Distinct from auth.py.jwt.no-algorithms (which flags a MISSING `algorithms`
+    # allowlist): here the allowlist is PRESENT but dangerously MIXES a symmetric
+    # (HS*) and an asymmetric (RS*/ES*/PS*) family in the same `jwt.decode` call.
+    #
+    # A single metavariable-regex over the bound list literal `$ALGS` requires
+    # BOTH families to appear (order-independent lookaheads), so single-family
+    # lists like ["RS256"] or ["HS256"] never match. `(?s)` lets `.` span a
+    # multi-line list. The `import jwt` guard pins this to PyJWT (joserfc and
+    # other libs expose a different `jwt.decode`).
+    patterns:
+      - pattern: jwt.decode(..., algorithms=$ALGS, ...)
+      - metavariable-regex:
+          metavariable: $ALGS
+          regex: (?s)(?=.*['"]HS(256|384|512)['"])(?=.*['"](RS|ES|PS)(256|384|512)['"])
+      - pattern-inside: |
+          import jwt
+          ...
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - PyJWT
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
