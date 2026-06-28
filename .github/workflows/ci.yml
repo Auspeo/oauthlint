@@ -107,3 +107,32 @@ jobs:
               exit 1
             fi
           done
+
+  action-smoke:
+    name: Root Marketplace action runs end-to-end (composite -> Docker delegation)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v7
+
+      # Proves the Marketplace-facing root `action.yml` (a composite that
+      # delegates to ./action) executes through to the Docker action and
+      # produces SARIF. fail-on: off so a finding can't fail this smoke test —
+      # we only assert the path runs end-to-end.
+      - id: oauthlint
+        uses: ./
+        with:
+          path: ./examples/vibe-app-express
+          sarif: 'true'
+          sarif-file: oauthlint.sarif
+          fail-on: 'off'
+
+      - name: Assert the root action produced a SARIF report with findings
+        run: |
+          SARIF="${{ steps.oauthlint.outputs.sarif-file }}"
+          echo "sarif-file output: $SARIF"
+          test -n "$SARIF" || { echo "::error::root action did not set sarif-file output"; exit 1; }
+          test -f "$SARIF" || { echo "::error::SARIF report $SARIF was not written"; exit 1; }
+          RESULTS=$(jq '[.runs[].results[]] | length' "$SARIF")
+          echo "SARIF results: $RESULTS"
+          test "$RESULTS" -gt 0 || { echo "::error::expected the vulnerable example to yield SARIF findings"; exit 1; }

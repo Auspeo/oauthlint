@@ -1,0 +1,81 @@
+# Root action.yml — the GitHub Marketplace-facing entrypoint for OAuthLint.
+#
+# The Marketplace only lists actions whose `action.yml` lives at the repository
+# root, but the real, battle-tested Docker action lives in `action/`. Rather than
+# duplicate the entrypoint logic, this is a thin **composite** action whose single
+# step delegates to the existing local Docker action via `uses: ./action`.
+#
+# Result:
+#   • `Auspeo/oauthlint@v1`        → this root composite (Marketplace usage)
+#   • `Auspeo/oauthlint/action@v1` → the Docker action (unchanged; still works)
+#
+# Every input/default/output below MIRRORS `action/action.yml` exactly so the two
+# entrypoints behave identically. Keep them in sync — `action/tests/root-action.test.ts`
+# fails if they drift.
+name: OAuthLint
+description: Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.
+author: Maurice Anney <webofboss@gmail.com>
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  path:
+    description: Path to scan (defaults to the repo root).
+    required: false
+    default: '.'
+  severity:
+    description: 'Filter findings: only emit those at this severity or above (INFO|LOW|MEDIUM|HIGH|CRITICAL).'
+    required: false
+    default: ''
+  fail-on:
+    description: 'Fail the job if any finding has this severity or above. Use "off" to never fail.'
+    required: false
+    default: 'HIGH'
+  json:
+    description: 'When true, emit JSON in addition to pretty output.'
+    required: false
+    default: 'false'
+  output:
+    description: 'Path to write the JSON report (only used when json=true).'
+    required: false
+    default: 'oauthlint-report.json'
+  sarif:
+    description: 'When true, emit a SARIF 2.1.0 report for GitHub Code Scanning.'
+    required: false
+    default: 'false'
+  sarif-file:
+    description: 'Path to write the SARIF report (only used when sarif=true).'
+    required: false
+    default: 'oauthlint.sarif'
+  annotations:
+    description: 'Emit inline PR annotations + a Markdown job summary for each finding. Set to "false" to opt out.'
+    required: false
+    default: 'true'
+
+outputs:
+  findings:
+    description: Number of findings (after severity filtering).
+    value: ${{ steps.run.outputs.findings }}
+  highest-severity:
+    description: Highest severity in the report.
+    value: ${{ steps.run.outputs.highest-severity }}
+  sarif-file:
+    description: Path to the generated SARIF report (only set when sarif=true).
+    value: ${{ steps.run.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    # Delegate to the real Docker action in ./action — no logic is duplicated.
+    - id: run
+      uses: ./action
+      with:
+        path: ${{ inputs.path }}
+        severity: ${{ inputs.severity }}
+        fail-on: ${{ inputs.fail-on }}
+        json: ${{ inputs.json }}
+        output: ${{ inputs.output }}
+        sarif: ${{ inputs.sarif }}
+        sarif-file: ${{ inputs.sarif-file }}
+        annotations: ${{ inputs.annotations }}

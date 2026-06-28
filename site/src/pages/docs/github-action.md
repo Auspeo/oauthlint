@@ -15,13 +15,15 @@ Add one step after checking out your code:
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: Auspeo/oauthlint/action@v1
+- uses: Auspeo/oauthlint@v1
   with:
     severity: HIGH   # only emit HIGH+ findings
     fail-on: HIGH    # fail the job on HIGH+
 ```
 
 The action is **Docker-based** — it runs the OAuthLint CLI inside a prebuilt image, so it works in any repo regardless of the project's language and needs no Node/toolchain setup of your own.
+
+`Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint. The original subpath form `Auspeo/oauthlint/action@v1` still works and behaves identically — the root action is a thin composite that delegates to it.
 
 ## Complete workflow
 
@@ -42,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: oauthlint
-        uses: Auspeo/oauthlint/action@v1
+        uses: Auspeo/oauthlint@v1
         with:
           sarif: 'true'
           # SARIF is for surfacing findings, not for gating. Use fail-on to
@@ -88,7 +90,7 @@ All inputs are optional.
 ### Surface MEDIUM+ in logs, but only block on CRITICAL
 
 ```yaml
-- uses: Auspeo/oauthlint/action@v1
+- uses: Auspeo/oauthlint@v1
   with:
     severity: MEDIUM
     fail-on: CRITICAL
@@ -98,7 +100,7 @@ All inputs are optional.
 
 ```yaml
 - id: oauthlint
-  uses: Auspeo/oauthlint/action@v1
+  uses: Auspeo/oauthlint@v1
   with:
     json: 'true'
     output: 'oauthlint.json'
