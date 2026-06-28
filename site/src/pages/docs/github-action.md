@@ -59,7 +59,9 @@ jobs:
 
 ## PR annotations
 
-OAuthLint does not annotate pull requests directly. Set `sarif: 'true'` and feed the action's `sarif-file` output to [`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action) (as shown above). GitHub code scanning then renders each finding as an inline annotation on the changed lines and lists it under **Security → Code scanning**. This requires `security-events: write` permission.
+The action posts **inline annotations on the changed lines** of a pull request out of the box — each finding shows up in the **Files changed** tab and the checks summary, with a per-severity job summary. This is on by default; set the `annotations` input to `'false'` to turn it off. No extra permissions or steps are needed.
+
+For the richer **Security → Code scanning** experience as well, set `sarif: 'true'` and feed the action's `sarif-file` output to [`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action) (as shown above) — this lists findings under code scanning and requires `security-events: write` permission.
 
 The SARIF pass always runs with `--fail-on off` internally and its exit code is swallowed, so generating the report never fails the job on its own — gating is controlled solely by the `fail-on` input.
 
