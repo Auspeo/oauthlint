@@ -29,6 +29,7 @@ cd "${GITHUB_WORKSPACE:-/github/workspace}"
 echo "::group::OAuthLint setup"
 echo "node $(node --version)"
 echo "semgrep $(semgrep --version)"
+echo "oauthlint $(oauthlint --version)"
 echo "::endgroup::"
 
 ARGS=( scan "$PATH_TO_SCAN" --fail-on "$FAIL_ON" )
@@ -39,7 +40,7 @@ fi
 echo "::group::Running oauthlint ${ARGS[*]}"
 # We let exit-code propagate so the action fails when OAuthLint fails.
 set +e
-npx --yes oauthlint "${ARGS[@]}"
+oauthlint "${ARGS[@]}"
 EXIT_CODE=$?
 set -e
 echo "::endgroup::"
@@ -47,7 +48,7 @@ echo "::endgroup::"
 if [[ "$EMIT_JSON" == "true" ]]; then
   echo "::group::Generating JSON report"
   set +e
-  npx --yes oauthlint scan "$PATH_TO_SCAN" --json --fail-on off > "$OUTPUT_PATH"
+  oauthlint scan "$PATH_TO_SCAN" --json --fail-on off > "$OUTPUT_PATH"
   set -e
   echo "Report written to $OUTPUT_PATH"
 
@@ -77,7 +78,7 @@ if [[ "$EMIT_SARIF" == "true" ]]; then
     SARIF_ARGS+=( --severity "$SEVERITY" )
   fi
   set +e
-  npx --yes oauthlint "${SARIF_ARGS[@]}" > "$SARIF_PATH"
+  oauthlint "${SARIF_ARGS[@]}" > "$SARIF_PATH"
   set -e
   echo "SARIF report written to $SARIF_PATH"
   echo "sarif-file=$SARIF_PATH" >> "$GITHUB_OUTPUT"
@@ -91,7 +92,7 @@ if [[ "$EMIT_ANNOTATIONS" == "true" ]]; then
   ANNOTATE_JSON="$OUTPUT_PATH"
   CLEANUP_JSON=""
   if [[ "$EMIT_JSON" != "true" ]]; then
-    ANNOTATE_JSON="$(mktemp -t oauthlint-annotate.XXXXXX.json)"
+    ANNOTATE_JSON="$(mktemp "${TMPDIR:-/tmp}/oauthlint-annotate.XXXXXX")"
     CLEANUP_JSON="$ANNOTATE_JSON"
     # --fail-on off + swallow the exit code: annotations must never fail the job.
     ANN_ARGS=( scan "$PATH_TO_SCAN" --json --fail-on off )
@@ -99,7 +100,7 @@ if [[ "$EMIT_ANNOTATIONS" == "true" ]]; then
       ANN_ARGS+=( --severity "$SEVERITY" )
     fi
     set +e
-    npx --yes oauthlint "${ANN_ARGS[@]}" > "$ANNOTATE_JSON"
+    oauthlint "${ANN_ARGS[@]}" > "$ANNOTATE_JSON"
     set -e
   fi
   # The helper prints annotation workflow-commands to stdout and appends the
