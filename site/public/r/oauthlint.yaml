@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 109 rules across every supported language.
+# Full pack — 111 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -3734,6 +3734,44 @@ rules:
           - metavariable-regex:
               metavariable: $ALG
               regex: (?i)^['"]none['"]$
+  - id: auth.py.jwt.algorithm-confusion
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A JWT is decoded with an `algorithms` allowlist that mixes a symmetric
+      HMAC algorithm (HS256/HS384/HS512) with an asymmetric one (RS*/ES*/PS*).
+      This enables the "algorithm confusion" attack: an attacker who knows your
+      RSA/EC PUBLIC key can sign a forged token with HMAC, using that public key
+      string as the shared secret. Because HS* is also accepted, PyJWT verifies
+      the forgery with the public key as the HMAC secret and treats it as valid
+      — a complete authentication bypass.
+
+      Allow only ONE algorithm family — the one you actually use. If you issue
+      RS256 tokens, pin `jwt.decode(token, public_key, algorithms=["RS256"])`
+      and never also accept an HS* algorithm with the same verification key.
+
+      CWE-327: Use of a Broken or Risky Cryptographic Algorithm.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+      technology:
+        - PyJWT
+    patterns:
+      - pattern: jwt.decode(..., algorithms=$ALGS, ...)
+      - metavariable-regex:
+          metavariable: $ALGS
+          regex: (?s)(?=.*['"]HS(256|384|512)['"])(?=.*['"](RS|ES|PS)(256|384|512)['"])
+      - pattern-inside: |
+          import jwt
+          ...
   - id: auth.py.jwt.hardcoded-secret
     languages:
       - python
@@ -4169,6 +4207,47 @@ rules:
           - pattern-not: None != $X
           - pattern-not: $X.len() == $N
           - pattern-not: $X.len() != $N
+  - id: auth.rust.jwt.algorithm-confusion
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      A `jsonwebtoken` `Validation` accepts a list of algorithms that MIXES an
+      HMAC family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
+      (`Algorithm::RS*`/`ES*`/`PS*`). This is the "algorithm confusion" attack:
+      when both families are accepted, an attacker takes your RSA/EC PUBLIC key
+      (which is not secret) and signs a forged token with HS*, using the public
+      key bytes as the HMAC shared secret. `decode` then verifies that forged
+      token as valid, letting the attacker mint arbitrary identities and claims.
+
+      Pin `validation.algorithms` to a SINGLE family you actually use, e.g.
+      `validation.algorithms = vec![Algorithm::RS256];` when your issuer signs
+      with RSA, or `vec![Algorithm::HS256]` for a genuinely symmetric secret.
+      Never accept an HMAC algorithm alongside an asymmetric one.
+
+      CWE-327: use of a broken or risky cryptographic algorithm/configuration.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-algorithm-confusion
+      category: security
+      cwe: CWE-327
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+      technology:
+        - jsonwebtoken
+    patterns:
+      - pattern-either:
+          - pattern: $V.algorithms = $VEC;
+          - pattern: $V.set_algorithms($VEC)
+      - metavariable-regex:
+          metavariable: $VEC
+          regex: (?s).*Algorithm::HS(256|384|512)
+      - metavariable-regex:
+          metavariable: $VEC
+          regex: (?s).*Algorithm::(RS|ES|PS)(256|384|512)
   - id: auth.rust.jwt.disable-signature-validation
     languages:
       - rust
