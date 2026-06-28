@@ -101,13 +101,13 @@ Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a confi
 ### GitHub Action
 
 ```yaml
-- uses: Auspeo/oauthlint/action@v1
+- uses: Auspeo/oauthlint@v1
   with:
     severity: HIGH
     fail-on: HIGH
 ```
 
-The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language.
+The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language. `Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint; the original `Auspeo/oauthlint/action@v1` subpath still works and behaves identically.
 
 ### VS Code / Cursor / Windsurf
 
