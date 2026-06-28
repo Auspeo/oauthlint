@@ -28,7 +28,7 @@ npx oauthlint scan ./src
 
 ## What it is
 
-LLM coding assistants (Cursor, Claude Code, GitHub Copilot, Gemini Code Assist) ship the same OAuth/JWT bugs across every project they touch:
+AI coding assistants — tools like GitHub Copilot, Cursor, and Claude Code, and others — ship the same OAuth/JWT bugs across every project they touch:
 
 - JWT verified with `alg: none` accepted
 - `client_secret` hard-coded in source
@@ -49,7 +49,7 @@ Honest answer: nothing stops you from writing these rules yourself. Semgrep is o
 
 What we have is the work most people never do:
 
-- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more. Anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the tedious, invisible work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/VALIDATION): thousands of files of real auth-library source, zero false positives on the clean libraries.)
+- **Low false positives, validated against real auth libraries.** We run the rules against `jose`, NextAuth, PyJWT, Authlib, `golang/oauth2`, `oauth2-rs`, Spring and more. Anything that fires on mature library source goes to a triage queue, not to you. Tuning a rule so it doesn't trip on `jose`'s internals is the tedious, invisible work the generic Semgrep registry skips. (See the [validation report](https://oauthlint.dev/validation): thousands of files of real auth-library source, zero false positives on the clean libraries.)
 - **One coherent product across every language it covers.** Same concept, same ID scheme, same docs. `AUTH-JWT-001` in JS maps to `AUTH-GO-JWT-001` in Go, instead of a patchwork of community rules with mismatched styles.
 - **Every finding teaches.** Every rule links to a fix page with CWE and OWASP mappings, so a finding is a lesson rather than a grep hit.
 - **Dataflow, not only patterns.** Taint-mode rules trace untrusted input through to dangerous sinks (open-redirect, SSRF), catching bugs a single-line pattern would miss.
