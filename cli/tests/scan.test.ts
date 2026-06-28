@@ -21,6 +21,13 @@ class FakeStream {
 
 const EMPTY_PLAN: FixPlan = { files: [], totalFixes: 0 };
 
+// Strip ANSI so plain-text assertions hold when colour is on (CI sets
+// FORCE_COLOR): picocolors styles phrases like `pc.bold('🛠 Applied')` and the
+// reset code lands mid-sentence. The ESC byte is built at runtime to avoid a
+// literal control char in the regex.
+const ESC = String.fromCharCode(27);
+const stripAnsi = (s: string): string => s.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
+
 function fakeAdapter(findings: Finding[], plan: FixPlan = EMPTY_PLAN): SemgrepAdapter {
   // We only need .scan()/.planFixes() for the scan command; cast through unknown
   // to keep it type-safe.
@@ -234,10 +241,11 @@ describe('runScan (--fix summary)', () => {
       adapter: fakeAdapter([finding('MEDIUM')], plan),
       stream: stream as unknown as NodeJS.WritableStream,
     });
-    expect(stream.buf).toContain('🛠 Applied 1 fix across 1 file');
-    expect(stream.buf).toContain('server.ts');
+    const clean = stripAnsi(stream.buf);
+    expect(clean).toContain('🛠 Applied 1 fix across 1 file');
+    expect(clean).toContain('server.ts');
     // Diffs are a dry-run concern; a real fix prints a summary, not a diff.
-    expect(stream.buf).not.toContain('@@');
+    expect(clean).not.toContain('@@');
   });
 
   it('reports a no-op when --fix finds nothing to change (idempotent re-run)', async () => {
@@ -270,15 +278,16 @@ describe('runScan (--fix-dry-run)', () => {
       adapter: fakeAdapter([finding('HIGH')], plan),
       stream: stream as unknown as NodeJS.WritableStream,
     });
-    expect(stream.buf).toContain('Fix preview');
-    expect(stream.buf).toContain('dry run');
-    expect(stream.buf).toContain('--- a/agent.ts');
-    expect(stream.buf).toContain('+++ b/agent.ts');
-    expect(stream.buf).toContain('-rejectUnauthorized: false');
-    expect(stream.buf).toContain('+rejectUnauthorized: true');
-    expect(stream.buf).toContain('Re-run with --fix');
+    const clean = stripAnsi(stream.buf);
+    expect(clean).toContain('Fix preview');
+    expect(clean).toContain('dry run');
+    expect(clean).toContain('--- a/agent.ts');
+    expect(clean).toContain('+++ b/agent.ts');
+    expect(clean).toContain('-rejectUnauthorized: false');
+    expect(clean).toContain('+rejectUnauthorized: true');
+    expect(clean).toContain('Re-run with --fix');
     // A dry run must not print the "Applied" summary.
-    expect(stream.buf).not.toContain('🛠 Applied');
+    expect(clean).not.toContain('🛠 Applied');
   });
 
   it('dry-run wins over --fix: nothing is applied when both are set', async () => {

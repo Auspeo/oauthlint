@@ -7,6 +7,13 @@ const plan = (files: FixPlan['files']): FixPlan => ({
   totalFixes: files.reduce((n, f) => n + f.fixCount, 0),
 });
 
+// Picocolors styles phrases like `pc.bold('🛠 Applied')`, which inserts a reset
+// (`ESC[22m`) mid-sentence when colour is on (e.g. CI sets FORCE_COLOR). Strip
+// ANSI before matching so plain-text assertions hold regardless of colour. The
+// ESC byte is built at runtime so it isn't a literal control char in the regex.
+const ESC = String.fromCharCode(27);
+const stripAnsi = (s: string): string => s.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
+
 describe('renderFixPreview', () => {
   it('renders a diff per file and a re-run hint', () => {
     const out = renderFixPreview(
@@ -57,11 +64,12 @@ describe('renderFixSummary', () => {
       ]),
       { cwd: '/proj' },
     );
-    expect(out).toContain('Applied 3 fixes across 2 files');
-    expect(out).toContain('a.go');
-    expect(out).toContain('(2 fixes)');
-    expect(out).toContain('nested/c.go');
-    expect(out).toContain('(1 fix)');
+    const clean = stripAnsi(out);
+    expect(clean).toContain('Applied 3 fixes across 2 files');
+    expect(clean).toContain('a.go');
+    expect(clean).toContain('(2 fixes)');
+    expect(clean).toContain('nested/c.go');
+    expect(clean).toContain('(1 fix)');
   });
 
   it('reports a no-op for an empty plan (idempotent re-run)', () => {
