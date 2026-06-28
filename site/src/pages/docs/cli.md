@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "CLI reference"
-description: "Every OAuthLint command and flag — scan, list, init, doctor — with accepted values, defaults, exit codes and CI examples."
+description: "Every OAuthLint command and flag (scan, list, init, doctor), with accepted values, defaults, exit codes and CI examples."
 section: "cli"
 ---
 
