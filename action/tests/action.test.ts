@@ -121,9 +121,15 @@ describe('entrypoint.sh', () => {
     expect(sh).toMatch(/SARIF_ARGS=\(\s*scan "\$PATH_TO_SCAN" --format sarif --fail-on off/);
   });
 
-  it('invokes oauthlint via npx (not a locally bundled copy)', async () => {
+  it('invokes the CLI directly, isolated from the scanned repo (not via npx)', async () => {
+    // The CLI is installed into the image (see Dockerfile) and run directly, so npx
+    // never resolves "oauthlint" against the scanned project (which can have its own
+    // package.json named oauthlint or a non-npm .npmrc). Guard against regressing to npx.
     const sh = await readFile(entrypointPath, 'utf8');
-    expect(sh).toMatch(/npx --yes oauthlint/);
+    expect(sh).toMatch(/oauthlint "\$\{ARGS\[@\]\}"/);
+    expect(sh).not.toMatch(/npx/);
+    const dockerfile = await readFile(new URL('../Dockerfile', import.meta.url), 'utf8');
+    expect(dockerfile).toMatch(/npm install -g oauthlint/);
   });
 
   it('uses set -euo pipefail (fail fast on errors)', async () => {

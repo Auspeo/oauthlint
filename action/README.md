@@ -17,11 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Auspeo/oauthlint/action@v1
+      - uses: Auspeo/oauthlint@v1
         with:
           severity: HIGH       # only emit HIGH+ findings
           fail-on: HIGH        # fail the job on HIGH+
 ```
+
+> **Which `uses:` line?** `Auspeo/oauthlint@v1` (repo root) is the
+> Marketplace-listed entrypoint and the recommended one. The original
+> `Auspeo/oauthlint/action@v1` (subpath) still works and is fully supported —
+> the root action is a thin composite that delegates to it, so behaviour is
+> identical. Use whichever you already have pinned.
 
 ## Inputs
 
@@ -142,7 +148,14 @@ jobs:
 
 ## Marketplace listing
 
-This Action is consumed via the monorepo path `Auspeo/oauthlint/action@v1` and works as-is. It is **not** on the GitHub Marketplace: GitHub only lists actions whose `action.yml` is at the repository root, and here it lives in `action/`. To list it later, split it into a dedicated `oauthlint-action` repo (or add a root `action.yml`). Tracked in [#23](https://github.com/Auspeo/oauthlint/issues/23).
+GitHub only lists actions whose `action.yml` is at the **repository root**, but the real logic of this Action lives here in `action/`. To make it listable without breaking existing `Auspeo/oauthlint/action@v1` users, the repo root carries a thin **composite** [`action.yml`](../action.yml) whose single step is `uses: ./action` — it delegates to this Docker action, mirroring every input/default/output. So:
+
+- `Auspeo/oauthlint@v1` — the Marketplace-facing entrypoint (root composite).
+- `Auspeo/oauthlint/action@v1` — the Docker action directly (unchanged, still supported).
+
+Both run identical logic; the composite just forwards inputs and re-exposes outputs.
+
+> **One-time manual step to actually list it.** Publishing to the Marketplace is not done from code: on a tagged GitHub **Release**, tick the **“Publish this Action to the GitHub Marketplace”** checkbox (you must accept the Developer Agreement and the repo must be public with the root `action.yml` present). After that, the moving `v1` tag (see [`major-tag.yml`](../.github/workflows/major-tag.yml)) keeps the listing current on each release.
 
 ## License
 
