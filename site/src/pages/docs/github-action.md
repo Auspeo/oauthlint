@@ -117,5 +117,7 @@ The `findings` and `highest-severity` outputs are available in later steps via `
 
 ## See also
 
+- [GitHub code scanning](/docs/code-scanning): a full walkthrough of the SARIF upload above and what the Security tab experience looks like.
+- [GitLab CI](/docs/gitlab-ci): the same scan and SARIF report in a GitLab pipeline.
 - [CLI reference](/docs/cli): every flag the action runs under the hood.
 - [Configuration](/docs/configuration): pin a severity floor, scope paths, and toggle rules with an `.oauthlintrc.yml` that the action picks up automatically.

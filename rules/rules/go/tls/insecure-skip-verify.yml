@@ -15,9 +15,20 @@ rules:
       To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`
       loaded with that CA instead.
     # Matches only the literal `true`. `InsecureSkipVerify: false` and the
-    # field's absence are not flagged. Works for `tls.Config{...}` and
-    # `&tls.Config{...}` (the composite literal matches inside the address-of).
-    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
+    # field's absence are not flagged. The `pattern-inside` keeps detection
+    # scoped to a `tls.Config{...}` (and `&tls.Config{...}`) composite literal,
+    # so an unrelated struct that happens to expose an `InsecureSkipVerify`
+    # field is never matched. Narrowing the matched node to the field itself
+    # (rather than the whole literal) is what lets the autofix below rewrite
+    # just that field and leave the surrounding `...` fields untouched.
+    patterns:
+      - pattern-inside: 'tls.Config{...}'
+      - pattern: 'InsecureSkipVerify: true'
+    # Safe, deterministic autofix: flip the boolean to `false`, the secure
+    # default that restores certificate verification and fully resolves the
+    # finding. Only the `true` literal changes; every other field in the
+    # `tls.Config` is preserved verbatim.
+    fix: 'InsecureSkipVerify: false'
     metadata:
       oauthlint-rule-id: AUTH-GO-TLS-001
       oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-insecure-skip-verify

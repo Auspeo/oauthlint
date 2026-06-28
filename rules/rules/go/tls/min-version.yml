@@ -14,13 +14,22 @@ rules:
       Set `MinVersion` to at least `tls.VersionTLS12`, and ideally
       `tls.VersionTLS13`, so the handshake refuses obsolete protocols.
     # Matches the obsolete constants only. `tls.VersionTLS12` and
-    # `tls.VersionTLS13` are not flagged. Works for both `tls.Config{...}`
-    # and `&tls.Config{...}` (the composite literal matches inside `&`).
+    # `tls.VersionTLS13` are not flagged. The `pattern-inside` keeps detection
+    # scoped to a `tls.Config{...}` (and `&tls.Config{...}`) composite literal;
+    # narrowing the matched node to the `MinVersion` field itself is what lets
+    # the autofix below rewrite just that field and leave neighbours untouched.
     patterns:
-      - pattern: 'tls.Config{..., MinVersion: $V, ...}'
+      - pattern-inside: 'tls.Config{...}'
+      - pattern: 'MinVersion: $V'
       - metavariable-regex:
           metavariable: $V
           regex: ^tls\.(VersionSSL30|VersionTLS10|VersionTLS11)$
+    # Safe, deterministic autofix: raise the floor to `tls.VersionTLS12`, the
+    # lowest version RFC 8996 still permits. This is the minimal correct upgrade
+    # — it fully resolves the finding (TLS 1.2+ is no longer flagged) without
+    # presuming the stricter `tls.VersionTLS13`, which can break interop with
+    # peers that don't yet speak 1.3.
+    fix: 'MinVersion: tls.VersionTLS12'
     metadata:
       oauthlint-rule-id: AUTH-GO-TLS-002
       oauthlint-doc-url: https://oauthlint.dev/rules/go-tls-min-version

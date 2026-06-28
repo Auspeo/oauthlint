@@ -14,13 +14,22 @@ rules:
       Set `Secure: true` and `HttpOnly: true` on auth cookies, and add an
       appropriate `SameSite` mode (for example `SameSite: http.SameSiteLaxMode`).
     # Matches only the literal `false`. `Secure: true`, `HttpOnly: true`, and
-    # the absence of the field are not flagged. Works for `http.Cookie{...}`
-    # and `&http.Cookie{...}` (the composite literal matches inside the
-    # address-of).
+    # the absence of the field are not flagged. The `pattern-inside` keeps
+    # detection scoped to an `http.Cookie{...}` (and `&http.Cookie{...}`)
+    # composite literal, so an unrelated struct exposing a `Secure`/`HttpOnly`
+    # bool is never matched. `$FIELD` captures the offending field name so the
+    # narrow match — and the autofix below — targets just that field.
     patterns:
-      - pattern-either:
-          - pattern: 'http.Cookie{..., Secure: false, ...}'
-          - pattern: 'http.Cookie{..., HttpOnly: false, ...}'
+      - pattern-inside: 'http.Cookie{...}'
+      - pattern: '$FIELD: false'
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: ^(Secure|HttpOnly)$
+    # Safe, deterministic autofix: flip the disabled flag to `true`. `$FIELD` is
+    # preserved, so `Secure: false` becomes `Secure: true` and `HttpOnly: false`
+    # becomes `HttpOnly: true` — each the secure value that resolves the finding,
+    # with every other field in the literal left untouched.
+    fix: '$FIELD: true'
     metadata:
       oauthlint-rule-id: AUTH-GO-COOKIE-001
       oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-insecure

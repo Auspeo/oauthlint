@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  type FixPlan,
   type SemgrepAdapter,
   SemgrepNotInstalledError,
   SemgrepOutputError,
@@ -18,8 +19,18 @@ class FakeStream {
   }
 }
 
-function fakeAdapter(findings: Finding[]): SemgrepAdapter {
-  // We only need .scan() for the scan command; cast through unknown to keep it type-safe.
+const EMPTY_PLAN: FixPlan = { files: [], totalFixes: 0 };
+
+// Strip ANSI so plain-text assertions hold when colour is on (CI sets
+// FORCE_COLOR): picocolors styles phrases like `pc.bold('🛠 Applied')` and the
+// reset code lands mid-sentence. The ESC byte is built at runtime to avoid a
+// literal control char in the regex.
+const ESC = String.fromCharCode(27);
+const stripAnsi = (s: string): string => s.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
+
+function fakeAdapter(findings: Finding[], plan: FixPlan = EMPTY_PLAN): SemgrepAdapter {
+  // We only need .scan()/.planFixes() for the scan command; cast through unknown
+  // to keep it type-safe.
   return {
     async scan(): Promise<ScanResult> {
       return {
@@ -29,6 +40,9 @@ function fakeAdapter(findings: Finding[]): SemgrepAdapter {
         semgrepVersion: '1.0.0',
         errors: [],
       };
+    },
+    async planFixes(): Promise<FixPlan> {
+      return plan;
     },
     async getVersion() {
       return '1.0.0';
@@ -205,20 +219,125 @@ describe('runScan (SARIF mode)', () => {
   });
 });
 
-describe('runScan (pretty extras)', () => {
-  it('prints the auto-fix hint when --fix is set', async () => {
+const planWith = (...files: FixPlan['files']): FixPlan => ({
+  files,
+  totalFixes: files.reduce((n, f) => n + f.fixCount, 0),
+});
+
+describe('runScan (--fix summary)', () => {
+  it('summarises which files changed and how many fixes were applied', async () => {
     const stream = new FakeStream();
-    const cookieFinding: Finding = { ...finding('MEDIUM'), ruleId: 'auth.cookie.no-secure' };
+    const plan = planWith({
+      path: '/proj/server.ts',
+      original: 'rejectUnauthorized: false\n',
+      fixed: 'rejectUnauthorized: true\n',
+      fixCount: 1,
+    });
     await runScan({
       path: '.',
       fix: true,
       failOn: 'off',
-      adapter: fakeAdapter([cookieFinding]),
+      cwd: '/proj',
+      adapter: fakeAdapter([finding('MEDIUM')], plan),
       stream: stream as unknown as NodeJS.WritableStream,
     });
-    expect(stream.buf).toContain('Auto-fix applied');
+    const clean = stripAnsi(stream.buf);
+    expect(clean).toContain('🛠 Applied 1 fix across 1 file');
+    expect(clean).toContain('server.ts');
+    // Diffs are a dry-run concern; a real fix prints a summary, not a diff.
+    expect(clean).not.toContain('@@');
   });
 
+  it('reports a no-op when --fix finds nothing to change (idempotent re-run)', async () => {
+    const stream = new FakeStream();
+    await runScan({
+      path: '.',
+      fix: true,
+      failOn: 'off',
+      adapter: fakeAdapter([], EMPTY_PLAN),
+      stream: stream as unknown as NodeJS.WritableStream,
+    });
+    expect(stream.buf).toContain('No autofixable findings');
+  });
+});
+
+describe('runScan (--fix-dry-run)', () => {
+  it('prints a unified diff per file and does not apply (no summary)', async () => {
+    const stream = new FakeStream();
+    const plan = planWith({
+      path: '/proj/agent.ts',
+      original: 'const a = 1;\nrejectUnauthorized: false\nconst b = 2;\n',
+      fixed: 'const a = 1;\nrejectUnauthorized: true\nconst b = 2;\n',
+      fixCount: 1,
+    });
+    await runScan({
+      path: '.',
+      fixDryRun: true,
+      failOn: 'off',
+      cwd: '/proj',
+      adapter: fakeAdapter([finding('HIGH')], plan),
+      stream: stream as unknown as NodeJS.WritableStream,
+    });
+    const clean = stripAnsi(stream.buf);
+    expect(clean).toContain('Fix preview');
+    expect(clean).toContain('dry run');
+    expect(clean).toContain('--- a/agent.ts');
+    expect(clean).toContain('+++ b/agent.ts');
+    expect(clean).toContain('-rejectUnauthorized: false');
+    expect(clean).toContain('+rejectUnauthorized: true');
+    expect(clean).toContain('Re-run with --fix');
+    // A dry run must not print the "Applied" summary.
+    expect(clean).not.toContain('🛠 Applied');
+  });
+
+  it('dry-run wins over --fix: nothing is applied when both are set', async () => {
+    const stream = new FakeStream();
+    let applied = false;
+    const plan = planWith({
+      path: '/proj/x.ts',
+      original: 'a\n',
+      fixed: 'b\n',
+      fixCount: 1,
+    });
+    const adapter = {
+      async scan(_t: unknown, o: { applyFixes?: boolean } = {}) {
+        if (o.applyFixes) applied = true;
+        return { findings: [], scannedFiles: 1, durationMs: 1, semgrepVersion: '1', errors: [] };
+      },
+      async planFixes() {
+        return plan;
+      },
+      async getVersion() {
+        return '1';
+      },
+    } as unknown as SemgrepAdapter;
+    await runScan({
+      path: '.',
+      fix: true,
+      fixDryRun: true,
+      failOn: 'off',
+      cwd: '/proj',
+      adapter,
+      stream: stream as unknown as NodeJS.WritableStream,
+    });
+    expect(applied).toBe(false);
+    expect(stream.buf).toContain('Fix preview');
+  });
+
+  it('notes when there is nothing to preview', async () => {
+    const stream = new FakeStream();
+    await runScan({
+      path: '.',
+      fixDryRun: true,
+      failOn: 'off',
+      adapter: fakeAdapter([], EMPTY_PLAN),
+      stream: stream as unknown as NodeJS.WritableStream,
+    });
+    expect(stream.buf).toContain('nothing to preview');
+  });
+});
+
+describe('runScan (pretty extras)', () => {
   it('reports how many findings were suppressed by inline directives', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'oauthlint-scan-'));
     const file = join(dir, 'server.ts');
