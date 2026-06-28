@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 111 rules across every supported language.
+# Full pack — 114 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -104,7 +104,6 @@ rules:
           - metavariable-regex:
               metavariable: $NAME
               regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
-    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, httpOnly: true })"
   - id: auth.cookie.no-samesite
     languages:
       - javascript
@@ -157,7 +156,6 @@ rules:
                     - pattern: "{..., sameSite: 'None', ...}"
                     - pattern: '{..., sameSite: "None", ...}'
                 - pattern-not: "{..., secure: true, ...}"
-    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, sameSite: 'strict' })"
   - id: auth.cookie.no-secure
     languages:
       - javascript
@@ -208,7 +206,6 @@ rules:
           - metavariable-regex:
               metavariable: $NAME
               regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
-    fix: "$RES.cookie($NAME, $VAL, { ...$OPTS, secure: true })"
   - id: auth.cookie.samesite-none-insecure
     languages:
       - javascript
@@ -1161,9 +1158,12 @@ rules:
       technology:
         - net/http
     patterns:
-      - pattern-either:
-          - pattern: "http.Cookie{..., Secure: false, ...}"
-          - pattern: "http.Cookie{..., HttpOnly: false, ...}"
+      - pattern-inside: http.Cookie{...}
+      - pattern: "$FIELD: false"
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: ^(Secure|HttpOnly)$
+    fix: "$FIELD: true"
   - id: auth.go.cors.allow-all
     languages:
       - go
@@ -1719,7 +1719,10 @@ rules:
         - https://cwe.mitre.org/data/definitions/295.html
       technology:
         - crypto/tls
-    pattern: "tls.Config{..., InsecureSkipVerify: true, ...}"
+    patterns:
+      - pattern-inside: tls.Config{...}
+      - pattern: "InsecureSkipVerify: true"
+    fix: "InsecureSkipVerify: false"
   - id: auth.go.tls.min-version
     languages:
       - go
@@ -1748,10 +1751,12 @@ rules:
       technology:
         - crypto/tls
     patterns:
-      - pattern: "tls.Config{..., MinVersion: $V, ...}"
+      - pattern-inside: tls.Config{...}
+      - pattern: "MinVersion: $V"
       - metavariable-regex:
           metavariable: $V
           regex: ^tls\.(VersionSSL30|VersionTLS10|VersionTLS11)$
+    fix: "MinVersion: tls.VersionTLS12"
   - id: auth.java.cookie.insecure
     languages:
       - java
@@ -2774,6 +2779,39 @@ rules:
       - pattern-regex: response_type\s*[:=]\s*['"]token\s+id_token['"]
       - pattern-regex: "[?&]response_type=token(?:&|['\"]|#|$)"
       - pattern-regex: "[?&]response_type=(?:id_token(?:%20|\\+)token|token(?:%20|\\+)id_token)(?:&|['\"]|#|$)"
+  - id: auth.oauth.insecure-token-endpoint
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
+      Authorization codes, `client_secret`, access/refresh tokens, and the
+      `code_verifier` then travel unencrypted — a network attacker can read
+      or rewrite them and take over the flow.
+
+      RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
+      endpoints. Use `https://` for every authorize, token, and userinfo
+      URL. `http://localhost` is fine for local development and is not
+      flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-015
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-insecure-token-endpoint
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.9
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - oauth2
+        - oidc
+    pattern-either:
+      - patterns:
+          - pattern-regex: "['\"]http://[^'\"\\s]+(?:response_type=|client_id=|client_secret=|grant_type=|code_challenge=|/oauth2?/|/connect/token|/o/oauth2|/authorize|/oauth/token)[^'\"]*['\"]"
+          - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])
   - id: auth.oauth.long-token-lifetime
     languages:
       - javascript
@@ -3057,6 +3095,77 @@ rules:
       - pattern: $P.set("code_challenge_method", "plain")
       - pattern: $P.append('code_challenge_method', 'plain')
       - pattern: $P.append("code_challenge_method", "plain")
+  - id: auth.oauth.ropc-grant
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-014
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - oauth2
+    pattern-either:
+      - pattern-regex: grant_type\s*[:=]\s*['"]password['"]
+      - pattern-regex: "[?&'\"`]grant_type=password(?:[&'\"`\\s]|$)"
+      - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
+  - id: auth.oauth.static-state
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth authorization request sends a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole
+      point is an unguessable, per-request value that you store and then
+      compare on the callback. A literal that ships in your source is known
+      to everyone and identical on every request, so an attacker can forge
+      a matching callback.
+
+      Generate `state` fresh per request from a CSPRNG
+      (`crypto.randomBytes(32).toString('hex')` /
+      `crypto.getRandomValues`), persist it in the session/cookie, and
+      verify it when the provider redirects back.
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-016
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - oauth2
+    pattern-either:
+      - patterns:
+          - pattern: "new URLSearchParams({..., response_type: $R, ...})"
+          - pattern-either:
+              - pattern: 'new URLSearchParams({..., state: "$S", ...})'
+              - pattern: "new URLSearchParams({..., state: '$S', ...})"
+      - patterns:
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*response_type=[^'\"]*['\"]"
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*state=[A-Za-z0-9._~%-]+[^'\"]*['\"]"
   - id: auth.oauth.token-in-localstorage
     languages:
       - javascript

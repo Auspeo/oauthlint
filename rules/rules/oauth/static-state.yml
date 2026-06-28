@@ -1,0 +1,49 @@
+rules:
+  - id: auth.oauth.static-state
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      OAuth authorization request sends a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole
+      point is an unguessable, per-request value that you store and then
+      compare on the callback. A literal that ships in your source is known
+      to everyone and identical on every request, so an attacker can forge
+      a matching callback.
+
+      Generate `state` fresh per request from a CSPRNG
+      (`crypto.randomBytes(32).toString('hex')` /
+      `crypto.getRandomValues`), persist it in the session/cookie, and
+      verify it when the provider redirects back.
+    pattern-either:
+      # Programmatic authorize build: a string-literal `state` alongside a
+      # `response_type` in the same URLSearchParams (so we know it is an
+      # authorize request, not some unrelated `state` field). A per-request
+      # value is a variable/shorthand, which is NOT a quoted literal and so
+      # does not match.
+      - patterns:
+          - pattern: 'new URLSearchParams({..., response_type: $R, ...})'
+          - pattern-either:
+              - pattern: 'new URLSearchParams({..., state: "$S", ...})'
+              - pattern: "new URLSearchParams({..., state: '$S', ...})"
+      # Inline authorize URL string literal carrying both response_type and a
+      # constant state value. A dynamic state would be a template literal
+      # (backticks) with `${...}`, which this single/double-quoted form excludes.
+      - patterns:
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*response_type=[^'"]*['"]
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*state=[A-Za-z0-9._~%-]+[^'"]*['"]
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-016
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html

@@ -40,9 +40,12 @@ rules:
       technology:
         - net/http
     patterns:
-      - pattern-either:
-          - pattern: "http.Cookie{..., Secure: false, ...}"
-          - pattern: "http.Cookie{..., HttpOnly: false, ...}"
+      - pattern-inside: http.Cookie{...}
+      - pattern: "$FIELD: false"
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: ^(Secure|HttpOnly)$
+    fix: "$FIELD: true"
   - id: auth.go.cors.allow-all
     languages:
       - go
@@ -598,7 +601,10 @@ rules:
         - https://cwe.mitre.org/data/definitions/295.html
       technology:
         - crypto/tls
-    pattern: "tls.Config{..., InsecureSkipVerify: true, ...}"
+    patterns:
+      - pattern-inside: tls.Config{...}
+      - pattern: "InsecureSkipVerify: true"
+    fix: "InsecureSkipVerify: false"
   - id: auth.go.tls.min-version
     languages:
       - go
@@ -627,7 +633,9 @@ rules:
       technology:
         - crypto/tls
     patterns:
-      - pattern: "tls.Config{..., MinVersion: $V, ...}"
+      - pattern-inside: tls.Config{...}
+      - pattern: "MinVersion: $V"
       - metavariable-regex:
           metavariable: $V
           regex: ^tls\.(VersionSSL30|VersionTLS10|VersionTLS11)$
+    fix: "MinVersion: tls.VersionTLS12"

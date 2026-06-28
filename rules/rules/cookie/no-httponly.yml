@@ -39,7 +39,11 @@ rules:
           - metavariable-regex:
               metavariable: $NAME
               regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
-    fix: '$RES.cookie($NAME, $VAL, { ...$OPTS, httpOnly: true })'
+    # No autofix. As with `auth.cookie.no-secure`, a single rule-level `fix:`
+    # cannot cover all three matched shapes safely: a spread template corrupts
+    # the 2-arg form (unbound `$OPTS` is emitted literally) and does not resolve
+    # an explicit `httpOnly: false`. Inserting a missing key is not a clean
+    # literal replacement, so this rule deliberately ships no `fix:`.
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-002
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-httponly

@@ -111,6 +111,10 @@ export async function buildProgram(): Promise<Command> {
     .option('--rules-dir <path>', 'Override the bundled rules directory')
     .option('--fix', 'Apply auto-fixes (rewrites source in place where possible)')
     .option(
+      '--fix-dry-run',
+      'Preview what --fix would change as a unified diff, without writing any files',
+    )
+    .option(
       '--baseline [file]',
       'Suppress findings already in a baseline file; report only NEW findings (default: .oauthlint-baseline.json)',
     )
@@ -125,6 +129,7 @@ export async function buildProgram(): Promise<Command> {
         failOn: opts.failOn,
         rulesDir: opts.rulesDir,
         fix: opts.fix,
+        fixDryRun: opts.fixDryRun,
         baseline: opts.baseline,
       });
       const machineReadable =
@@ -224,6 +229,7 @@ interface ScanCliOptions {
   staged?: boolean;
   rulesDir?: string;
   fix?: boolean;
+  fixDryRun?: boolean;
   // commander gives `true` for a bare `--baseline`, or the string path for
   // `--baseline <file>`.
   baseline?: string | boolean;

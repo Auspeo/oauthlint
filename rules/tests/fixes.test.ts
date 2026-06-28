@@ -1,7 +1,7 @@
 import { execFile, execFileSync } from 'node:child_process';
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -42,16 +42,64 @@ const semgrepAvailable = hasSemgrep();
 
 // Each rule that ships a `fix:`, with the fixture extension and the rule id we
 // re-scan for. `dir` is the fixture directory under tests/fixtures/.
-const FIXED_RULES: { dir: string; ruleFile: string; ext: string }[] = [
+//   - `contains`: substrings the fixed `vulnerable.*` MUST contain — proves the
+//     fix produced the expected secure literal, not just *some* rewrite.
+//   - `absent`:   substrings the fixed `vulnerable.*` MUST NOT contain — proves
+//     the insecure literal is gone (and that no unsubstituted metavariable like
+//     a literal `$OPTS` leaked into the output).
+//   - `survives`: substrings present in the fixture that the fix must leave
+//     intact — proves surrounding code was not mangled.
+interface FixedRule {
+  dir: string;
+  ruleFile: string;
+  ext: string;
+  contains: string[];
+  absent: string[];
+  survives: string[];
+}
+
+const FIXED_RULES: FixedRule[] = [
   {
     dir: 'rust-tls-accept-invalid-certs',
     ruleFile: join(rulesRoot, 'rust', 'tls', 'accept-invalid-certs.yml'),
     ext: 'rs',
+    contains: ['danger_accept_invalid_certs(false)'],
+    absent: ['danger_accept_invalid_certs(true)'],
+    survives: ['reqwest::Client::builder()', '.build()'],
   },
   {
     dir: 'rust-tls-accept-invalid-hostnames',
     ruleFile: join(rulesRoot, 'rust', 'tls', 'accept-invalid-hostnames.yml'),
     ext: 'rs',
+    contains: ['danger_accept_invalid_hostnames(false)'],
+    absent: ['danger_accept_invalid_hostnames(true)'],
+    survives: ['reqwest::Client::builder()', '.build()'],
+  },
+  {
+    dir: 'go-tls-insecure-skip-verify',
+    ruleFile: join(rulesRoot, 'go', 'tls', 'insecure-skip-verify.yml'),
+    ext: 'go',
+    contains: ['InsecureSkipVerify: false'],
+    absent: ['InsecureSkipVerify: true'],
+    // The fix must touch only the flag, leaving the rest of the literal intact.
+    survives: ['tls.Config{', 'MinVersion: tls.VersionTLS12'],
+  },
+  {
+    dir: 'go-tls-min-version',
+    ruleFile: join(rulesRoot, 'go', 'tls', 'min-version.yml'),
+    ext: 'go',
+    contains: ['MinVersion: tls.VersionTLS12'],
+    absent: ['tls.VersionTLS10', 'tls.VersionTLS11', 'tls.VersionSSL30'],
+    survives: ['tls.Config{', 'http.Transport{'],
+  },
+  {
+    dir: 'go-cookie-insecure',
+    ruleFile: join(rulesRoot, 'go', 'cookie', 'insecure.yml'),
+    ext: 'go',
+    // Both disabled flags are flipped to their secure value; `$FIELD` preserved.
+    contains: ['Secure: true', 'HttpOnly: true'],
+    absent: ['Secure: false', 'HttpOnly: false', '$FIELD'],
+    survives: ['http.Cookie{', 'Name: "session"'],
   },
 ];
 
@@ -80,7 +128,7 @@ async function autofix(ruleFile: string, target: string): Promise<void> {
 describe.skipIf(!semgrepAvailable)(
   'rule autofixes resolve the finding without corrupting source',
   () => {
-    for (const { dir, ruleFile, ext } of FIXED_RULES) {
+    for (const { dir, ruleFile, ext, contains, absent, survives } of FIXED_RULES) {
       // Each case runs three Semgrep invocations (scan + autofix + re-scan), so
       // the default 5s per-test budget is too tight on a cold binary.
       it(`${dir}: vulnerable fixture is fixed and re-scan = 0`, { timeout: 60_000 }, async () => {
@@ -101,17 +149,13 @@ describe.skipIf(!semgrepAvailable)(
         const after = await scanCount(ruleFile, dst);
         expect(after).toBe(0);
 
-        // The fix must not have mangled surrounding code: the original `true`
-        // literal is gone and replaced by `false`, and the call/chain survives.
+        // The fix produced the expected secure literal, removed the insecure
+        // one (and never leaked an unsubstituted metavariable), and left the
+        // surrounding code intact.
         const fixed = readFileSync(dst, 'utf8');
-        const method = basename(ruleFile, '.yml').includes('hostnames')
-          ? 'danger_accept_invalid_hostnames'
-          : 'danger_accept_invalid_certs';
-        expect(fixed).toContain(`${method}(false)`);
-        expect(fixed).not.toContain(`${method}(true)`);
-        // Untouched neighbours from the fixture stay intact.
-        expect(fixed).toContain('.build()');
-        expect(fixed).toContain('reqwest::Client::builder()');
+        for (const needle of contains) expect(fixed).toContain(needle);
+        for (const needle of absent) expect(fixed).not.toContain(needle);
+        for (const needle of survives) expect(fixed).toContain(needle);
       });
 
       it(`${dir}: safe fixture is left byte-for-byte unchanged`, { timeout: 60_000 }, async () => {

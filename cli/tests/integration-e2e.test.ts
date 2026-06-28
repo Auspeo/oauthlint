@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -470,4 +470,63 @@ describe('list', () => {
     expect(rules.length).toBeGreaterThanOrEqual(8);
     expect(rules.every((r) => r.id.startsWith('auth.'))).toBe(true);
   });
+});
+
+// A Go cookie with TLS/cookie flags explicitly disabled — fires
+// `auth.go.cookie.insecure`, whose autofix flips each flag to its secure value.
+const VULN_GO_COOKIE = [
+  'package main',
+  '',
+  'import "net/http"',
+  '',
+  'func setCookie(w http.ResponseWriter) {',
+  '\thttp.SetCookie(w, &http.Cookie{Name: "session", Value: "t", Secure: false, HttpOnly: false})',
+  '}',
+  '',
+].join('\n');
+
+e2e('scan --fix / --fix-dry-run (real autofix)', () => {
+  it(
+    'previews a unified diff without writing, then applies it, then is idempotent',
+    async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'oauthlint-fix-e2e-'));
+      const file = join(dir, 'cookie.go');
+      try {
+        await writeFile(file, VULN_GO_COOKIE);
+
+        // 1) Dry run: prints a diff, changes nothing on disk. Scan from inside
+        // the temp dir so diff labels render as relative paths.
+        const dry = await runCli(['scan', '.', '--fix-dry-run', '--fail-on', 'off'], { cwd: dir });
+        const dryOut = stripAnsi(dry.stdout);
+        expect(dry.exitCode).toBe(0);
+        expect(dryOut).toContain('Fix preview');
+        expect(dryOut).toContain('--- a/cookie.go');
+        expect(dryOut).toContain('+++ b/cookie.go');
+        expect(dryOut).toContain('-\thttp.SetCookie(w, &http.Cookie{Name: "session"');
+        expect(dryOut).toContain('Secure: true');
+        expect(dryOut).toContain('Re-run with --fix');
+        // Crucially, the file is untouched.
+        expect(await readFile(file, 'utf8')).toBe(VULN_GO_COOKIE);
+
+        // 2) Apply: rewrites the file and prints a summary.
+        const fix = await runCli(['scan', '.', '--fix', '--fail-on', 'off'], { cwd: dir });
+        const fixOut = stripAnsi(fix.stdout);
+        expect(fixOut).toContain('Applied');
+        expect(fixOut).toContain('cookie.go');
+        const fixed = await readFile(file, 'utf8');
+        expect(fixed).toContain('Secure: true');
+        expect(fixed).toContain('HttpOnly: true');
+        expect(fixed).not.toContain('Secure: false');
+        expect(fixed).not.toContain('HttpOnly: false');
+
+        // 3) Idempotent: a second --fix finds nothing and changes nothing.
+        const again = await runCli(['scan', '.', '--fix', '--fail-on', 'off'], { cwd: dir });
+        expect(stripAnsi(again.stdout)).toContain('No autofixable findings');
+        expect(await readFile(file, 'utf8')).toBe(fixed);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+    SCAN_TIMEOUT,
+  );
 });

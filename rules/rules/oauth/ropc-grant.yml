@@ -1,0 +1,43 @@
+rules:
+  - id: auth.oauth.ropc-grant
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine.
+    pattern-either:
+      # Object literal / assignment: { grant_type: 'password' } or
+      # grant_type = 'password'. The `=` alt also covers `grant_type = "password"`.
+      - pattern-regex: |-
+              grant_type\s*[:=]\s*['"]password['"]
+      # URL-encoded request body: "grant_type=password&username=…" (single,
+      # double, or template-literal string). The value is bounded so
+      # `grant_type=password_reset` and friends are not flagged.
+      - pattern-regex: |-
+              [?&'"`]grant_type=password(?:[&'"`\s]|$)
+      # URLSearchParams / FormData builders: append/set('grant_type','password').
+      - pattern-regex: |-
+              ['"]grant_type['"]\s*,\s*['"]password['"]
+    metadata:
+      oauthlint-rule-id: AUTH-OAUTH-014
+      oauthlint-doc-url: https://oauthlint.dev/rules/oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html

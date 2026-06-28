@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock execa with a plain swappable function (no vi.fn spy): the adapter's
@@ -152,6 +155,99 @@ describe('SemgrepAdapter.scan (mocked execa)', () => {
     throwWith(new Error('disk on fire'));
     const adapter = new SemgrepAdapter({ configPath: '/rules' });
     await expect(adapter.scan('/target')).rejects.toThrow('disk on fire');
+  });
+});
+
+describe('SemgrepAdapter.planFixes (mocked execa)', () => {
+  // A fix result carries the replacement text plus the byte range it covers.
+  const fixResult = (path: string, start: number, end: number, fix: string) => ({
+    check_id: 'rules.tls.auth.tls.reject-unauthorized',
+    path,
+    start: { line: 1, offset: start },
+    end: { line: 1, offset: end },
+    extra: { severity: 'ERROR', message: 'x', fix, metadata: {} },
+  });
+
+  it('runs --autofix --dryrun and reconstructs the fixed file from offsets', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oauthlint-plan-'));
+    try {
+      const file = join(dir, 'agent.ts');
+      const content = 'const x = { rejectUnauthorized: false };\n';
+      writeFileSync(file, content);
+      const start = content.indexOf('false');
+      const end = start + 'false'.length;
+
+      resolveWith({
+        stdout: JSON.stringify({ results: [fixResult(file, start, end, 'true')] }),
+      });
+      const adapter = new SemgrepAdapter({ configPath: '/rules' });
+      const plan = await adapter.planFixes(file);
+
+      // The dry run must request both flags (so nothing is written to disk).
+      const [, args] = state.calls[0] as [string, string[]];
+      expect(args).toContain('--autofix');
+      expect(args).toContain('--dryrun');
+
+      expect(plan.totalFixes).toBe(1);
+      expect(plan.files).toHaveLength(1);
+      expect(plan.files[0].path).toBe(file);
+      expect(plan.files[0].original).toBe(content);
+      expect(plan.files[0].fixed).toBe('const x = { rejectUnauthorized: true };\n');
+      expect(plan.files[0].fixCount).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('applies multiple fixes in one file from the end backwards', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oauthlint-plan-'));
+    try {
+      const file = join(dir, 'multi.go');
+      const content = 'a{Secure: false, HttpOnly: false}\n';
+      writeFileSync(file, content);
+      const s1 = content.indexOf('false');
+      const s2 = content.indexOf('false', s1 + 1);
+      resolveWith({
+        stdout: JSON.stringify({
+          results: [fixResult(file, s1, s1 + 5, 'true'), fixResult(file, s2, s2 + 5, 'true')],
+        }),
+      });
+      const adapter = new SemgrepAdapter({ configPath: '/rules' });
+      const plan = await adapter.planFixes(file);
+      expect(plan.files[0].fixed).toBe('a{Secure: true, HttpOnly: true}\n');
+      expect(plan.files[0].fixCount).toBe(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores results without a fix and yields an empty plan', async () => {
+    resolveWith({
+      stdout: JSON.stringify({
+        results: [{ check_id: 'r', path: '/x', start: { line: 1 }, end: { line: 1 }, extra: {} }],
+      }),
+    });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    const plan = await adapter.planFixes('/x');
+    expect(plan.files).toEqual([]);
+    expect(plan.totalFixes).toBe(0);
+  });
+
+  it('skips a fix whose target file cannot be read', async () => {
+    resolveWith({
+      stdout: JSON.stringify({
+        results: [fixResult('/no/such/file.ts', 0, 1, 'y')],
+      }),
+    });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    const plan = await adapter.planFixes('/no/such/file.ts');
+    expect(plan.files).toEqual([]);
+  });
+
+  it('throws SemgrepNotInstalledError when the binary is missing', async () => {
+    throwWith({ code: 'ENOENT' });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    await expect(adapter.planFixes('/target')).rejects.toBeInstanceOf(SemgrepNotInstalledError);
   });
 });
 

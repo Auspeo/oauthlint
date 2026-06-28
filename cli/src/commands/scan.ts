@@ -1,6 +1,8 @@
 import { resolve } from 'node:path';
 import { RULES_ROOT } from 'oauthlint-rules';
+import pc from 'picocolors';
 import {
+  type FixPlan,
   SemgrepAdapter,
   SemgrepNotInstalledError,
   SemgrepOutputError,
@@ -14,6 +16,7 @@ import {
 } from '../core/baseline.js';
 import { GitError, resolveDiffFiles, resolveStagedFiles } from '../core/changed-files.js';
 import { loadConfig } from '../core/config.js';
+import { renderFixPreview, renderFixSummary } from '../core/fix-plan.js';
 import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
 import { exitCodeFor, highestSeverity, meetsThreshold } from '../core/severity.js';
@@ -48,10 +51,19 @@ export interface ScanCommandOptions {
   failOn?: SeverityName | 'off';
   rulesDir?: string;
   /**
-   * Apply auto-fixes (rewrites source files in place) for rules that
-   * ship a `fix:` template. Currently the cookie-* rules.
+   * Apply auto-fixes (rewrites source files in place) for rules that ship a
+   * `fix:` template — the TLS/cert-verification flag flips (Rust `reqwest`,
+   * Go `crypto/tls`) and the Go `http.Cookie` `Secure`/`HttpOnly` flips. Each
+   * fix is a deterministic literal replacement proven by the rule pack's
+   * autofix safety contract; running `--fix` twice is a no-op (idempotent).
    */
   fix?: boolean;
+  /**
+   * Preview what `--fix` WOULD change without writing anything: prints a unified
+   * diff per file and a summary. Takes precedence over `--fix` (when both are
+   * given, nothing is written).
+   */
+  fixDryRun?: boolean;
   /**
    * Suppress findings already captured in a baseline file, reporting only NEW
    * findings. A bare `true` uses the default `.oauthlint-baseline.json`; a
@@ -157,9 +169,20 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   if (format === 'pretty') reporter.reportStart(label, await countRuleFiles(rulesDir));
 
   const adapter = opts.adapter ?? new SemgrepAdapter({ configPath: rulesDir });
+  // `--fix-dry-run` previews changes and never writes; it wins over `--fix`.
+  const dryRun = opts.fixDryRun === true;
+  const applyFixes = opts.fix === true && !dryRun;
+
   let result: Awaited<ReturnType<SemgrepAdapter['scan']>>;
+  let fixPlan: FixPlan | null = null;
   try {
-    result = await adapter.scan(targets, { applyFixes: opts.fix });
+    // Compute the fix plan (a dry run that writes nothing) BEFORE applying, so
+    // the post-fix summary and the dry-run preview both reflect exactly what
+    // would change. The applying scan then runs second.
+    if (dryRun || applyFixes) {
+      fixPlan = await adapter.planFixes(targets);
+    }
+    result = await adapter.scan(targets, { applyFixes });
   } catch (err) {
     if (err instanceof SemgrepNotInstalledError) {
       (opts.stream ?? process.stderr).write(`${err.message}\n`);
@@ -218,11 +241,13 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
     }
   } else {
     reporter.reportResult({ ...result, findings });
-    if (opts.fix && format === 'pretty') {
-      const fixed = findings.filter((f) => f.ruleId.startsWith('auth.cookie.')).length;
-      stream.write(
-        `\n🛠 Auto-fix applied where possible — re-run \`oauthlint scan\` to confirm.${fixed > 0 ? ` (${fixed} cookie-* finding${fixed === 1 ? '' : 's'} eligible.)` : ''}\n`,
-      );
+    if (fixPlan && format === 'pretty') {
+      const color = pc.isColorSupported;
+      if (dryRun) {
+        stream.write(renderFixPreview(fixPlan, { cwd, color }));
+      } else {
+        stream.write(renderFixSummary(fixPlan, { cwd }));
+      }
     }
     if (suppressed.length > 0 && format === 'pretty') {
       stream.write(

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
 import { ExecaError, execa } from 'execa';
 import { type Finding, SEMGREP_SEVERITY_MAP, type ScanResult } from '../types.js';
 
@@ -14,11 +16,17 @@ interface SemgrepJson {
 interface SemgrepResult {
   check_id: string;
   path: string;
-  start: { line: number };
-  end: { line: number };
+  // `offset` is the 0-based byte offset of the match into the file; present on
+  // every result and used to splice in autofix replacements precisely.
+  start: { line: number; offset?: number };
+  end: { line: number; offset?: number };
   extra: {
     severity?: string;
     message?: string;
+    // The autofix replacement text for this match's `[start.offset, end.offset)`
+    // range. Present only when the matched rule ships a `fix:` (and, with
+    // `--dryrun`, the file is left untouched on disk).
+    fix?: string;
     metadata?: Record<string, unknown> & {
       'oauthlint-rule-id'?: string;
       'oauthlint-doc-url'?: string;
@@ -26,6 +34,25 @@ interface SemgrepResult {
       'llm-prevalence'?: 'HIGH' | 'MEDIUM' | 'LOW';
     };
   };
+}
+
+/** The fix preview for a single file: its current and post-fix contents. */
+export interface FileFixPlan {
+  /** Absolute path of the file that would be rewritten. */
+  path: string;
+  /** Current on-disk contents. */
+  original: string;
+  /** Contents after every applicable fix is applied. */
+  fixed: string;
+  /** How many individual fixes would be applied to this file. */
+  fixCount: number;
+}
+
+/** What `--fix` would change across all scanned files — computed without writing. */
+export interface FixPlan {
+  files: FileFixPlan[];
+  /** Total number of fixes across every file. */
+  totalFixes: number;
 }
 
 export class SemgrepNotInstalledError extends Error {
@@ -150,6 +177,111 @@ export class SemgrepAdapter {
       semgrepVersion: parsed.version ?? null,
       errors: (parsed.errors ?? []).map((e) => e.long_msg ?? e.message ?? 'unknown semgrep error'),
     };
+  }
+
+  /**
+   * Compute what `--fix` WOULD change, without writing anything. Runs Semgrep
+   * with `--autofix --dryrun`, which leaves files on disk untouched but reports
+   * each fix's replacement text and byte range in the `--json` output. We splice
+   * those replacements into an in-memory copy of each file to produce the exact
+   * post-fix contents, so callers can render a diff (`--fix-dry-run`) or a
+   * summary of changed files (`--fix`).
+   *
+   * Replacements within a file are applied from the highest offset down, so the
+   * earlier (lower-offset) ranges stay valid as we splice. Overlapping fixes are
+   * impossible to apply unambiguously, so any fix that overlaps one already
+   * applied is skipped (matching Semgrep's own conservative behaviour).
+   *
+   * @throws SemgrepNotInstalledError if the binary cannot be found.
+   */
+  async planFixes(target: string | string[]): Promise<FixPlan> {
+    const targets = Array.isArray(target) ? target : [target];
+    const args = [
+      'scan',
+      '--config',
+      this.configPath,
+      '--json',
+      '--quiet',
+      '--no-git-ignore',
+      '--metrics=off',
+      '--autofix',
+      '--dryrun',
+      '--',
+      ...targets,
+    ];
+
+    let result: Awaited<ReturnType<typeof execa>>;
+    try {
+      result = await execa(this.binary, args, {
+        cwd: this.cwd,
+        reject: false,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+    } catch (err) {
+      if (isSpawnFailure(err)) throw new SemgrepNotInstalledError();
+      throw err;
+    }
+    if (isSpawnFailure(result)) throw new SemgrepNotInstalledError();
+
+    const stdout = typeof result.stdout === 'string' ? result.stdout : '';
+    let parsed: SemgrepJson;
+    try {
+      parsed = JSON.parse(stdout.trim() || '{}') as SemgrepJson;
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new SemgrepOutputError(detail, stdout.slice(0, 200));
+    }
+
+    // Group the fixable matches (those carrying an `extra.fix`) by file.
+    const byFile = new Map<string, { start: number; end: number; replacement: string }[]>();
+    for (const r of parsed.results ?? []) {
+      const replacement = r.extra.fix;
+      const start = r.start.offset;
+      const end = r.end.offset;
+      if (replacement === undefined || start === undefined || end === undefined) continue;
+      const abs = isAbsolute(r.path) ? r.path : resolve(this.cwd ?? process.cwd(), r.path);
+      const edits = byFile.get(abs) ?? [];
+      edits.push({ start, end, replacement });
+      byFile.set(abs, edits);
+    }
+
+    const files: FileFixPlan[] = [];
+    let totalFixes = 0;
+    for (const [path, edits] of byFile) {
+      let original: Buffer;
+      try {
+        original = readFileSync(path);
+      } catch {
+        // The file vanished between scan and read (or isn't readable); skip it
+        // rather than fail the whole preview.
+        continue;
+      }
+      // Apply from the end so earlier offsets remain valid against `out`.
+      edits.sort((x, y) => y.start - x.start);
+      let out = original;
+      let appliedFloor = Number.POSITIVE_INFINITY;
+      let fixCount = 0;
+      for (const e of edits) {
+        if (e.end > appliedFloor) continue; // overlaps an already-applied fix
+        out = Buffer.concat([
+          out.subarray(0, e.start),
+          Buffer.from(e.replacement, 'utf8'),
+          out.subarray(e.end),
+        ]);
+        appliedFloor = e.start;
+        fixCount++;
+      }
+      const originalText = original.toString('utf8');
+      const fixedText = out.toString('utf8');
+      if (fixedText === originalText) continue;
+      files.push({ path, original: originalText, fixed: fixedText, fixCount });
+      totalFixes += fixCount;
+    }
+
+    // Deterministic order for stable diff/summary output.
+    files.sort((a, b) => a.path.localeCompare(b.path));
+    return { files, totalFixes };
   }
 
   /**

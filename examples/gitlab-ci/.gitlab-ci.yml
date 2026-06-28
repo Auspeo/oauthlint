@@ -1,0 +1,35 @@
+# OAuthLint in GitLab CI.
+#
+# Runs the OAuthLint CLI in a pipeline: installs Semgrep (the engine OAuthLint
+# drives), writes a SARIF report, then gates the pipeline on HIGH-and-above
+# findings. The SARIF file is published as a downloadable artifact, which works
+# on every GitLab tier.
+#
+# If your project is on GitLab Ultimate (19.2 or newer), uncomment the
+# `reports: sarif:` block to also surface findings in the Security tab. See
+# https://oauthlint.dev/docs/gitlab-ci for the full walkthrough.
+
+stages:
+  - test
+
+oauthlint:
+  stage: test
+  image: node:20-bookworm
+  before_script:
+    # Semgrep must be on PATH. OAuthLint is a wrapper around a Semgrep rule pack.
+    - apt-get update && apt-get install -y --no-install-recommends python3-pip
+    - pip install --break-system-packages semgrep
+  script:
+    # 1. Write a SARIF report. --fail-on off so this pass never fails on its own.
+    - npx --yes oauthlint scan . --format sarif --fail-on off > oauthlint.sarif
+    # 2. Gate the pipeline. Surface MEDIUM+ in the log, fail only on HIGH+.
+    - npx --yes oauthlint scan . --severity MEDIUM --fail-on HIGH
+  artifacts:
+    when: always   # keep the report even when the gating step fails
+    expire_in: 30 days
+    paths:
+      - oauthlint.sarif
+    # GitLab Ultimate 19.2+ only: ingest the report into the Security tab,
+    # vulnerability report, and merge request security widget.
+    # reports:
+    #   sarif: oauthlint.sarif
