@@ -98,6 +98,62 @@ describe('AI (LLM) prevalence', () => {
   });
 });
 
+describe('dataflow (taint) surfacing', () => {
+  // The taint rule ids the catalogue page derives (read-only, since
+  // RuleView does not yet expose the analysis `mode`). Keep in sync with the
+  // TAINT_RULE_IDS set in rules/index.astro and [slug].astro.
+  const taintIds = [
+    'auth.flow.open-redirect',
+    'auth.flow.secret-in-response',
+    'auth.flow.ssrf',
+    'auth.go.flow.open-redirect',
+    'auth.go.flow.secret-in-response',
+    'auth.go.flow.ssrf',
+    'auth.oauth.open-redirect-callback',
+    'auth.py.flow.open-redirect',
+    'auth.py.flow.secret-in-response',
+    'auth.py.flow.ssrf',
+  ];
+
+  const detailSource = readFileSync(
+    fileURLToPath(new URL('../src/pages/rules/[slug].astro', import.meta.url)),
+    'utf8',
+  );
+
+  it('every derived taint id matches a real rule in the pack', () => {
+    const ids = new Set(rules.map((r) => r.id));
+    for (const id of taintIds) {
+      expect(ids.has(id), `${id} present in pack`).toBe(true);
+    }
+  });
+
+  it('both pages derive the same taint id set', () => {
+    for (const id of taintIds) {
+      expect(catalogueSource, `catalogue lists ${id}`).toContain(id);
+      expect(detailSource, `detail lists ${id}`).toContain(id);
+    }
+  });
+
+  it('exposes the dataflow filter control + per-row signal on the catalogue', () => {
+    expect(catalogueSource).toContain('id="rule-flow"');
+    expect(catalogueSource).toContain("data-flow={isTaint(r.id) ? 'true' : 'false'}");
+    // The toggle participates in the client-side match predicate.
+    expect(catalogueSource).toContain("row.dataset.flow === 'true'");
+  });
+
+  it('shows a DATAFLOW badge and explainer on the catalogue', () => {
+    expect(catalogueSource).toContain('DATAFLOW');
+    expect(catalogueSource).toContain('Dataflow analysis.');
+    expect(catalogueSource).toContain('href="/research"');
+  });
+
+  it('marks taint rules as Dataflow analysis on the detail page', () => {
+    expect(detailSource).toContain('DATAFLOW');
+    expect(detailSource).toContain('Dataflow rule.');
+    expect(detailSource).toContain("isTaint ? 'Dataflow' : 'Pattern'");
+  });
+});
+
 describe('OWASP coverage page', () => {
   it('every shipped owasp code resolves to a known edition (api-2023 / web-2021)', () => {
     const codes = [...new Set(rules.map((r) => r.owasp).filter(Boolean) as string[])];
