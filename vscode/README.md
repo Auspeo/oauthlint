@@ -64,8 +64,8 @@ If the CLI is not found, the extension shows a one-time notice with setup steps.
 - **oauthlint: Open rule documentation**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
-pack covers **138 rules across five languages: JavaScript/TypeScript, Python, Go,
-Rust, and Java**, including dataflow (taint) rules for open-redirect and SSRF, and
+pack covers **138 rules across JavaScript/TypeScript, Python, Go, Rust, and Java**,
+including dataflow (taint) rules for open-redirect and SSRF, and
 runs from the [CLI](https://www.npmjs.com/package/oauthlint) and
 [GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action).
 

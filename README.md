@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Java · Rust, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
+A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Rust · Java, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Auspeo/oauthlint/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
@@ -135,7 +135,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**138 rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). The catalogue grows with every release.
+**138 rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -147,9 +147,9 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 |----------|:------:|
 | JavaScript / TypeScript | ✅ shipping |
 | Python (PyJWT, requests, Flask, Django) | ✅ shipping |
-| Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping |
 | Go (golang-jwt, crypto/tls, net/http) | ✅ shipping |
 | Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping |
+| Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping |
 | More (open an issue to request your stack) | 🔜 planned |
 
 **Why JS/TS first?** That's where AI coding tools generate the most code, and so the most OAuth/JWT bugs. It's the densest place to start, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
@@ -158,7 +158,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 
 | Package | What it does |
 |---------|--------------|
-| [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Java · Rust), schema-validated, with vulnerable + safe fixtures |
+| [`rules/`](rules) | Semgrep rules (JS/TS · Python · Go · Rust · Java), schema-validated, with vulnerable + safe fixtures |
 | [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor`, with pretty + JSON + SARIF + HTML output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI, with inline PR annotations + job summary |
 | [`vscode/`](vscode) | VS Code / Cursor / Windsurf extension (Marketplace + OpenVSX): diagnostics, status bar + Quick Fix suppressions |
