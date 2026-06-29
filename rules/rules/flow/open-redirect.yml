@@ -61,6 +61,17 @@ rules:
               - pattern: "$RES.setHeader('Location', $SINK)"
               - pattern: '$RES.setHeader("Location", $SINK)'
               - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          # `$RES.redirect(...)` / `$RES.location(...)` also match a bare,
+          # receiver-less `redirect(...)` / `location(...)` call. Those are the
+          # framework navigation primitives exported by Next.js
+          # (`next/navigation`), SvelteKit and Remix — they send the user to a
+          # server-constructed application URL, not the Express `res.redirect`
+          # open-redirect sink this rule targets. Requiring an explicit receiver
+          # removes that over-match (the dominant FP class seen on next-auth)
+          # without affecting any `res.redirect` / `res.location` detection.
+          - pattern-not: redirect($SINK)
+          - pattern-not: redirect($CODE, $SINK)
+          - pattern-not: location($SINK)
           - focus-metavariable: $SINK
     metadata:
       oauthlint-rule-id: AUTH-FLOW-010
