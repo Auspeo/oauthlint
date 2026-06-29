@@ -1,5 +1,42 @@
 # oauthlint
 
+## 0.8.0
+
+### Minor Changes
+
+- efc2d17: The human-readable scan output now shows a code frame for each finding: a few
+  lines of source context, a dim line-number gutter, and a caret under the matched
+  span, in the style of ESLint, ruff, and cargo. It is on by default for the
+  pretty format (json, SARIF, and HTML are unchanged) and can be turned off with
+  `--no-code-frame` or the `codeFrame` config option.
+- 8513dba: Rules: add SSRF coverage for Java (Spring `RestTemplate`/`WebClient`, OkHttp,
+  Apache HttpClient) and Rust (axum/actix into `reqwest`), and a JS/TS rule for
+  logging `Authorization: Basic` credentials (the `basic-auth` package result and
+  the `Proxy-Authorization` header). `cwe` is now required by the rule schema, and
+  the OWASP mappings were standardized (CORS and cookie-flag rules to API8:2023,
+  TLS to A02:2021, session fixation to API2:2023).
+
+  CLI: `SemgrepAdapter` gained optional `timeoutMs` and `maxOutputBytes` (both off
+  by default, so existing behaviour is unchanged) and a `SemgrepResourceError`, and
+  the package now exports them. This lets the new `oauthlint-mcp` server reuse the
+  scan engine with bounded resources.
+
+### Patch Changes
+
+- 9574a26: Harden the CLI and the HTML report.
+
+  - Fix the intermittent exit code 13 from `oauthlint list` on Node 22. The bin no
+    longer holds an unsettled top-level await while a command handler calls
+    `process.exit()`, and the stdout flush now resolves on stream close or error
+    (EPIPE), not only on drain.
+  - The HTML report (`--format html`) now validates a finding's documentation URL
+    scheme before using it as a link, so a custom rule cannot inject a
+    `javascript:` URL into the rendered report.
+
+- Updated dependencies [8513dba]
+- Updated dependencies [9574a26]
+  - oauthlint-rules@0.4.0
+
 ## 0.7.1
 
 ### Patch Changes

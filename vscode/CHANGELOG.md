@@ -1,5 +1,15 @@
 # oauthlint-vscode
 
+## 0.4.1
+
+### Patch Changes
+
+- Robustness fixes. A per-file scan now clears only that file's diagnostics
+  instead of the whole workspace, so saving two files in quick succession no
+  longer drops one file's squiggles. Scan output is capped so a runaway process
+  cannot exhaust memory, and the scanned path is passed after `--` so it can
+  never be read as a flag.
+
 ## 0.4.0
 
 ### Minor Changes
