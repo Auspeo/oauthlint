@@ -1,0 +1,43 @@
+rules:
+  - id: auth.java.web.permit-all-actuator
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      Spring Security grants `permitAll()` to a sensitive management path. Spring
+      Boot Actuator and similar diagnostic endpoints expose health, environment,
+      configuration, thread dumps, and heap dumps — opening them to anonymous
+      access leaks secrets and internal state and can enable remote code
+      execution (CWE-862, broken access control). This is a common AI-generated
+      mistake: the management path is opened to "fix" a probe or scrape and the
+      intended authentication is never added.
+
+      Require authentication for management endpoints — e.g.
+      `requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")` — and
+      expose only `/actuator/health` (and `/info`) publicly if you must.
+    # Flag permitAll() on a matcher whose path literal targets a management /
+    # diagnostics surface (actuator, jolokia, heap/thread dumps, internal).
+    # Ordinary application matchers (e.g. "/public/**", "/login") are not
+    # flagged. Covers the Spring Security 6 `requestMatchers` and the legacy
+    # `antMatchers` / `mvcMatchers`.
+    patterns:
+      - pattern-either:
+          - pattern: $X.requestMatchers($P).permitAll()
+          - pattern: $X.antMatchers($P).permitAll()
+          - pattern: $X.mvcMatchers($P).permitAll()
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?s).*/(?:actuator|jolokia|heapdump|threaddump|internal)\b.*
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-permit-all-actuator
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - spring-security
+        - spring-boot-actuator
+      references:
+        - https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+        - https://cwe.mitre.org/data/definitions/862.html

@@ -1,0 +1,38 @@
+rules:
+  - id: auth.rust.oauth.static-state
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      OAuth authorization request is built with a hardcoded, constant `state`
+      value (`CsrfToken::new("literal")`). A static `state` provides ZERO CSRF
+      protection — the whole point is an unguessable, per-request value that
+      you store and then compare on the callback. A literal that ships in your
+      source is known to everyone and identical on every request, so an
+      attacker can forge a matching callback.
+
+      Use `CsrfToken::new_random` (the `oauth2` crate's CSPRNG-backed
+      generator), pass it to `authorize_url`, persist it in the session, and
+      verify it when the provider redirects back.
+    # `CsrfToken::new` with a STRING LITERAL is a constant state baked into the
+    # source. The four conversion forms below match only when the literal is the
+    # direct argument, so `CsrfToken::new(generate())` or a variable is never
+    # flagged. `CsrfToken::new_random()` is a different method and is not
+    # matched.
+    pattern-either:
+      - pattern: CsrfToken::new("...".to_string())
+      - pattern: CsrfToken::new("...".to_owned())
+      - pattern: CsrfToken::new("...".into())
+      - pattern: CsrfToken::new(String::from("..."))
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html

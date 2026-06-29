@@ -1,0 +1,39 @@
+rules:
+  - id: auth.go.oauth.static-state
+    languages:
+      - go
+    severity: WARNING
+    message: |
+      OAuth authorization request is built with a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole point
+      is an unguessable, per-request value that you store and then compare on
+      the callback. A literal that ships in your source is known to everyone
+      and identical on every request, so an attacker can forge a matching
+      callback.
+
+      Generate `state` fresh per request from a CSPRNG (e.g.
+      `crypto/rand` -> `base64.URLEncoding.EncodeToString(b)`), persist it in
+      the session/cookie, and verify it when the provider redirects back. With
+      `golang.org/x/oauth2`, pass that random value as the first argument to
+      `Config.AuthCodeURL(state, ...)`.
+    # `Config.AuthCodeURL(state, ...)` is the golang.org/x/oauth2 authorize-URL
+    # builder; its first argument is the CSRF `state`. A string LITERAL there is
+    # constant on every request and cannot provide CSRF protection. A
+    # per-request value is a variable (not a quoted literal) and does not match.
+    # The empty-string form is excluded — that is a missing state, covered
+    # elsewhere — so this fires only on a genuinely hardcoded value.
+    patterns:
+      - pattern: $C.AuthCodeURL("...", ...)
+      - pattern-not: $C.AuthCodeURL("", ...)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html

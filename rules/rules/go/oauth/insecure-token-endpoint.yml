@@ -1,0 +1,39 @@
+rules:
+  - id: auth.go.oauth.insecure-token-endpoint
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
+      Authorization codes, `client_secret`, access/refresh tokens, and the
+      `code_verifier` then travel unencrypted — a network attacker can read
+      or rewrite them and take over the flow.
+
+      RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
+      endpoints. Use `https://` for every authorize, token, and userinfo
+      URL (including `oauth2.Endpoint{AuthURL, TokenURL}`).
+      `http://localhost` is fine for local development and is not flagged.
+    # A string literal that targets an OAuth/OIDC endpoint over http://.
+    # Required OAuth markers keep this precise: a generic http URL is NOT
+    # flagged, only one carrying an authorize/token request or an /oauth path.
+    # `https://` cannot match (the scheme is `http://` literally), and the
+    # localhost / loopback dev hosts are subtracted below.
+    patterns:
+      - pattern-regex: |-
+          "http://[^"\s]+(?:response_type=|client_id=|client_secret=|grant_type=|code_challenge=|/oauth2?/|/connect/token|/o/oauth2|/authorize|/oauth/token)[^"]*"
+      - pattern-not-regex: |-
+          http://(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-insecure-token-endpoint
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+        - oidc
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.9
+        - https://cwe.mitre.org/data/definitions/319.html

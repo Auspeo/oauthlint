@@ -1,0 +1,43 @@
+rules:
+  - id: auth.py.oauth.insecure-transport-env
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      `OAUTHLIB_INSECURE_TRANSPORT` is being set, which disables oauthlib's
+      HTTPS requirement for OAuth flows (`requests-oauthlib`, Authlib's
+      requests integration, Django OAuth Toolkit). oauthlib raises
+      `InsecureTransportError` to stop you exchanging codes and tokens over
+      cleartext; setting this variable silences that guard, so authorization
+      codes, `client_secret`, and access/refresh tokens travel over plain
+      `http://` where a network attacker can read or rewrite them (CWE-319).
+
+      Remove this assignment and serve every OAuth endpoint over `https://`.
+      For local development use a loopback HTTPS listener or a tunnel rather
+      than disabling transport security in code that can ship to production.
+    # Matches only an ASSIGNMENT (or setdefault/putenv) of the
+    # OAUTHLIB_INSECURE_TRANSPORT key. Merely reading it
+    # (`os.environ.get("OAUTHLIB_INSECURE_TRANSPORT")`) is not flagged, and other
+    # environment keys are untouched. Semgrep normalises quote style, so the
+    # single- and double-quoted spellings are both covered.
+    pattern-either:
+      - pattern: os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = ...
+      - pattern: os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", ...)
+      - pattern: os.putenv("OAUTHLIB_INSECURE_TRANSPORT", ...)
+      - pattern: environ["OAUTHLIB_INSECURE_TRANSPORT"] = ...
+      - pattern: environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-insecure-transport-env
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - oauthlib
+        - requests-oauthlib
+        - authlib
+      references:
+        - https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://cwe.mitre.org/data/definitions/319.html

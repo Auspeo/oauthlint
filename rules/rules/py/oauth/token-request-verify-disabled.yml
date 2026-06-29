@@ -1,0 +1,41 @@
+rules:
+  - id: auth.py.oauth.token-request-verify-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      An OAuth client fetches or refreshes a token with TLS certificate
+      verification disabled (`verify=False`). The token request carries the
+      `client_secret`, the authorization `code`, and the issued access/refresh
+      tokens; with verification off, an attacker who can intercept the
+      connection presents any certificate and reads or tampers with them — a
+      classic man-in-the-middle on the most sensitive call in the flow
+      (CWE-295).
+
+      Never pass `verify=False` to `fetch_token` / `refresh_token` /
+      `fetch_access_token` (Authlib, requests-oauthlib). Leave verification on
+      (the default) so the system CA bundle is used, or point `verify` at a CA
+      bundle path for a private CA.
+    # Scoped to OAuth client token methods (Authlib OAuth1/2 sessions,
+    # requests-oauthlib) and the literal `verify=False`. `verify=True` and
+    # `verify="/path/ca.pem"` are not flagged. This is distinct from
+    # auth.py.flow.requests-verify-disabled, which covers the `requests` HTTP
+    # verbs (`get`/`post`/…); here the sink is the OAuth token-exchange call.
+    pattern-either:
+      - pattern: $C.fetch_token(..., verify=False, ...)
+      - pattern: $C.refresh_token(..., verify=False, ...)
+      - pattern: $C.fetch_access_token(..., verify=False, ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-token-request-verify-disabled
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - authlib
+        - requests-oauthlib
+      references:
+        - https://docs.authlib.org/en/latest/client/oauth2.html
+        - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+        - https://cwe.mitre.org/data/definitions/295.html

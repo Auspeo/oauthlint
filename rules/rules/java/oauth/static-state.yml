@@ -1,0 +1,38 @@
+rules:
+  - id: auth.java.oauth.static-state
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      OAuth authorization request sends a hardcoded, constant `state` value. A
+      static `state` provides ZERO CSRF protection — the whole point is an
+      unguessable, per-request value that you store and then compare on the
+      callback. A literal that ships in your source is known to everyone and
+      identical on every request, so an attacker can forge a matching callback
+      (CWE-330).
+
+      Generate `state` fresh per request from a CSPRNG (`new SecureRandom()` /
+      `Base64.getUrlEncoder().encodeToString(randomBytes)`), persist it in the
+      session, and verify it when the provider redirects back.
+    # An inline authorize URL string literal that carries BOTH a `response_type`
+    # (so we know it is an authorize request, not some unrelated `state` field)
+    # AND a constant `state=` value. A per-request value is built by
+    # concatenation — `"…&state=" + state` — whose literal ends right after
+    # `state=`, so the value-character class below cannot match it.
+    patterns:
+      - pattern-regex: |-
+          "https?://[^"\s]+\?[^"]*response_type=[^"]*"
+      - pattern-regex: |-
+          "https?://[^"\s]+\?[^"]*state=[A-Za-z0-9._~%-]+[^"]*"
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
