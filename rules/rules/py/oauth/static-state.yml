@@ -1,0 +1,45 @@
+rules:
+  - id: auth.py.oauth.static-state
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      OAuth authorization request sends a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole
+      point is an unguessable, per-request value that you store and then
+      compare on the callback. A literal that ships in your source is known
+      to everyone and identical on every request, so an attacker can forge
+      a matching callback.
+
+      Generate `state` fresh per request from a CSPRNG
+      (`secrets.token_urlsafe(32)`), persist it in the session, and verify
+      it when the provider redirects back.
+    pattern-either:
+      # Authorize parameter dict carrying a `response_type` (so we know it is an
+      # authorize request, not some unrelated `state` field) AND a string-LITERAL
+      # `state`. A per-request value is a variable or a function call, which is
+      # not a quoted literal and so does not match.
+      - patterns:
+          - pattern: '{..., "response_type": ..., ...}'
+          - pattern-either:
+              - pattern: '{..., "state": "$S", ...}'
+      # Inline authorize URL string literal carrying both response_type and a
+      # constant state value. A dynamic state would be an f-string with `{state}`,
+      # whose `{` is excluded from the value character class below.
+      - patterns:
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*response_type=[^'"]*['"]
+          - pattern-regex: |-
+              ['"]https?://[^'"\s]+\?[^'"]*state=[A-Za-z0-9._~%-]+[^'"]*['"]
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
