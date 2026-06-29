@@ -39,7 +39,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
-- …and many more: 138 rules across JavaScript/TypeScript, Python, Go, Rust, and Java
+- …and many more: 140+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -114,6 +114,21 @@ The Action is **Docker-based**, so it runs in any repository's CI regardless of 
 
 Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace (or [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) for Cursor / Windsurf) for inline diagnostics on save, a status-bar finding count, an "Apply fix" Quick Fix where a rule ships a safe autofix, and Quick Fix suppressions.
 
+### MCP server (scan AI-generated code in-loop)
+
+`oauthlint-mcp` is an [MCP](https://modelcontextprotocol.io) server that hands the rule pack to AI coding tools (Claude Code, Cursor, Windsurf, and others) so they can scan the OAuth code they just wrote, in the same loop that produced it. The bug gets caught before it reaches your diff.
+
+```jsonc
+// add to your tool's MCP config
+{
+  "mcpServers": {
+    "oauthlint": { "command": "npx", "args": ["oauthlint-mcp"] }
+  }
+}
+```
+
+The `oauthlint-mcp` package ships with the next release; until then it runs from source. Setup for each tool is at [oauthlint.dev/docs/mcp](https://oauthlint.dev/docs/mcp).
+
 ### Use directly with Semgrep
 
 Already have [Semgrep](https://semgrep.dev)? Run the **full pack** with one command, no install and no config file:
@@ -135,7 +150,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**138 rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). The catalogue grows with every release.
+**140+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -162,6 +177,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | [`cli/`](cli) | `scan` (incremental `--diff` / `--staged`), `baseline`, `list`, `init`, `doctor`, with pretty + JSON + SARIF + HTML output |
 | [`action/`](action) | Docker-based GitHub Action wrapping the CLI, with inline PR annotations + job summary |
 | [`vscode/`](vscode) | VS Code / Cursor / Windsurf extension (Marketplace + OpenVSX): diagnostics, status bar + Quick Fix suppressions |
+| [`mcp/`](mcp) | `oauthlint-mcp`, an MCP server that lets AI coding tools scan the OAuth code they generate, in-loop ([docs](https://oauthlint.dev/docs/mcp)) |
 | [`examples/`](examples) | Deliberately-vulnerable demo apps used for dogfooding |
 
 ## Develop
