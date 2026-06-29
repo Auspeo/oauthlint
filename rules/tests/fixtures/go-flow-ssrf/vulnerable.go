@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 )
 
 // Inline: a query parameter flows straight into http.Get.
@@ -69,8 +70,19 @@ func clientPost(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 }
 
+// Parse-then-use without a host check: url.Parse does not validate anything,
+// so the parsed result is still attacker-controlled — a real SSRF.
+func fetchParsedUnchecked(w http.ResponseWriter, r *http.Request) {
+	raw := r.URL.Query().Get("url")
+	u, _ := url.Parse(raw)
+	// ruleid: auth.go.flow.ssrf
+	resp, _ := http.Get(u.String())
+	defer resp.Body.Close()
+}
+
 func main() {
 	http.HandleFunc("/q", fetchQuery)
+	http.HandleFunc("/pu", fetchParsedUnchecked)
 	http.HandleFunc("/f", fetchForm)
 	http.HandleFunc("/p", postForm)
 	http.HandleFunc("/h", headHeader)
