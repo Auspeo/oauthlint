@@ -4,20 +4,34 @@ import pc, { createColors } from 'picocolors';
 import type { Finding, ScanResult, SeverityName } from '../types.js';
 import { renderCodeFrame } from './code-frame.js';
 
-const SEVERITY_COLOR: Record<SeverityName, (s: string) => string> = {
-  CRITICAL: (s) => pc.bgRed(pc.white(s)),
-  HIGH: pc.red,
-  MEDIUM: pc.yellow,
-  LOW: pc.cyan,
-  INFO: pc.gray,
-};
+type Colors = ReturnType<typeof createColors>;
+
+/**
+ * The inverted/coloured severity tag (e.g. ` HIGH `). Uses the reporter's own
+ * {@link Colors} instance so it honours the resolved colour setting (NO_COLOR /
+ * non-TTY / explicit `color: false`) rather than the global picocolors state.
+ */
+function severityTag(severity: SeverityName, colors: Colors): string {
+  const label = ` ${severity} `;
+  switch (severity) {
+    case 'CRITICAL':
+      return colors.bgRed(colors.white(label));
+    case 'HIGH':
+      return colors.red(label);
+    case 'MEDIUM':
+      return colors.yellow(label);
+    case 'LOW':
+      return colors.cyan(label);
+    default:
+      return colors.gray(label);
+  }
+}
 
 /**
  * Foreground accent per severity, used for the code-frame gutter and caret.
- * Distinct from {@link SEVERITY_COLOR} so CRITICAL renders as plain red here
- * rather than the inverted badge used for the severity tag.
+ * CRITICAL renders as plain red here rather than the inverted badge used for
+ * the severity tag.
  */
-type Colors = ReturnType<typeof createColors>;
 function accentFor(severity: SeverityName, colors: Colors): (s: string) => string {
   switch (severity) {
     case 'CRITICAL':
@@ -71,8 +85,9 @@ export class Reporter {
 
   reportStart(target: string, ruleCount: number): void {
     if (this.json) return;
-    this.line(pc.dim(`OAuthLint — scanning ${pc.bold(target)}`));
-    this.line(pc.dim(`Loaded ${ruleCount} rules`));
+    const c = this.colors;
+    this.line(c.dim(`OAuthLint — scanning ${c.bold(target)}`));
+    this.line(c.dim(`Loaded ${ruleCount} rules`));
     this.line('');
   }
 
@@ -105,11 +120,12 @@ export class Reporter {
       return;
     }
 
-    const sep = pc.dim('━'.repeat(60));
+    const c = this.colors;
+    const sep = c.dim('━'.repeat(60));
     if (result.findings.length === 0) {
-      this.line(pc.green('✓ No auth issues found.'));
+      this.line(c.green('✓ No auth issues found.'));
       this.line(
-        pc.dim(
+        c.dim(
           `Scanned ${result.scannedFiles} file${result.scannedFiles === 1 ? '' : 's'} in ${result.durationMs}ms.`,
         ),
       );
@@ -118,18 +134,18 @@ export class Reporter {
 
     const counts = countBySeverity(result.findings);
     const summary = [
-      counts.CRITICAL ? pc.red(`${counts.CRITICAL} critical`) : null,
-      counts.HIGH ? pc.red(`${counts.HIGH} high`) : null,
-      counts.MEDIUM ? pc.yellow(`${counts.MEDIUM} medium`) : null,
-      counts.LOW ? pc.cyan(`${counts.LOW} low`) : null,
-      counts.INFO ? pc.gray(`${counts.INFO} info`) : null,
+      counts.CRITICAL ? c.red(`${counts.CRITICAL} critical`) : null,
+      counts.HIGH ? c.red(`${counts.HIGH} high`) : null,
+      counts.MEDIUM ? c.yellow(`${counts.MEDIUM} medium`) : null,
+      counts.LOW ? c.cyan(`${counts.LOW} low`) : null,
+      counts.INFO ? c.gray(`${counts.INFO} info`) : null,
     ]
       .filter((x): x is string => x !== null)
-      .join(pc.dim(' · '));
+      .join(c.dim(' · '));
 
     this.line(sep);
     this.line(
-      pc.bold(`Found ${result.findings.length} issue${result.findings.length === 1 ? '' : 's'}: `) +
+      c.bold(`Found ${result.findings.length} issue${result.findings.length === 1 ? '' : 's'}: `) +
         summary,
     );
     this.line('');
@@ -145,35 +161,36 @@ export class Reporter {
 
     this.line(sep);
     this.line(
-      pc.dim(
+      c.dim(
         `Scanned ${result.scannedFiles} files in ${result.durationMs}ms${result.semgrepVersion ? ` · semgrep ${result.semgrepVersion}` : ''}`,
       ),
     );
     if (result.errors.length > 0) {
       this.line(
-        pc.yellow(
+        c.yellow(
           `⚠ ${result.errors.length} semgrep error${result.errors.length === 1 ? '' : 's'}:`,
         ),
       );
       for (const e of result.errors) {
-        this.line(pc.dim(`  · ${e}`));
+        this.line(c.dim(`  · ${e}`));
       }
     }
   }
 
   private printFinding(f: Finding): void {
-    const tag = SEVERITY_COLOR[f.severity](` ${f.severity} `);
-    const id = pc.bold(f.ruleId);
-    this.line(`${tag} ${id}${f.oauthlintRuleId ? pc.dim(` (${f.oauthlintRuleId})`) : ''}`);
-    this.line(pc.dim(`  ${f.filePath}:${f.startLine}`));
+    const c = this.colors;
+    const tag = severityTag(f.severity, c);
+    const id = c.bold(f.ruleId);
+    this.line(`${tag} ${id}${f.oauthlintRuleId ? c.dim(` (${f.oauthlintRuleId})`) : ''}`);
+    this.line(c.dim(`  ${f.filePath}:${f.startLine}`));
     if (this.codeFrame) this.printCodeFrame(f);
     const firstLine = f.message.split('\n')[0]?.trim() ?? '';
-    if (firstLine) this.line(pc.dim('  → ') + firstLine);
-    if (f.docUrl) this.line(pc.dim(`  📖 ${f.docUrl}`));
+    if (firstLine) this.line(c.dim('  → ') + firstLine);
+    if (f.docUrl) this.line(c.dim(`  📖 ${f.docUrl}`));
     // Teaching hint: every finding points at the offline explainer. Pretty mode
     // only — reportResult returns early under `--json`, and SARIF/HTML never
     // touch the Reporter, so machine-readable output stays uncorrupted.
-    this.line(pc.dim(`  ↳ run \`oauthlint explain ${f.ruleId}\` for details + the fix`));
+    this.line(c.dim(`  ↳ run \`oauthlint explain ${f.ruleId}\` for details + the fix`));
     this.line('');
   }
 
