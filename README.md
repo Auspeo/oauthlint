@@ -6,13 +6,13 @@
 
 A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Java · Rust, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
-[![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
-[![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/auspeo.oauthlint-vscode?label=VS%20Code&color=2f6feb)](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)
-[![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
-[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg)](https://semgrep.dev)
+[![CI](https://img.shields.io/github/actions/workflow/status/Auspeo/oauthlint/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
+[![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![VS Code Marketplace](https://img.shields.io/open-vsx/v/auspeo/oauthlint-vscode?style=flat-square&label=VS%20Code&color=2f6feb)](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)
+[![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg?style=flat-square)](https://oauthlint.dev)
+[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg?style=flat-square)](https://semgrep.dev)
 
 </div>
 
