@@ -14,18 +14,35 @@ const section = Astro.props.section ?? fm.section ?? '';
 const title = `${Astro.props.title ?? fm.title ?? 'Docs'} — OAuthLint`;
 const description = Astro.props.description ?? fm.description;
 
+// Grouped so the sidebar reads as an information architecture, not a flat dump.
+// `key` matches each page's `section` frontmatter for active highlighting.
 const NAV = [
-  { key: 'getting-started', label: 'Getting started', href: '/docs' },
-  { key: 'semgrep', label: 'Use with Semgrep', href: '/docs/semgrep' },
-  { key: 'cli', label: 'CLI reference', href: '/docs/cli' },
-  { key: 'configuration', label: 'Configuration', href: '/docs/configuration' },
-  { key: 'github-action', label: 'GitHub Action', href: '/docs/github-action' },
-  { key: 'code-scanning', label: 'GitHub code scanning', href: '/docs/code-scanning' },
-  { key: 'gitlab-ci', label: 'GitLab CI', href: '/docs/gitlab-ci' },
-  { key: 'pre-commit', label: 'pre-commit', href: '/docs/pre-commit' },
-  { key: 'recipes', label: 'Recipes', href: '/docs/recipes' },
-  { key: 'vscode', label: 'VS Code extension', href: '/docs/vscode' },
-  { key: 'suppressing', label: 'Suppressing rules', href: '/docs/suppressing' },
+  {
+    group: 'Getting started',
+    items: [
+      { key: 'getting-started', label: 'Introduction', href: '/docs' },
+      { key: 'semgrep', label: 'Use with Semgrep', href: '/docs/semgrep' },
+    ],
+  },
+  {
+    group: 'Using OAuthLint',
+    items: [
+      { key: 'cli', label: 'CLI reference', href: '/docs/cli' },
+      { key: 'configuration', label: 'Configuration', href: '/docs/configuration' },
+      { key: 'suppressing', label: 'Suppressing rules', href: '/docs/suppressing' },
+      { key: 'recipes', label: 'Recipes', href: '/docs/recipes' },
+    ],
+  },
+  {
+    group: 'Integrations',
+    items: [
+      { key: 'github-action', label: 'GitHub Action', href: '/docs/github-action' },
+      { key: 'code-scanning', label: 'GitHub code scanning', href: '/docs/code-scanning' },
+      { key: 'gitlab-ci', label: 'GitLab CI', href: '/docs/gitlab-ci' },
+      { key: 'pre-commit', label: 'pre-commit', href: '/docs/pre-commit' },
+      { key: 'vscode', label: 'VS Code extension', href: '/docs/vscode' },
+    ],
+  },
 ];
 ---
 
@@ -33,17 +50,23 @@ const NAV = [
   <SiteChrome active="docs">
     <div class="docs-wrap">
       <aside class="docs-side" aria-label="Documentation">
-        <div class="docs-eyebrow">DOCUMENTATION</div>
-        <nav>
+        <nav class="docs-nav">
           {
-            NAV.map((item) => (
-              <a
-                href={item.href}
-                aria-current={section === item.key ? 'page' : undefined}
-                class:list={['docs-link', { active: section === item.key }]}
-              >
-                {item.label}
-              </a>
+            NAV.map((grp) => (
+              <div class="docs-group">
+                <div class="docs-group-label">{grp.group}</div>
+                <div class="docs-group-items">
+                  {grp.items.map((item) => (
+                    <a
+                      href={item.href}
+                      aria-current={section === item.key ? 'page' : undefined}
+                      class:list={['docs-link', { active: section === item.key }]}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
             ))
           }
         </nav>
@@ -69,35 +92,56 @@ const NAV = [
     position: sticky;
     top: 72px;
   }
-  .docs-eyebrow {
-    font-family: var(--ol-font-mono);
-    font-size: var(--ol-text-label);
-    letter-spacing: var(--ol-tracking-wide);
-    color: var(--ol-text-faint);
-    margin: 0 0 var(--ol-space-4) var(--ol-space-3);
-  }
-  .docs-side nav {
+  .docs-nav {
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--ol-border);
+    gap: var(--ol-space-6);
+  }
+  .docs-group-label {
+    font-family: var(--ol-font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ol-text-faint);
+    margin: 0 0 var(--ol-space-2) 14px;
+  }
+  .docs-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
   .docs-link {
-    font-family: var(--ol-font-mono);
-    font-size: 14px;
+    position: relative;
+    font-family: var(--ol-font-display);
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
     color: var(--ol-text-muted);
     text-decoration: none;
-    padding: 6px 12px;
-    border-left: 2px solid transparent;
-    margin-left: -1px;
-    transition: color var(--ol-dur-fast) var(--ol-ease-standard);
+    padding: 5px 10px 5px 14px;
+    border-radius: var(--ol-radius-xs);
+    transition:
+      color var(--ol-dur-fast) var(--ol-ease-standard),
+      background-color var(--ol-dur-fast) var(--ol-ease-standard);
   }
   .docs-link:hover {
     color: var(--ol-text);
+    background: var(--ol-surface);
   }
   .docs-link.active {
     color: var(--ol-accent);
-    border-left-color: var(--ol-accent);
-    background: var(--ol-accent-subtle);
+    font-weight: 600;
+  }
+  /* The active marker is a small monospace caret: a "scanner cursor" that ties
+     the sidebar to the product identity without the generic accent-bar look. */
+  .docs-link.active::before {
+    content: "›";
+    position: absolute;
+    left: 3px;
+    font-family: var(--ol-font-mono);
+    font-weight: 400;
+    color: var(--ol-accent);
   }
   @media (max-width: 820px) {
     .docs-wrap {
@@ -108,18 +152,7 @@ const NAV = [
     }
     .docs-side {
       position: static;
-    }
-    .docs-side nav {
-      flex-flow: row wrap;
-      border-left: none;
-    }
-    .docs-link {
-      border-left: none;
-      margin-left: 0;
-      border: 1px solid var(--ol-border);
-    }
-    .docs-link.active {
-      border-color: var(--ol-accent);
+      margin-bottom: var(--ol-space-8);
     }
   }
 
