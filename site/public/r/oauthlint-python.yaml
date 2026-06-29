@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# python subset — 19 rules.
+# python subset — 25 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -847,6 +847,240 @@ rules:
           - metavariable-pattern:
               metavariable: $OPTS
               pattern: '{..., "verify_signature": False, ...}'
+  - id: auth.py.jwt.untrusted-verify-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key or the
+      `algorithms` allowlist of `jwt.decode(...)` (PyJWT / python-jose). When
+      the attacker controls the key, they sign their own forged token and
+      supply the matching key, so every token "verifies" — a complete
+      authentication bypass. When the attacker controls `algorithms`, they can
+      downgrade verification (e.g. to `HS256` against a public key, or to
+      `none` on older libraries) and defeat the signature check (CWE-347,
+      Improper Verification of Cryptographic Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Pin `algorithms` to a constant allowlist
+      (`algorithms=["RS256"]`) and resolve the key from trusted configuration or
+      a vetted key set keyed by a validated `kid` — never from `request.args`,
+      `request.form`, `request.json`, or `request.headers`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
+      technology:
+        - pyjwt
+        - python-jose
+    mode: taint
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args.getlist(...)
+      - pattern: request.args[...]
+      - pattern: request.form.get(...)
+      - pattern: request.form[...]
+      - pattern: request.values.get(...)
+      - pattern: request.json.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.headers[...]
+      - pattern: flask.request.args.get(...)
+      - pattern: flask.request.headers.get(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.decode($T, $SINK)
+              - pattern: jwt.decode($T, $SINK, ...)
+              - pattern: jwt.decode($T, key=$SINK, ...)
+          - focus-metavariable: $SINK
+      - patterns:
+          - pattern: jwt.decode(..., algorithms=$SINK, ...)
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: is_allowed_algorithm(...)
+      - pattern: validate_algorithm(...)
+      - pattern: is_allowed_key(...)
+      - pattern: load_trusted_key(...)
+  - id: auth.py.oauth.insecure-token-endpoint
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
+      Authorization codes, `client_secret`, access/refresh tokens, and the
+      `code_verifier` then travel unencrypted — a network attacker can read
+      or rewrite them and take over the flow.
+
+      RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
+      endpoints. Use `https://` for every authorize, token, userinfo, and
+      `.well-known` discovery URL. `http://localhost` and loopback addresses
+      are fine for local development and are not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-insecure-token-endpoint
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.9
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - oauth2
+        - oidc
+    patterns:
+      - pattern-regex: "['\"]http://[^'\"\\s]+(?:response_type=|client_id=|client_secret=|grant_type=|code_challenge=|/oauth2?/|/connect/token|/o/oauth2|/authorize|/oauth/token|/\\.well-known/)[^'\"]*['\"]"
+      - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])
+  - id: auth.py.oauth.insecure-transport-env
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      `OAUTHLIB_INSECURE_TRANSPORT` is being set, which disables oauthlib's
+      HTTPS requirement for OAuth flows (`requests-oauthlib`, Authlib's
+      requests integration, Django OAuth Toolkit). oauthlib raises
+      `InsecureTransportError` to stop you exchanging codes and tokens over
+      cleartext; setting this variable silences that guard, so authorization
+      codes, `client_secret`, and access/refresh tokens travel over plain
+      `http://` where a network attacker can read or rewrite them (CWE-319).
+
+      Remove this assignment and serve every OAuth endpoint over `https://`.
+      For local development use a loopback HTTPS listener or a tunnel rather
+      than disabling transport security in code that can ship to production.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-insecure-transport-env
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - oauthlib
+        - requests-oauthlib
+        - authlib
+    pattern-either:
+      - pattern: os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = ...
+      - pattern: os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", ...)
+      - pattern: os.putenv("OAUTHLIB_INSECURE_TRANSPORT", ...)
+      - pattern: environ["OAUTHLIB_INSECURE_TRANSPORT"] = ...
+      - pattern: environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", ...)
+  - id: auth.py.oauth.ropc-grant
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine. In Python this covers a
+      `requests`/`httpx`/`urllib` body, an OAuth client call, or a
+      URL-encoded body string.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - oauth2
+        - requests
+    pattern-either:
+      - pattern-regex: grant_type['"]?\s*[:=]\s*['"]password['"]
+      - pattern-regex: "[?&'\"]grant_type=password(?:[&'\"\\s]|$)"
+      - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
+  - id: auth.py.oauth.static-state
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      OAuth authorization request sends a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole
+      point is an unguessable, per-request value that you store and then
+      compare on the callback. A literal that ships in your source is known
+      to everyone and identical on every request, so an attacker can forge
+      a matching callback.
+
+      Generate `state` fresh per request from a CSPRNG
+      (`secrets.token_urlsafe(32)`), persist it in the session, and verify
+      it when the provider redirects back.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - oauth2
+    pattern-either:
+      - patterns:
+          - pattern: '{..., "response_type": ..., ...}'
+          - pattern-either:
+              - pattern: '{..., "state": "$S", ...}'
+      - patterns:
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*response_type=[^'\"]*['\"]"
+          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*state=[A-Za-z0-9._~%-]+[^'\"]*['\"]"
+  - id: auth.py.oauth.token-request-verify-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      An OAuth client fetches or refreshes a token with TLS certificate
+      verification disabled (`verify=False`). The token request carries the
+      `client_secret`, the authorization `code`, and the issued access/refresh
+      tokens; with verification off, an attacker who can intercept the
+      connection presents any certificate and reads or tampers with them — a
+      classic man-in-the-middle on the most sensitive call in the flow
+      (CWE-295).
+
+      Never pass `verify=False` to `fetch_token` / `refresh_token` /
+      `fetch_access_token` (Authlib, requests-oauthlib). Leave verification on
+      (the default) so the system CA bundle is used, or point `verify` at a CA
+      bundle path for a private CA.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-token-request-verify-disabled
+      category: security
+      cwe: CWE-295
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.authlib.org/en/latest/client/oauth2.html
+        - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - authlib
+        - requests-oauthlib
+    pattern-either:
+      - pattern: $C.fetch_token(..., verify=False, ...)
+      - pattern: $C.refresh_token(..., verify=False, ...)
+      - pattern: $C.fetch_access_token(..., verify=False, ...)
   - id: auth.py.secret.django-hardcoded-key
     languages:
       - python
