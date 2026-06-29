@@ -47,6 +47,33 @@ interface SarifResult {
   message: { text: string };
   locations: SarifLocation[];
   properties?: Record<string, unknown>;
+  fixes?: SarifFix[];
+}
+
+// SARIF 2.1.0 §3.27.30 / §3.55: a result MAY carry one or more `fixes`, each a
+// set of `artifactChanges` whose `replacements` describe a deleted region and
+// the text inserted in its place. Consuming tools (e.g. GitHub, IDE SARIF
+// viewers) can apply these directly. Regions are 1-based; `endColumn` is
+// exclusive — one past the last replaced character — matching Semgrep's own
+// column semantics so we pass them through unchanged.
+interface SarifFix {
+  description: { text: string };
+  artifactChanges: SarifArtifactChange[];
+}
+
+interface SarifArtifactChange {
+  artifactLocation: { uri: string };
+  replacements: SarifReplacement[];
+}
+
+interface SarifReplacement {
+  deletedRegion: {
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+  };
+  insertedContent: { text: string };
 }
 
 interface SarifLocation {
@@ -138,7 +165,7 @@ function buildRule(f: Finding): SarifRule {
 }
 
 function buildResult(f: Finding): SarifResult {
-  return {
+  const result: SarifResult = {
     ruleId: f.ruleId,
     level: SARIF_LEVEL[f.severity],
     message: { text: f.message.split('\n')[0]?.trim() ?? f.ruleId },
@@ -155,6 +182,35 @@ function buildResult(f: Finding): SarifResult {
       severity: f.severity,
       llmPrevalence: f.llmPrevalence,
     },
+  };
+  // Only emit `fixes` when the rule actually ships one — a finding with no fix
+  // must not carry an empty `fixes` array (which SARIF consumers would read as
+  // "an empty fix is available").
+  if (f.fix) result.fixes = [buildFix(f)];
+  return result;
+}
+
+function buildFix(f: Finding): SarifFix {
+  // `f.fix` is guaranteed by the caller (buildResult only calls us when set).
+  const fix = f.fix as NonNullable<Finding['fix']>;
+  return {
+    description: { text: `Apply the OAuthLint autofix for ${f.ruleId}.` },
+    artifactChanges: [
+      {
+        artifactLocation: { uri: relativise(f.filePath) },
+        replacements: [
+          {
+            deletedRegion: {
+              startLine: fix.range.startLine,
+              startColumn: fix.range.startCol,
+              endLine: fix.range.endLine,
+              endColumn: fix.range.endCol,
+            },
+            insertedContent: { text: fix.replacement },
+          },
+        ],
+      },
+    ],
   };
 }
 

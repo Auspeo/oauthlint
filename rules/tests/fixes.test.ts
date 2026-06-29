@@ -60,6 +60,16 @@ interface FixedRule {
 
 const FIXED_RULES: FixedRule[] = [
   {
+    dir: 'jwt-ignore-expiration',
+    ruleFile: join(rulesRoot, 'jwt', 'ignore-expiration.yml'),
+    ext: 'ts',
+    // The disabled check is flipped back on; only the boolean changes.
+    contains: ['ignoreExpiration: false'],
+    absent: ['ignoreExpiration: true'],
+    // Sibling options and the destructured-import form must survive untouched.
+    survives: ["algorithms: ['RS256']", "audience: 'api'", 'verify(token, key, {'],
+  },
+  {
     dir: 'rust-tls-accept-invalid-certs',
     ruleFile: join(rulesRoot, 'rust', 'tls', 'accept-invalid-certs.yml'),
     ext: 'rs',

@@ -1,0 +1,77 @@
+rules:
+  - id: auth.jwt.untrusted-verify-key
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key or the
+      `algorithms` allowlist of `jwt.verify(...)`. When the attacker controls
+      the key, they sign their own forged token and supply the matching key,
+      so every token "verifies" — a complete authentication bypass. When the
+      attacker controls `algorithms`, they can downgrade verification (e.g. to
+      `HS256` against a public key, or to `none` on older libraries) and defeat
+      the signature check (CWE-347, Improper Verification of Cryptographic
+      Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Pin `algorithms` to a constant allowlist
+      (`{ algorithms: ['RS256'] }`) and resolve the key from trusted
+      configuration or a vetted key set keyed by a validated `kid` — never from
+      `req.query` / `req.body` / `req.params` / `req.headers`.
+    # Taint mode with the sink FOCUSED on the key / algorithms argument — never
+    # the token. The token is supposed to come from the request, so focusing on
+    # it would false-positive on every correct call; focusing on the key and the
+    # `algorithms` value fires only when the attacker controls verification
+    # itself. Routing a candidate algorithm/key through an allow-list /
+    # validation helper clears the taint. Distinct from
+    # auth.jwt.algorithm-confusion (HS* + a PEM public key) and
+    # auth.jwt.no-algorithms-allowlist (a MISSING allowlist): this is about a
+    # request-CONTROLLED key or algorithm.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sanitizers:
+      # A candidate algorithm or key vetted against an allow-list / validator is
+      # no longer attacker-controlled when it reaches verify().
+      - pattern: isAllowedAlgorithm(...)
+      - pattern: validateAlgorithm(...)
+      - pattern: isAllowedKey(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
+    pattern-sinks:
+      # Request input used as the verification key (2- and 3-argument forms).
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.verify($T, $SINK)
+              - pattern: jwt.verify($T, $SINK, $OPTS)
+          - focus-metavariable: $SINK
+      # Request input used as the accepted `algorithms`.
+      - patterns:
+          - pattern: 'jwt.verify($T, $KEY, {..., algorithms: $SINK, ...})'
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-012
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - jsonwebtoken
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/

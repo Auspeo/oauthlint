@@ -51,6 +51,10 @@ export class Reporter {
           docUrl: f.docUrl,
           cwe: f.cwe,
           llmPrevalence: f.llmPrevalence,
+          // Present only when the rule ships a `fix:`; `JSON.stringify` drops it
+          // (undefined) otherwise, so findings without a fix stay byte-identical
+          // to the pre-autofix-contract output.
+          fix: f.fix,
         })),
       };
       this.line(JSON.stringify(payload, null, 2));
