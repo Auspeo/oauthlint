@@ -1,0 +1,49 @@
+rules:
+  - id: auth.go.oauth.ropc-grant
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine. With `golang.org/x/oauth2`,
+      avoid `Config.PasswordCredentialsToken` and use `AuthCodeURL` /
+      `Exchange` instead.
+    pattern-either:
+      # golang.org/x/oauth2: Config.PasswordCredentialsToken(ctx, user, pass)
+      # is the ROPC helper — its only purpose is the password grant.
+      - pattern: $C.PasswordCredentialsToken(...)
+      # url.Values builders: v.Set("grant_type", "password") /
+      # v.Add("grant_type", "password"). The value is bounded so
+      # `password_reset` and friends are not matched.
+      - pattern-regex: |-
+              "grant_type"\s*,\s*"password"
+      # url.Values / map composite literal: {"grant_type": {"password"}} or
+      # {"grant_type": "password"}.
+      - pattern-regex: |-
+              "grant_type"\s*:\s*\[?\s*\{?\s*"password"
+      # URL-encoded request body string: "grant_type=password&username=…"
+      # (double-quoted or raw backtick string). The trailing class bounds the
+      # value so only the password grant matches.
+      - pattern-regex: |-
+              [?&"`]grant_type=password(?:[&"`\s\\]|$)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
