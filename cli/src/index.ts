@@ -29,7 +29,13 @@ export {
   loadSuppressionMap,
   parseSuppressionsFromSource,
 } from './core/suppress.js';
-export { SemgrepAdapter, SemgrepNotInstalledError } from './adapters/semgrep.js';
+export {
+  SemgrepAdapter,
+  type SemgrepAdapterOptions,
+  SemgrepNotInstalledError,
+  SemgrepOutputError,
+  SemgrepResourceError,
+} from './adapters/semgrep.js';
 export { Reporter, type ReporterOptions } from './core/reporter.js';
 export { loadConfig, DEFAULT_CONFIG } from './core/config.js';
 export {

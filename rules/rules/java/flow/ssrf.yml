@@ -1,0 +1,113 @@
+rules:
+  - id: auth.java.flow.ssrf
+    languages:
+      - java
+    severity: ERROR
+    # Non-production code (example apps, demos, docs, vendored copies, tests)
+    # is not the library surface users ship, so findings there are noise for a
+    # low-FP linter. Globs intentionally omit `**/test/**`-style fixture paths
+    # so the rule still fires on its own fixtures under rules/tests/fixtures/.
+    paths:
+      exclude:
+        - "**/src/test/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/docs/**"
+    message: |
+      Untrusted request input flows into the URL of an outbound HTTP request.
+      Because the destination is attacker-controlled, this is a Server-Side
+      Request Forgery (CWE-918): an attacker can point the request at internal
+      services behind your firewall, or at the cloud metadata endpoint
+      (http://169.254.169.254/...) to steal IAM/instance credentials and pivot
+      deeper into your infrastructure.
+
+      Never build a request URL straight from a Spring `@RequestParam` /
+      `@RequestBody` value or a raw `HttpServletRequest.getParameter(...)` /
+      `getHeader(...)` value. Validate the destination against an explicit
+      allow-list of hosts (resolve the URL and check its host against the
+      allow-list, rejecting private/loopback ranges) before issuing the request
+      with `RestTemplate`, `WebClient`, OkHttp, or Apache HttpClient.
+    # Taint mode so indirection is caught — `String u = req.getParameter("url");
+    # restTemplate.getForObject(u, ...)` flags, not just the inline form.
+    # Passing the value through a host allow-list / validation guard
+    # (isAllowedUrl, validateUrl, assertAllowedHost, or an allow-list
+    # `contains(...)` if-guard) clears the taint, so a genuinely vetted
+    # outbound request does not fire.
+    mode: taint
+    pattern-sources:
+      # Spring MVC handler parameters annotated with @RequestParam / @RequestBody
+      # carry attacker-controlled request data. Focus the parameter so the taint
+      # tracks the value, not the whole method.
+      - patterns:
+          - pattern-either:
+              - pattern: "$RET $M(..., @RequestParam $T $P, ...) {...}"
+              - pattern: "$RET $M(..., @RequestParam(...) $T $P, ...) {...}"
+              - pattern: "$RET $M(..., @RequestBody $T $P, ...) {...}"
+          - focus-metavariable: $P
+      # Servlet API request accessors. Constrained to an HttpServletRequest
+      # receiver so unrelated `.getParameter(...)` / `.getHeader(...)` calls on
+      # other objects are not treated as untrusted input.
+      - pattern: (HttpServletRequest $REQ).getParameter(...)
+      - pattern: (HttpServletRequest $REQ).getParameterValues(...)
+      - pattern: (HttpServletRequest $REQ).getHeader(...)
+    pattern-sanitizers:
+      # Routing the value through a host allow-list / validation helper clears
+      # the taint: only the vetted destination (not the raw request input)
+      # reaches the request.
+      - pattern: isAllowedUrl(...)
+      - pattern: isAllowedHost(...)
+      - pattern: validateUrl(...)
+      - pattern: assertAllowedHost(...)
+      # An inline allow-list membership guard vets the value: a value used inside
+      # `if (allow.contains(...)) { ... }` is treated as validated, mirroring the
+      # Python rule's `if is_allowed_url(v): ...`. The boolean-returning
+      # membership call itself does NOT sanitize (that clears only the boolean),
+      # so taint is cleared by the if-guard.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if (<... $ALLOW.contains(<... $V ...>) ...>) { ... }
+    pattern-sinks:
+      # Focus the URL argument so the finding lands on the tainted destination,
+      # not the whole call.
+      - patterns:
+          - pattern-either:
+              # Spring RestTemplate.
+              - pattern: $RT.getForObject($URL, ...)
+              - pattern: $RT.getForEntity($URL, ...)
+              - pattern: $RT.postForObject($URL, ...)
+              - pattern: $RT.postForEntity($URL, ...)
+              - pattern: $RT.exchange($URL, ...)
+              - pattern: $RT.execute($URL, ...)
+              # Spring WebClient fluent URI.
+              - pattern: $WC.uri($URL)
+              - pattern: $WC.uri($URL, ...)
+              # OkHttp Request.Builder.
+              - pattern: $B.url($URL)
+              # Apache HttpClient request objects.
+              - pattern: new HttpGet($URL)
+              - pattern: new HttpPost($URL)
+              - pattern: new HttpPut($URL)
+              - pattern: new HttpDelete($URL)
+              - pattern: new HttpHead($URL)
+              # JDK URL/URI opened directly.
+              - pattern: new URL($URL)
+              - pattern: new URI($URL)
+          - focus-metavariable: $URL
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - spring
+        - resttemplate
+        - webclient
+        - okhttp
+        - apache-httpclient
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/918.html

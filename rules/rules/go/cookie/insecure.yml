@@ -35,7 +35,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-insecure
       category: security
       cwe: CWE-614
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: HIGH
       technology:
         - net/http

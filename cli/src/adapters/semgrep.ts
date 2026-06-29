@@ -84,6 +84,23 @@ export class SemgrepOutputError extends Error {
   }
 }
 
+/**
+ * Thrown when a scan exceeds its configured time budget (`timeoutMs`) or buffers
+ * more output than `maxOutputBytes` allows. A bounded, well-behaved failure is
+ * preferable to a runaway subprocess — used by long-lived hosts (e.g. the MCP
+ * server) that must never hang or exhaust memory on a pathological input.
+ */
+export class SemgrepResourceError extends Error {
+  constructor(reason: 'timeout' | 'output', limit: number) {
+    super(
+      reason === 'timeout'
+        ? `Semgrep scan exceeded its ${limit}ms time budget and was aborted.`
+        : `Semgrep output exceeded the ${limit}-byte cap and the scan was aborted.`,
+    );
+    this.name = 'SemgrepResourceError';
+  }
+}
+
 export interface SemgrepAdapterOptions {
   /** Override path to the semgrep binary (defaults to `semgrep` on PATH). */
   binary?: string;
@@ -91,17 +108,54 @@ export interface SemgrepAdapterOptions {
   configPath: string;
   /** Working directory to run semgrep from (the target to scan). */
   cwd?: string;
+  /**
+   * Abort the scan subprocess after this many milliseconds. Off by default
+   * (the CLI lets a scan run to completion); long-lived hosts set this so a
+   * pathological input can never hang the process.
+   */
+  timeoutMs?: number;
+  /**
+   * Cap the bytes buffered from each stdio stream. Off by default (execa's own
+   * default applies); long-lived hosts set this to bound memory use.
+   */
+  maxOutputBytes?: number;
 }
 
 export class SemgrepAdapter {
   private readonly binary: string;
   private readonly configPath: string;
   private readonly cwd?: string;
+  private readonly timeoutMs?: number;
+  private readonly maxOutputBytes?: number;
 
   constructor(opts: SemgrepAdapterOptions) {
     this.binary = opts.binary ?? 'semgrep';
     this.configPath = opts.configPath;
     this.cwd = opts.cwd;
+    this.timeoutMs = opts.timeoutMs;
+    this.maxOutputBytes = opts.maxOutputBytes;
+  }
+
+  /** Per-call execa options shared by `scan` and `planFixes`. */
+  private execOptions() {
+    return {
+      cwd: this.cwd,
+      reject: false as const,
+      stdout: 'pipe' as const,
+      stderr: 'pipe' as const,
+      ...(this.timeoutMs ? { timeout: this.timeoutMs } : {}),
+      ...(this.maxOutputBytes ? { maxBuffer: this.maxOutputBytes } : {}),
+    };
+  }
+
+  /**
+   * Translate a bounded-resource failure (execa `timedOut` / `isMaxBuffer`)
+   * into a clear, typed error. Returns without throwing when neither limit
+   * was hit, so callers can proceed to parse the output.
+   */
+  private assertWithinLimits(result: { timedOut?: boolean; isMaxBuffer?: boolean }): void {
+    if (result.timedOut) throw new SemgrepResourceError('timeout', this.timeoutMs ?? 0);
+    if (result.isMaxBuffer) throw new SemgrepResourceError('output', this.maxOutputBytes ?? 0);
   }
 
   /**
@@ -141,13 +195,9 @@ export class SemgrepAdapter {
 
     let result: Awaited<ReturnType<typeof execa>>;
     try {
-      result = await execa(this.binary, args, {
-        cwd: this.cwd,
-        reject: false,
-        // Semgrep exits non-zero when findings are present; we don't want that to throw.
-        stdout: 'pipe',
-        stderr: 'pipe',
-      });
+      // Semgrep exits non-zero when findings are present; reject:false keeps
+      // that from throwing. Optional timeout/maxBuffer bound the subprocess.
+      result = await execa(this.binary, args, this.execOptions());
     } catch (err) {
       if (isSpawnFailure(err)) {
         throw new SemgrepNotInstalledError();
@@ -159,6 +209,7 @@ export class SemgrepAdapter {
     if (isSpawnFailure(result)) {
       throw new SemgrepNotInstalledError();
     }
+    this.assertWithinLimits(result);
 
     const stdout = typeof result.stdout === 'string' ? result.stdout : '';
     let parsed: SemgrepJson;
@@ -215,17 +266,13 @@ export class SemgrepAdapter {
 
     let result: Awaited<ReturnType<typeof execa>>;
     try {
-      result = await execa(this.binary, args, {
-        cwd: this.cwd,
-        reject: false,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      });
+      result = await execa(this.binary, args, this.execOptions());
     } catch (err) {
       if (isSpawnFailure(err)) throw new SemgrepNotInstalledError();
       throw err;
     }
     if (isSpawnFailure(result)) throw new SemgrepNotInstalledError();
+    this.assertWithinLimits(result);
 
     const stdout = typeof result.stdout === 'string' ? result.stdout : '';
     let parsed: SemgrepJson;

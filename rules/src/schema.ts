@@ -22,10 +22,7 @@ export const OAuthLintMetadataSchema = z.object({
   }),
   'oauthlint-doc-url': z.string().url(),
   category: z.literal('security'),
-  cwe: z
-    .string()
-    .regex(/^CWE-\d+$/)
-    .optional(),
+  cwe: z.string().regex(/^CWE-\d+$/),
   owasp: z.string().optional(),
   'llm-prevalence': z.enum(['HIGH', 'MEDIUM', 'LOW']),
   references: z.array(z.string().url()).optional(),

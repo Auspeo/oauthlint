@@ -41,7 +41,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-requests-verify-disabled
       category: security
       cwe: CWE-295
-      owasp: API8:2023
+      owasp: A02:2021
       llm-prevalence: HIGH
       technology:
         - requests
