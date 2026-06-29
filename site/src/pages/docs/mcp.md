@@ -11,6 +11,8 @@ The OAuthLint MCP server lets AI coding tools check the auth code they generate,
 
 It runs as a [Model Context Protocol](https://modelcontextprotocol.io) server over the stdio transport, the standard wiring for a local server launched by Claude Code, Claude Desktop, Cursor, Windsurf and other MCP clients.
 
+> **Availability:** `oauthlint-mcp` publishes to npm with the next OAuthLint release. The `npx oauthlint-mcp` setup below is how you will wire it in once it lands. Until then, you can run it from source: see [Run from source](#run-from-source).
+
 ## What you get
 
 The server exposes four tools to the model:
@@ -82,6 +84,32 @@ Edit `~/.codeium/windsurf/mcp_config.json`.
 ```
 
 After saving, restart or reload the tool so it discovers the server. You should then see the four OAuthLint tools available to the model.
+
+### Run from source
+
+Until `oauthlint-mcp` is on npm, run it from a local checkout. Clone the repo, install dependencies, and build this package:
+
+```bash
+git clone https://github.com/Auspeo/oauthlint
+cd oauthlint
+pnpm install
+pnpm --filter oauthlint-mcp build
+```
+
+That gives you an executable at `mcp/bin/oauthlint-mcp.js`. Point your client at it with `node` and the absolute path, in place of the `npx` command above:
+
+```json
+{
+  "mcpServers": {
+    "oauthlint": {
+      "command": "node",
+      "args": ["/absolute/path/to/oauthlint/mcp/bin/oauthlint-mcp.js"]
+    }
+  }
+}
+```
+
+When the npm release lands, swap this back for the `npx oauthlint-mcp` configuration.
 
 ## Using it
 
