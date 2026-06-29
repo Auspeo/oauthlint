@@ -35,7 +35,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/py-cookie-insecure-flags
       category: security
       cwe: CWE-614
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: HIGH
       references:
         - https://docs.djangoproject.com/en/stable/ref/settings/#session-cookie-secure
@@ -73,7 +73,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/py-cors-allow-all
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://flask-cors.readthedocs.io/en/latest/configuration.html
@@ -383,7 +383,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-requests-verify-disabled
       category: security
       cwe: CWE-295
-      owasp: API8:2023
+      owasp: A02:2021
       llm-prevalence: HIGH
       references:
         - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
