@@ -7,7 +7,7 @@
  */
 interface Props {
   /** Which nav link is the current page, so it renders in the accent colour. */
-  active?: 'docs' | 'rules' | 'research' | 'about';
+  active?: 'docs' | 'rules' | 'research' | 'validation' | 'about';
 }
 const { active } = Astro.props;
 const year = new Date().getFullYear();
@@ -28,6 +28,7 @@ const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--o
       <a href="/docs" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('docs')}; text-decoration:none;`}>docs</a>
       <a href="/rules" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('rules')}; text-decoration:none;`}>rules</a>
       <a href="/research" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('research')}; text-decoration:none;`}>research</a>
+      <a href="/validation" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('validation')}; text-decoration:none;`}>validation</a>
       <a href="/about" style={`font-family:var(--ol-font-ui); font-size:13px; color:${navLink('about')}; text-decoration:none;`}>about</a>
     </div>
     <button type="button" data-nav-toggle aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-nav-links">
@@ -45,6 +46,7 @@ const navLink = (key: string) => (active === key ? 'var(--ol-accent)' : 'var(--o
       <div style="display:flex; gap:var(--ol-space-5);">
         <a href="/docs" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">docs</a>
         <a href="/research" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">research</a>
+        <a href="/validation" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">validation</a>
         <a href="https://github.com/Auspeo/oauthlint" target="_blank" rel="noopener noreferrer" style="font-family:var(--ol-font-ui); font-size:12px; color:var(--ol-text-muted); text-decoration:none;">github ↗</a>
       </div>
     </div>

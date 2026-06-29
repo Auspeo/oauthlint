@@ -1,8 +1,8 @@
 ---
-layout: ../layouts/DocsLayout.astro
+layout: ../layouts/Prose.astro
 title: "Validation report"
 description: "How the OAuthLint rule pack behaves on real, popular code: zero false positives on clean auth libraries across ~9,400 files."
-section: "validation"
+active: "validation"
 ---
 
 # Real-world validation report
