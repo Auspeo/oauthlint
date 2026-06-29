@@ -5,7 +5,10 @@ import { buildManifest, loadAllRules } from '../src/loader.js';
 describe('loadAllRules', () => {
   it('loads every shipped rule and validates the schema', async () => {
     const rules = await loadAllRules();
-    expect(rules.length).toBeGreaterThanOrEqual(8);
+    // Floor sits just below the current pack size (138 rules) with a small
+    // tolerance so adding a single rule never breaks this guard. Bump it as
+    // new rule batches ship to keep catching accidental mass deletions.
+    expect(rules.length).toBeGreaterThanOrEqual(135);
   });
 
   it('returns rules sorted by id (deterministic order for snapshots)', async () => {
