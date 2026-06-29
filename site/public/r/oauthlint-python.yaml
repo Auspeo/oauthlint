@@ -1008,7 +1008,8 @@ rules:
         - oauth2
         - requests
     pattern-either:
-      - pattern-regex: grant_type['"]?\s*[:=]\s*['"]password['"]
+      - pattern-regex: "['\"]grant_type['\"]\\s*:\\s*['\"]password['\"]"
+      - pattern-regex: "[(,]\\s*grant_type\\s*=\\s*['\"]password['\"]"
       - pattern-regex: "[?&'\"]grant_type=password(?:[&'\"\\s]|$)"
       - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
   - id: auth.py.oauth.static-state

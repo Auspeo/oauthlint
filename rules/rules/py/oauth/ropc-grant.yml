@@ -21,12 +21,20 @@ rules:
     # (dict / kwarg form) or bounded token (URL-encoded form), so
     # `grant_type=password_reset` and `grant_type=client_credentials` never
     # fire, and a dynamic `grant_type=grant` variable is not a literal and is
-    # not flagged.
+    # not flagged. Each form anchors `grant_type` to a request-parameter
+    # position (dict key, call keyword, query string, or pair) so a library's
+    # own bare local assignment — `grant_type = "password"`, as in Authlib's
+    # `_guess_grant_type` — is NOT treated as an application sending the grant.
     pattern-either:
-      # Dict entry `"grant_type": "password"` or keyword `grant_type="password"`.
-      # The optional quote after the key covers the dict form's closing `"`.
+      # Dict / mapping entry: `{"grant_type": "password"}`. The key is a quoted
+      # literal followed by a colon, which a bare variable assignment is not.
       - pattern-regex: |-
-              grant_type['"]?\s*[:=]\s*['"]password['"]
+              ['"]grant_type['"]\s*:\s*['"]password['"]
+      # Call keyword argument: `fetch_token(..., grant_type="password")`. The
+      # leading `(` or `,` anchors it to an argument list, so a top-level
+      # statement `grant_type = "password"` (library internal) does not match.
+      - pattern-regex: |-
+              [(,]\s*grant_type\s*=\s*['"]password['"]
       # URL-encoded request body: "grant_type=password&username=…". The value is
       # bounded so `grant_type=password_reset` is not flagged.
       - pattern-regex: |-

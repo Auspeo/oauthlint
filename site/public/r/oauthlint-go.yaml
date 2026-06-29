@@ -770,6 +770,17 @@ rules:
       - pattern-regex: '"grant_type"\s*,\s*"password"'
       - pattern-regex: '"grant_type"\s*:\s*\[?\s*\{?\s*"password"'
       - pattern-regex: '[?&"`]grant_type=password(?:[&"`\s\\]|$)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*_test.go"
+        - "**/*_test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/testdata/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
   - id: auth.go.oauth.static-state
     languages:
       - go

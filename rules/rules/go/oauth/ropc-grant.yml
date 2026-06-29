@@ -34,6 +34,21 @@ rules:
       # value so only the password grant matches.
       - pattern-regex: |-
               [?&"`]grant_type=password(?:[&"`\s\\]|$)
+    # We flag an application sending ROPC, not the example/test code or vendored
+    # client libraries that legitimately implement the grant. Excluding these
+    # trees keeps the signal on first-party application code; a vendored copy of
+    # `golang.org/x/oauth2`, for instance, must not trip this rule.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*_test.go"
+        - "**/*_test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/testdata/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
     metadata:
       oauthlint-rule-id: AUTH-GO-OAUTH-001
       oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-ropc-grant
