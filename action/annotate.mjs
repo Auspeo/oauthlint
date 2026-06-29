@@ -117,6 +117,19 @@ export function ruleDocUrl(finding) {
   return `https://oauthlint.dev/rules/${slug}`;
 }
 
+/**
+ * Return a doc URL only when it is a safe `http(s)` link, with `)` percent-
+ * encoded so it can't terminate the Markdown link target or smuggle a row out
+ * of the table. A malformed or non-http scheme (e.g. `javascript:`) yields
+ * `null` so the caller renders plain text instead of a link.
+ */
+export function safeDocUrl(url) {
+  if (!url) return null;
+  const s = String(url);
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s.replace(/\)/g, '%29');
+}
+
 /** Escape a value for safe inclusion inside a Markdown table cell. */
 export function escapeMarkdownCell(value) {
   return String(value ?? '')
@@ -159,7 +172,7 @@ export function buildSummary(findings, workspace, cap = SUMMARY_ROW_CAP) {
   for (const f of shown) {
     const sev = escapeMarkdownCell(String(f.severity).toUpperCase());
     const ruleLabel = f.oauthlintRuleId || f.ruleId || '';
-    const docUrl = ruleDocUrl(f);
+    const docUrl = safeDocUrl(ruleDocUrl(f));
     const rule = docUrl
       ? `[${escapeMarkdownCell(ruleLabel)}](${docUrl})`
       : escapeMarkdownCell(ruleLabel);

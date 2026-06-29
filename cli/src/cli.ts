@@ -32,7 +32,13 @@ async function exitAfterFlush(code: number): Promise<never> {
         res();
         return;
       }
-      s.once('drain', () => res());
+      // Resolve on `drain` (buffer emptied) but ALSO on `close` and `error`
+      // (e.g. EPIPE when the reader goes away): the buffer may then never drain,
+      // and a flush promise that can hang would deadlock `exitAfterFlush`.
+      const done = (): void => res();
+      s.once('drain', done);
+      s.once('close', done);
+      s.once('error', done);
     });
   await Promise.all([flush(process.stdout), flush(process.stderr)]);
   process.exit(code);
