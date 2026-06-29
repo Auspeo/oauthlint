@@ -38,8 +38,21 @@ func fetchValidated(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 }
 
+// Safe: parse the URL, then guard the request on a host allow-list lookup of
+// the parsed host. The request only runs once the host is vetted.
+func fetchParsedChecked(w http.ResponseWriter, r *http.Request) {
+	raw := r.URL.Query().Get("url")
+	u, _ := url.Parse(raw)
+	if allowedHosts[u.Host] {
+		// ok: auth.go.flow.ssrf
+		resp, _ := http.Get(raw)
+		defer resp.Body.Close()
+	}
+}
+
 func main() {
 	http.HandleFunc("/c", fetchConstant)
 	http.HandleFunc("/v", fetchValidated)
+	http.HandleFunc("/pc", fetchParsedChecked)
 	_ = http.ListenAndServe(":8080", nil)
 }

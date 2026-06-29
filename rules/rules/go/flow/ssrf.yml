@@ -20,9 +20,11 @@ rules:
       link-local address ranges before dialing. See CWE-918.
     # Taint mode so indirection (target := r.FormValue("endpoint");
     # http.Get(target)) is caught, not just the inline form. The taint is
-    # cleared by an allow-list / host-validation helper, or by a
-    # url.Parse(...)-then-checked flow where the parsed host is vetted before
-    # the request is made.
+    # cleared by an allow-list / host-validation helper, or inside an
+    # `if`-guard that checks the parsed host against an allow-list. A bare
+    # `url.Parse(...)` is NOT a sanitizer: the parsed struct's Host/Path/Scheme
+    # are still attacker-controlled, so parse-then-use without a host check is a
+    # real SSRF and must still fire.
     mode: taint
     pattern-sources:
       # $R is the *http.Request. Cover the common net/http input shapes.
@@ -37,10 +39,17 @@ rules:
       - pattern: validateURL(...)
       - pattern: isAllowedHost(...)
       - pattern: $ALLOW.MatchString(...)
-      # url.Parse-then-checked: a parsed URL whose host has been inspected is
-      # treated as cleared (the request is built from a vetted destination
-      # rather than the raw untrusted string).
-      - pattern: url.Parse(...)
+      # parse-then-host-checked: a value used inside an `if`-guard that looks the
+      # parsed host up in an allow-list map is treated as vetted, mirroring the
+      # Python rule's `if is_allowed_url(...):` guard. A bare `url.Parse(...)` is
+      # deliberately NOT listed — it returns an attacker-controlled struct and
+      # does not validate anything, so parse-then-use still fires.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
     pattern-sinks:
       # Focus the URL argument so the finding lands on the tainted destination,
       # not the whole call. The plain call form is used (no aliasing) because

@@ -69,7 +69,16 @@ export interface RunResult {
   stderr: string;
   /** Whether the run was aborted due to timeout. */
   timedOut: boolean;
+  /** Whether the run was aborted because its output exceeded the size cap. */
+  outputCapped: boolean;
 }
+
+/**
+ * Cap on combined stdout+stderr we are willing to buffer. A runaway scan or a
+ * pathologically large report should never be allowed to exhaust the editor's
+ * memory — past this we kill the process and surface an error instead.
+ */
+const MAX_OUTPUT_BYTES = 20 * 1024 * 1024;
 
 const EMPTY_REPORT: OAuthLintReport = {
   schemaVersion: 'oauthlint-v1',
@@ -89,31 +98,53 @@ const EMPTY_REPORT: OAuthLintReport = {
 export function runOAuthLint(opts: RunOptions): Promise<RunResult> {
   return new Promise((resolveResult) => {
     const cli = opts.cliPath ?? 'oauthlint';
-    const args = ['scan', opts.target, '--json', '--fail-on', 'off'];
+    // Target goes after `--` so a path that begins with `-` can never be
+    // mistaken for a flag. Commander treats everything after `--` as operands.
+    const args = ['scan', '--json', '--fail-on', 'off'];
     if (opts.rulesDir) args.push('--rules-dir', opts.rulesDir);
+    args.push('--', opts.target);
 
     let stdout = '';
     let stderr = '';
+    let outputBytes = 0;
     let settled = false;
     let timedOut = false;
+    let outputCapped = false;
 
     const child = spawn(cli, args, {
       cwd: opts.cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
+    const kill = () => {
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), 1000);
+    };
+
     const timer = opts.timeoutMs
       ? setTimeout(() => {
           timedOut = true;
-          child.kill('SIGTERM');
-          setTimeout(() => child.kill('SIGKILL'), 1000);
+          kill();
         }, opts.timeoutMs)
       : null;
 
-    child.stdout.on('data', (buf) => {
+    // Guard both pipes against unbounded growth. The first chunk that pushes us
+    // over the cap trips `outputCapped` and tears the process down; `close`
+    // then resolves with a clear error instead of a truncated/parsed report.
+    const overCap = (chunkLength: number): boolean => {
+      outputBytes += chunkLength;
+      if (outputBytes <= MAX_OUTPUT_BYTES || outputCapped) return outputCapped;
+      outputCapped = true;
+      kill();
+      return true;
+    };
+
+    child.stdout.on('data', (buf: Buffer) => {
+      if (overCap(buf.length)) return;
       stdout += buf.toString();
     });
-    child.stderr.on('data', (buf) => {
+    child.stderr.on('data', (buf: Buffer) => {
+      if (overCap(buf.length)) return;
       stderr += buf.toString();
     });
     child.on('error', (err) => {
@@ -125,14 +156,26 @@ export function runOAuthLint(opts: RunOptions): Promise<RunResult> {
         exitCode: null,
         stderr: `${stderr}\n${err.message}`,
         timedOut,
+        outputCapped,
       });
     });
     child.on('close', (code) => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
+      if (outputCapped) {
+        resolveResult({
+          report: null,
+          exitCode: code,
+          stderr:
+            `${stderr}\noauthlint output exceeded ${MAX_OUTPUT_BYTES} bytes; scan aborted.`.trim(),
+          timedOut,
+          outputCapped,
+        });
+        return;
+      }
       const report = parseReport(stdout);
-      resolveResult({ report, exitCode: code, stderr, timedOut });
+      resolveResult({ report, exitCode: code, stderr, timedOut, outputCapped });
     });
   });
 }

@@ -27,3 +27,22 @@ export function goodCallback(req: Req, res: Res) {
 export function goodCallback2(_req: Req, res: Res) {
   res.redirect('/dashboard');
 }
+
+const ALLOWED = new Set(['/profile', '/settings']);
+
+// ok: auth.oauth.open-redirect-callback -- inline allow-list guard validates the
+// value before it reaches res.redirect.
+export function guardedCallback(req: Req, res: Res) {
+  if (ALLOWED.has(req.query.next as string)) {
+    res.redirect(req.query.next as string);
+  }
+}
+
+const ALLOWED_ARR = ['/profile', '/settings'];
+
+// ok: auth.oauth.open-redirect-callback -- Array.includes guard.
+export function guardedCallbackIncludes(req: Req, res: Res) {
+  if (ALLOWED_ARR.includes(req.query.next as string)) {
+    res.redirect(req.query.next as string);
+  }
+}

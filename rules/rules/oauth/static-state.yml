@@ -28,13 +28,14 @@ rules:
               - pattern: 'new URLSearchParams({..., state: "$S", ...})'
               - pattern: "new URLSearchParams({..., state: '$S', ...})"
       # Inline authorize URL string literal carrying both response_type and a
-      # constant state value. A dynamic state would be a template literal
-      # (backticks) with `${...}`, which this single/double-quoted form excludes.
-      - patterns:
-          - pattern-regex: |-
-              ['"]https?://[^'"\s]+\?[^'"]*response_type=[^'"]*['"]
-          - pattern-regex: |-
-              ['"]https?://[^'"\s]+\?[^'"]*state=[A-Za-z0-9._~%-]+[^'"]*['"]
+      # constant state value WITHIN THE SAME quoted literal. Using a single
+      # regex (lookaheads bounded by `[^'"]`) prevents the file-level false
+      # positive where `response_type=` in one string and a constant `state=`
+      # in a different string would otherwise combine into a finding. A dynamic
+      # state would be a template literal (backticks) with `${...}`, which this
+      # single/double-quoted form excludes.
+      - pattern-regex: |-
+          ['"]https?://(?=[^'"]*[?&]response_type=)(?=[^'"]*[?&]state=[A-Za-z0-9._~%-]+)[^'"]+['"]
     metadata:
       oauthlint-rule-id: AUTH-OAUTH-016
       oauthlint-doc-url: https://oauthlint.dev/rules/oauth-static-state

@@ -14,9 +14,10 @@ RUN apk add --no-cache nodejs npm bash ca-certificates
 # Install the CLI into the image and run it directly (not via npx at scan time).
 # npx resolves against the *scanned* repo, which breaks when that repo has its own
 # package.json named "oauthlint" or a non-npm .npmrc (e.g. a pnpm workspace). A
-# global install is isolated from the scanned project entirely. Pinned at build,
-# refreshed whenever the action image is rebuilt (i.e. each action release).
-RUN npm install -g oauthlint
+# global install is isolated from the scanned project entirely. Pinned to an
+# exact version (bumped per action release) for reproducible builds, and
+# installed with --ignore-scripts so a dependency's install hook can't run.
+RUN npm install -g oauthlint@0.7.1 --ignore-scripts
 
 WORKDIR /action
 

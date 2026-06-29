@@ -255,16 +255,17 @@ const jsonLd = {
          no IntersectionObserver) it just shows the finished output. -->
     <script>
       (() => {
-        const term = document.querySelector('[data-term]');
+        const term = document.querySelector<HTMLElement>('[data-term]');
         if (!term) return;
         const CMD = 'npx oauthlint scan ./src';
         const SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-        const cmd = term.querySelector('[data-term-cmd]');
-        const caret = term.querySelector('[data-term-caret]');
-        const status = term.querySelector('[data-term-status]');
-        const spin = term.querySelector('[data-term-spin]');
-        const finds = [...term.querySelectorAll('[data-term-find]')];
-        const sum = term.querySelector('[data-term-sum]');
+        const cmd = term.querySelector<HTMLElement>('[data-term-cmd]');
+        const caret = term.querySelector<HTMLElement>('[data-term-caret]');
+        const status = term.querySelector<HTMLElement>('[data-term-status]');
+        const spin = term.querySelector<HTMLElement>('[data-term-spin]');
+        const finds = [...term.querySelectorAll<HTMLElement>('[data-term-find]')];
+        const sum = term.querySelector<HTMLElement>('[data-term-sum]');
+        if (!cmd || !caret || !status || !spin || !sum) return;
 
         const showFinal = () => {
           cmd.textContent = CMD;
@@ -284,10 +285,10 @@ const jsonLd = {
 
         let gen = 0;
         let running = false;
-        let spinTimer = null;
-        const timers = new Set();
-        const wait = (ms) =>
-          new Promise((res) => {
+        let spinTimer: ReturnType<typeof setInterval> | null = null;
+        const timers = new Set<ReturnType<typeof setTimeout>>();
+        const wait = (ms: number) =>
+          new Promise<void>((res) => {
             const t = setTimeout(() => {
               timers.delete(t);
               res();
@@ -305,7 +306,7 @@ const jsonLd = {
           }
         };
 
-        async function loop(my) {
+        const loop = async (my: number) => {
           while (running && my === gen) {
             reset();
             await wait(550);
@@ -317,7 +318,7 @@ const jsonLd = {
             await wait(320);
             status.style.opacity = '1';
             spinTimer = setInterval(() => {
-              const next = (SPIN.indexOf(spin.textContent) + 1) % SPIN.length;
+              const next = (SPIN.indexOf(spin.textContent ?? '') + 1) % SPIN.length;
               spin.textContent = SPIN[next];
             }, 80);
             await wait(1150);
@@ -336,7 +337,7 @@ const jsonLd = {
             caret.style.display = 'none';
             await wait(4800);
           }
-        }
+        };
         const start = () => {
           if (running) return;
           running = true;

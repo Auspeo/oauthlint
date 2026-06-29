@@ -58,15 +58,18 @@ if [[ "$EMIT_JSON" == "true" ]]; then
   set -e
   echo "Report written to $OUTPUT_PATH"
 
-  FINDINGS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$OUTPUT_PATH','utf8')).findings.length)")
-  HIGHEST=$(node -e "
-    const fs=require('fs');
-    const order=['INFO','LOW','MEDIUM','HIGH','CRITICAL'];
-    const p=JSON.parse(fs.readFileSync('$OUTPUT_PATH','utf8'));
-    let h='';
+  # The report path is passed as an argv entry (after `--`) and read via
+  # process.argv — never interpolated into the JS source — so a crafted path
+  # can't break out of the string and run arbitrary code in the runner.
+  FINDINGS=$(node -e 'const p=process.argv[1];console.log(JSON.parse(require("fs").readFileSync(p,"utf8")).findings.length)' -- "$OUTPUT_PATH")
+  HIGHEST=$(node -e '
+    const fs=require("fs");
+    const order=["INFO","LOW","MEDIUM","HIGH","CRITICAL"];
+    const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+    let h="";
     for(const f of p.findings){ if(order.indexOf(f.severity)>order.indexOf(h)) h=f.severity; }
-    console.log(h||'NONE');
-  ")
+    console.log(h||"NONE");
+  ' -- "$OUTPUT_PATH")
   echo "findings=$FINDINGS" >> "$GITHUB_OUTPUT"
   echo "highest-severity=$HIGHEST" >> "$GITHUB_OUTPUT"
   echo "::endgroup::"
