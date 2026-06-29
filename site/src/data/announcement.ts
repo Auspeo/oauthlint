@@ -1,10 +1,10 @@
 /**
- * Site-wide release announcement banner — single source of truth.
+ * Site-wide release announcement banner: single source of truth.
  *
  * Set `announcement` to advertise the latest release; set it to `null` to
  * remove the banner entirely (nothing renders, no layout shift). One edit per
  * release: bump `version` (which re-surfaces the bar for everyone who dismissed
- * the previous one — see `shouldShowAnnouncement`), update `text`, and point
+ * the previous one, see `shouldShowAnnouncement`), update `text`, and point
  * `href` at the release notes.
  */
 export interface Announcement {
@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.7.0',
-  text: 'v0.7.0 is out: 130+ rules across JavaScript, TypeScript, Python, Go, Java, and Rust, plus autofix with a dry-run preview and dataflow analysis.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.7.0',
+  version: 'v0.8.0',
+  text: 'v0.8.0 is out: a new MCP server lets AI tools scan their own OAuth code, plus code frames in the CLI, wider SSRF coverage, and 140+ rules.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.8.0',
 };
 
 /**
