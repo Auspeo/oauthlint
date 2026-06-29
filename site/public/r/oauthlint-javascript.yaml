@@ -244,6 +244,21 @@ rules:
               - pattern: '{..., sameSite: "None", ...}'
           - pattern-not: "{..., secure: true, ...}"
       - pattern-regex: (?i)(["'`])(?![^"'`\n]*\bsecure\b)[^"'`\n]*\bsamesite\s*=\s*none\b[^"'`\n]*\1
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.cors.null-origin
     languages:
       - javascript
@@ -648,6 +663,9 @@ rules:
               - pattern: $RES.setHeader('Location', $SINK)
               - pattern: $RES.setHeader("Location", $SINK)
               - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          - pattern-not: redirect($SINK)
+          - pattern-not: redirect($CODE, $SINK)
+          - pattern-not: location($SINK)
           - focus-metavariable: $SINK
     pattern-sanitizers:
       - pattern: isAllowedUrl(...)
@@ -938,6 +956,21 @@ rules:
         - express
         - axios
         - fetch
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
     mode: taint
     pattern-sources:
       - pattern: $REQ.query
@@ -1105,6 +1138,21 @@ rules:
           - pattern-not: $X !== undefined
           - pattern-not: $X == undefined
           - pattern-not: $X != undefined
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.flow.weak-bcrypt-rounds
     languages:
       - javascript
@@ -2178,7 +2226,8 @@ rules:
       technology:
         - oauth2
     pattern-either:
-      - pattern-regex: grant_type\s*[:=]\s*['"]password['"]
+      - pattern-regex: grant_type\s*:\s*['"]password['"]
+      - pattern-regex: \.grant_type\s*=\s*['"]password['"]
       - pattern-regex: "[?&'\"`]grant_type=password(?:[&'\"`\\s]|$)"
       - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
   - id: auth.oauth.static-state

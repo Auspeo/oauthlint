@@ -244,6 +244,21 @@ rules:
               - pattern: '{..., sameSite: "None", ...}'
           - pattern-not: "{..., secure: true, ...}"
       - pattern-regex: (?i)(["'`])(?![^"'`\n]*\bsecure\b)[^"'`\n]*\bsamesite\s*=\s*none\b[^"'`\n]*\1
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.cors.null-origin
     languages:
       - javascript
@@ -648,6 +663,9 @@ rules:
               - pattern: $RES.setHeader('Location', $SINK)
               - pattern: $RES.setHeader("Location", $SINK)
               - pattern: "$RES.writeHead($S, {..., Location: $SINK, ...})"
+          - pattern-not: redirect($SINK)
+          - pattern-not: redirect($CODE, $SINK)
+          - pattern-not: location($SINK)
           - focus-metavariable: $SINK
     pattern-sanitizers:
       - pattern: isAllowedUrl(...)
@@ -938,6 +956,21 @@ rules:
         - express
         - axios
         - fetch
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
     mode: taint
     pattern-sources:
       - pattern: $REQ.query
@@ -1105,6 +1138,21 @@ rules:
           - pattern-not: $X !== undefined
           - pattern-not: $X == undefined
           - pattern-not: $X != undefined
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.flow.weak-bcrypt-rounds
     languages:
       - javascript
@@ -1967,6 +2015,17 @@ rules:
       - pattern-regex: '"grant_type"\s*,\s*"password"'
       - pattern-regex: '"grant_type"\s*:\s*\[?\s*\{?\s*"password"'
       - pattern-regex: '[?&"`]grant_type=password(?:[&"`\s\\]|$)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*_test.go"
+        - "**/*_test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/testdata/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
   - id: auth.go.oauth.static-state
     languages:
       - go
@@ -3746,7 +3805,8 @@ rules:
       technology:
         - oauth2
     pattern-either:
-      - pattern-regex: grant_type\s*[:=]\s*['"]password['"]
+      - pattern-regex: grant_type\s*:\s*['"]password['"]
+      - pattern-regex: \.grant_type\s*=\s*['"]password['"]
       - pattern-regex: "[?&'\"`]grant_type=password(?:[&'\"`\\s]|$)"
       - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
   - id: auth.oauth.static-state
@@ -4877,7 +4937,8 @@ rules:
         - oauth2
         - requests
     pattern-either:
-      - pattern-regex: grant_type['"]?\s*[:=]\s*['"]password['"]
+      - pattern-regex: "['\"]grant_type['\"]\\s*:\\s*['\"]password['\"]"
+      - pattern-regex: "[(,]\\s*grant_type\\s*=\\s*['\"]password['\"]"
       - pattern-regex: "[?&'\"]grant_type=password(?:[&'\"\\s]|$)"
       - pattern-regex: "['\"]grant_type['\"]\\s*,\\s*['\"]password['\"]"
   - id: auth.py.oauth.static-state
@@ -5519,6 +5580,18 @@ rules:
       - pattern: $C.exchange_password(...)
       - pattern-regex: '"grant_type"\s*,\s*"password"'
       - pattern-regex: '[?&"]grant_type=password(?:[&"\s\\]|$)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
   - id: auth.rust.oauth.static-state
     languages:
       - rust
@@ -5546,11 +5619,25 @@ rules:
         - https://cwe.mitre.org/data/definitions/330.html
       technology:
         - oauth2
-    pattern-either:
-      - pattern: CsrfToken::new("...".to_string())
-      - pattern: CsrfToken::new("...".to_owned())
-      - pattern: CsrfToken::new("...".into())
-      - pattern: CsrfToken::new(String::from("..."))
+    patterns:
+      - pattern-either:
+          - pattern: CsrfToken::new("...".to_string())
+          - pattern: CsrfToken::new("...".to_owned())
+          - pattern: CsrfToken::new("...".into())
+          - pattern: CsrfToken::new(String::from("..."))
+      - pattern-not-inside: mod tests {...}
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
   - id: auth.rust.tls.accept-invalid-certs
     languages:
       - rust

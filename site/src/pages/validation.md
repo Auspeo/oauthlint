@@ -1,44 +1,29 @@
 ---
 layout: ../layouts/Prose.astro
 title: "Validation report"
-description: "How the OAuthLint rule pack behaves on real, popular code: zero false positives on clean auth libraries across ~9,400 files."
+description: "How the OAuthLint rule pack behaves on real, popular code: zero false positives on the clean auth libraries it scans."
 active: "validation"
 ---
 
 # Real-world validation report
 
-OAuthLint's whole value rests on low false positives. A security linter that
-cries wolf gets turned off. This page documents how the full 90-rule pack
-(v0.2.0) behaves when run against real, popular code across all five supported
-languages.
+OAuthLint's whole value rests on a low false-positive rate. A security linter that cries wolf gets turned off. This page records how the full rule pack (138 rules across JavaScript/TypeScript, Python, Go, Java, and Rust) behaves when it is run against real, widely-used code.
 
-> Reproduce the raw scan with `pnpm validate`. It clones the targets in
-> [`scripts/validation-targets.yml`](https://github.com/Auspeo/oauthlint/blob/main/scripts/validation-targets.yml)
-> and runs the CLI over each. The summary below is from a full-pack scan of the
-> cached corpus.
+> Reproduce it with `pnpm validate`. It scans the repositories listed in [`scripts/validation-targets.yml`](https://github.com/Auspeo/oauthlint/blob/main/scripts/validation-targets.yml) with the CLI and writes a per-rule report. The figures below come from a full-pack scan of that corpus on the current release.
 
 ## Method
 
-- **Corpus:** 18 widely-used repositories, ~9,400 source files across
-  JavaScript/TypeScript, Python, Go, Java and Rust.
+- **Corpus:** widely-used auth and OAuth projects (more than 4,000 source files) across all five supported languages, plus a few large, auth-heavy applications.
 - **Signal classification** (from `validation-targets.yml`):
-  - **`low`**: mature auth libraries that should be clean. Any finding here is a
-    candidate false positive, triaged individually.
-  - **`high`**: auth-heavy and AI-generated apps where real findings are
-    expected.
-- **Test and example code is excluded** from the false-positive denominator. A
-  library's own test suite legitimately exercises the dangerous APIs it
-  implements.
+  - **low:** mature auth code that should come back clean. Any finding here is a candidate false positive and is triaged one by one.
+  - **high:** auth-heavy or AI-generated apps where real findings are expected.
+- **What the rules skip:** by design they do not fire on test suites, example apps, documentation snippets, or vendored dependencies. A library's own tests legitimately exercise the very APIs the rules flag, so that code is not part of the false-positive denominator.
 
 ## Headline result
 
-> Across 18 repos and ~9,400 files, the pack produced zero false positives on
-> the clean auth libraries. Every finding on a `low`-signal target resolves to
-> either the library detecting its own primitives in its test suite, or a
-> genuine true positive.
+> On the clean, auth-consuming libraries, the pack fires zero. The only findings on low-signal code are two real, low-severity patterns in next-auth's own source, plus one correct detection in each of the two OAuth client libraries that implement the deprecated password grant.
 
-The ten pristine auth libraries below fired zero rules, across JS/TS, Python, Go
-and Rust alike:
+These eight auth libraries came back with zero findings, across JS/TS, Python, Go, Rust, and Java:
 
 | Library | Lang | Findings |
 |---|---|:--:|
@@ -47,40 +32,31 @@ and Rust alike:
 | `jpadilla/pyjwt` | Python | 0 |
 | `lepture/authlib` | Python | 0 |
 | `pallets/flask` | Python | 0 |
-| `golang/oauth2` | Go | 0 |
 | `gorilla/sessions` | Go | 0 |
 | `seanmonstar/reqwest` | Rust | 0 |
-| `ramosbugs/oauth2-rs` | Rust | 0 |
 | `spring-projects/spring-petclinic` | Java | 0 |
 
-## Triage of the remaining `low`-signal findings
+## Triage of the remaining low-signal findings
 
-These are the only findings on `low`-signal repos. None is a new false positive:
+These are the only findings on low-signal targets, and none of them is noise:
 
 | Finding | Repo | Verdict |
 |---|---|---|
-| `auth.rust.jwt.no-*-validation` ×22 | `Keats/jsonwebtoken` | **Excluded.** All inside the crate's own `#[cfg(test)]` module (it *implements* `Validation`, so its tests set `validate_exp/aud = false`). jsonwebtoken is deliberately not a target. |
-| `auth.go.jwt.parse-unverified` ×1 | `golang-jwt/jwt` | **Excluded.** The library's own `ParseWithClaims` calls `ParseUnverified` internally before verifying. golang-jwt is the implementer, not a target. |
-| `auth.java.web.permit-all` ×1 | `spring-projects/spring-security` | **Excluded.** Integration-test scaffolding. |
-| `auth.flow.timing-unsafe-compare` ×2 | `nextauthjs/next-auth` | **True positive (kept).** A real CSRF-token compare and a `Bearer ${CRON_SECRET}` compare, both worth constant-time handling. |
+| `auth.go.oauth.ropc-grant` ×1 | `golang/oauth2` | **Correct detection.** The library's own `PasswordCredentialsToken` builds the deprecated Resource Owner Password Credentials grant. The rule flags that grant wherever it is constructed, and here it is the library implementing it. In a normal scan this library is a vendored dependency, which OAuthLint skips. |
+| `auth.rust.oauth.ropc-grant` ×1 | `ramosbugs/oauth2-rs` | **Correct detection.** The same case: the crate's request builder for `exchange_password`. |
+| `auth.flow.timing-unsafe-compare` ×1 | `nextauthjs/next-auth` | **True positive (kept).** A non-constant-time CSRF-token compare, worth constant-time handling. |
 | `auth.jwt.no-expiration` ×1 | `nextauthjs/next-auth` | **True positive (kept).** The Dgraph adapter signs a JWT with no `exp`. |
 
-Implementer libraries (`jsonwebtoken`, `golang-jwt`) are excluded by design:
-they ship and test the very primitives the rules flag. See the notes in
-`validation-targets.yml`.
+The two implementation libraries (`golang/oauth2` and `oauth2-rs`) build OAuth requests for a living, so they contain the raw mechanisms the rules look for. Flagging the password grant in the code that implements it is accurate, not a false alarm, and you would not point OAuthLint at a dependency's source in day-to-day use.
+
+Earlier builds of the pack did fire on these libraries' tests, examples, and request builders. Those were tracked down and fixed: the OAuth rules now require an application-style usage and skip test, example, and vendored paths, so a library exercising its own primitives no longer counts against the score.
 
 ## The pack still finds real things
 
-On `high`-signal apps the rules surface genuine, actionable findings. On
-`directus/directus`, for example: `auth.oauth.open-redirect-callback` in its
-OAuth2/OIDC drivers, `auth.jwt.decode-without-verify`, and
-`auth.flow.timing-unsafe-compare`. Low false positives, not low recall.
+On high-signal apps the rules surface genuine, actionable findings. `directus/directus`, for example, produces well over a hundred across twenty rules (open-redirect in its OAuth and OIDC drivers, decode-without-verify, timing-unsafe compares, and more), and `supabase/auth` produces a focused handful. Low false positives, not low recall.
 
 ## Why this matters
 
-This is the discipline the generic Semgrep registry does not apply to the auth
-domain: every rule is tuned against real library source, so it fires on your
-bug, not on `jose`'s internals. It is invisible, tedious work, and it is the
-product.
+This is the tuning the generic Semgrep registry never does for the auth domain. Every rule is measured against real library source, so it fires on your bug rather than on jose's internals or a library's own test suite. It is invisible, tedious work, and it is the product.
 
 <!-- Methodology and corpus: scripts/validation-targets.yml. Re-run: pnpm validate. -->

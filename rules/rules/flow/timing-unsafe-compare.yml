@@ -4,6 +4,25 @@ rules:
       - javascript
       - typescript
     severity: WARNING
+    # Non-production code (example apps, demos, docs, vendored copies, tests)
+    # is not the library surface users ship, so findings there are noise for a
+    # low-FP linter. Globs intentionally omit `**/tests/**` / `**/fixtures/**`
+    # so the rule still fires on its own fixtures under rules/tests/fixtures/.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
     message: |
       A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
       `csrf`, `hmac`) is being compared with `===` / `!==` /

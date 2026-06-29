@@ -525,6 +525,18 @@ rules:
       - pattern: $C.exchange_password(...)
       - pattern-regex: '"grant_type"\s*,\s*"password"'
       - pattern-regex: '[?&"]grant_type=password(?:[&"\s\\]|$)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
   - id: auth.rust.oauth.static-state
     languages:
       - rust
@@ -552,11 +564,25 @@ rules:
         - https://cwe.mitre.org/data/definitions/330.html
       technology:
         - oauth2
-    pattern-either:
-      - pattern: CsrfToken::new("...".to_string())
-      - pattern: CsrfToken::new("...".to_owned())
-      - pattern: CsrfToken::new("...".into())
-      - pattern: CsrfToken::new(String::from("..."))
+    patterns:
+      - pattern-either:
+          - pattern: CsrfToken::new("...".to_string())
+          - pattern: CsrfToken::new("...".to_owned())
+          - pattern: CsrfToken::new("...".into())
+          - pattern: CsrfToken::new(String::from("..."))
+      - pattern-not-inside: mod tests {...}
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
   - id: auth.rust.tls.accept-invalid-certs
     languages:
       - rust

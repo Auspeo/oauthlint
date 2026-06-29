@@ -4,6 +4,28 @@ rules:
       - javascript
       - typescript
     severity: WARNING
+    # Non-production code (example apps, demos, docs, vendored copies, tests)
+    # is not the library surface users ship, so findings there are noise for a
+    # low-FP linter. In particular this skips vendored third-party cookie
+    # serializers (e.g. packages/core/src/lib/vendored/cookie.ts) whose
+    # incremental `"; SameSite=None"` attribute fragment is not a complete
+    # insecure cookie. Globs intentionally omit `**/tests/**` / `**/fixtures/**`
+    # so the rule still fires on its own fixtures under rules/tests/fixtures/.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/apps/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
     message: |
       A cookie is being set with `SameSite=None` but WITHOUT `Secure`.
       `SameSite=None` *requires* `Secure`: modern browsers reject a

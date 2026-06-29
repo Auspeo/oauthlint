@@ -19,11 +19,31 @@ rules:
     # direct argument, so `CsrfToken::new(generate())` or a variable is never
     # flagged. `CsrfToken::new_random()` is a different method and is not
     # matched.
-    pattern-either:
-      - pattern: CsrfToken::new("...".to_string())
-      - pattern: CsrfToken::new("...".to_owned())
-      - pattern: CsrfToken::new("...".into())
-      - pattern: CsrfToken::new(String::from("..."))
+    patterns:
+      - pattern-either:
+          - pattern: CsrfToken::new("...".to_string())
+          - pattern: CsrfToken::new("...".to_owned())
+          - pattern: CsrfToken::new("...".into())
+          - pattern: CsrfToken::new(String::from("..."))
+      # Unit tests routinely pass a fixed `state` to assert on the URL — that is
+      # the test asserting determinism, not an app shipping a constant CSRF
+      # token. The `#[cfg(test)] mod tests { ... }` block is the canonical Rust
+      # idiom (e.g. oauth2-rs' own crate tests), so suppress matches inside it.
+      - pattern-not-inside: mod tests {...}
+    # Belt-and-suspenders: never fire on test/example/vendored/generated trees.
+    # `tests.rs` is Rust's sibling test-module file convention.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
     metadata:
       oauthlint-rule-id: AUTH-RUST-OAUTH-003
       oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-static-state
