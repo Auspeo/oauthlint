@@ -637,21 +637,26 @@ rules:
         - express
     mode: taint
     pattern-sources:
-      - pattern: $REQ.query
-      - pattern: $REQ.params
-      - pattern: $REQ.body
-      - pattern: $REQ.cookies
-      - pattern: $REQ.headers
-      - pattern: $REQ.query.$X
-      - pattern: $REQ.params.$X
-      - pattern: $REQ.body.$X
-      - pattern: $REQ.cookies.$X
-      - pattern: $REQ.headers.$X
-      - pattern: $REQ.query[$K]
-      - pattern: $REQ.params[$K]
-      - pattern: $REQ.body[$K]
-      - pattern: $REQ.cookies[$K]
-      - pattern: $REQ.headers[$K]
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.cookies
+              - pattern: $REQ.headers
+              - pattern: $REQ.query.$X
+              - pattern: $REQ.params.$X
+              - pattern: $REQ.body.$X
+              - pattern: $REQ.cookies.$X
+              - pattern: $REQ.headers.$X
+              - pattern: $REQ.query[$K]
+              - pattern: $REQ.params[$K]
+              - pattern: $REQ.body[$K]
+              - pattern: $REQ.cookies[$K]
+              - pattern: $REQ.headers[$K]
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|ctx|context|c|event|r)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -671,9 +676,18 @@ rules:
       - pattern: isAllowedUrl(...)
       - pattern: validateRedirect(...)
       - pattern: sanitizeRedirect(...)
-      - pattern: $ALLOW.includes(...)
-      - pattern: $ALLOW.has(...)
-      - pattern: $ALLOW.indexOf(...)
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.has($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.includes($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.indexOf($X) ...>) { ... }
   - id: auth.flow.password-min-length
     languages:
       - javascript
@@ -964,7 +978,7 @@ rules:
         - "**/*.spec.*"
         - "**/example/**"
         - "**/examples/**"
-        - "**/apps/**"
+        - "**/demo/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"
@@ -973,21 +987,26 @@ rules:
         - "**/*.stories.*"
     mode: taint
     pattern-sources:
-      - pattern: $REQ.query
-      - pattern: $REQ.params
-      - pattern: $REQ.body
-      - pattern: $REQ.cookies
-      - pattern: $REQ.headers
-      - pattern: $REQ.query.$X
-      - pattern: $REQ.params.$X
-      - pattern: $REQ.body.$X
-      - pattern: $REQ.cookies.$X
-      - pattern: $REQ.headers.$X
-      - pattern: $REQ.query[$K]
-      - pattern: $REQ.params[$K]
-      - pattern: $REQ.body[$K]
-      - pattern: $REQ.cookies[$K]
-      - pattern: $REQ.headers[$K]
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.cookies
+              - pattern: $REQ.headers
+              - pattern: $REQ.query.$X
+              - pattern: $REQ.params.$X
+              - pattern: $REQ.body.$X
+              - pattern: $REQ.cookies.$X
+              - pattern: $REQ.headers.$X
+              - pattern: $REQ.query[$K]
+              - pattern: $REQ.params[$K]
+              - pattern: $REQ.body[$K]
+              - pattern: $REQ.cookies[$K]
+              - pattern: $REQ.headers[$K]
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|ctx|context|c|event|r)$
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -1010,9 +1029,18 @@ rules:
       - pattern: isAllowedUrl(...)
       - pattern: validateUrl(...)
       - pattern: assertAllowedHost(...)
-      - pattern: $ALLOW.includes(...)
-      - pattern: $ALLOW.has(...)
-      - pattern: $ALLOW.indexOf(...)
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.has($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.includes($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.indexOf($X) ...>) { ... }
   - id: auth.flow.timing-unsafe-compare
     languages:
       - javascript
@@ -1146,7 +1174,7 @@ rules:
         - "**/*.spec.*"
         - "**/example/**"
         - "**/examples/**"
-        - "**/apps/**"
+        - "**/demo/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"
@@ -1556,7 +1584,12 @@ rules:
       - pattern: validateRedirect(...)
       - pattern: isAllowedRedirect(...)
       - pattern: $ALLOW.MatchString(...)
-      - pattern: url.Parse(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
   - id: auth.go.flow.secret-in-response
     languages:
       - go
@@ -1664,7 +1697,12 @@ rules:
       - pattern: validateURL(...)
       - pattern: isAllowedHost(...)
       - pattern: $ALLOW.MatchString(...)
-      - pattern: url.Parse(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
   - id: auth.go.flow.weak-rand
     languages:
       - go
@@ -2698,11 +2736,19 @@ rules:
         - javax.net.ssl
         - apache-httpclient
     pattern-either:
-      - pattern: ($HOST, $SESSION) -> true
-      - pattern: |
-          new HostnameVerifier() {
-            public boolean verify(String $H, SSLSession $S) { return true; }
-          }
+      - patterns:
+          - pattern: ($HOST, $SESSION) -> true
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
+      - patterns:
+          - pattern: |
+              new HostnameVerifier() {
+                public boolean verify(String $H, SSLSession $S) { return true; }
+              }
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
       - pattern: new org.apache.http.conn.ssl.NoopHostnameVerifier()
       - pattern: new NoopHostnameVerifier()
       - pattern: org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE
@@ -3643,10 +3689,7 @@ rules:
       references:
         - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
     pattern-either:
-      - patterns:
-          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*client_id=[^'\"]*['\"]"
-          - pattern-regex: response_type=
-          - pattern-not-regex: state=
+      - pattern-regex: "['\"]https?://(?=[^'\"]*[?&]client_id=)(?=[^'\"]*[?&]response_type=)(?![^'\"]*[?&]state=)[^'\"]+['\"]"
       - patterns:
           - pattern: "new URLSearchParams({..., client_id: $C, ...})"
           - pattern: "new URLSearchParams({..., response_type: $R, ...})"
@@ -3739,9 +3782,18 @@ rules:
               - pattern: $RES.redirect($CODE, $SINK)
           - focus-metavariable: $SINK
     pattern-sanitizers:
-      - pattern: $SET.has(...)
-      - pattern: $ARR.includes(...)
-      - pattern: $ARR.indexOf(...)
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $SET.has($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ARR.includes($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ARR.indexOf($X) ...>) { ... }
   - id: auth.oauth.pkce-plain
     languages:
       - javascript
@@ -3844,9 +3896,7 @@ rules:
           - pattern-either:
               - pattern: 'new URLSearchParams({..., state: "$S", ...})'
               - pattern: "new URLSearchParams({..., state: '$S', ...})"
-      - patterns:
-          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*response_type=[^'\"]*['\"]"
-          - pattern-regex: "['\"]https?://[^'\"\\s]+\\?[^'\"]*state=[A-Za-z0-9._~%-]+[^'\"]*['\"]"
+      - pattern-regex: "['\"]https?://(?=[^'\"]*[?&]response_type=)(?=[^'\"]*[?&]state=[A-Za-z0-9._~%-]+)[^'\"]+['\"]"
   - id: auth.oauth.token-in-localstorage
     languages:
       - javascript

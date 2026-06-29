@@ -16,7 +16,7 @@ rules:
         - "**/*.spec.*"
         - "**/example/**"
         - "**/examples/**"
-        - "**/apps/**"
+        - "**/demo/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"
@@ -42,34 +42,55 @@ rules:
     # (isAllowedUrl, allowlist.includes, Set.has) clears the taint, so a
     # genuinely vetted outbound request does not fire.
     mode: taint
+    # `$REQ` is constrained to conventional request-object names so that
+    # unrelated receivers (`db.query`, `config.headers`, `someObj.body`) are not
+    # treated as untrusted request input.
     pattern-sources:
-      - pattern: $REQ.query
-      - pattern: $REQ.params
-      - pattern: $REQ.body
-      - pattern: $REQ.cookies
-      - pattern: $REQ.headers
-      - pattern: $REQ.query.$X
-      - pattern: $REQ.params.$X
-      - pattern: $REQ.body.$X
-      - pattern: $REQ.cookies.$X
-      - pattern: $REQ.headers.$X
-      - pattern: $REQ.query[$K]
-      - pattern: $REQ.params[$K]
-      - pattern: $REQ.body[$K]
-      - pattern: $REQ.cookies[$K]
-      - pattern: $REQ.headers[$K]
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.body
+              - pattern: $REQ.cookies
+              - pattern: $REQ.headers
+              - pattern: $REQ.query.$X
+              - pattern: $REQ.params.$X
+              - pattern: $REQ.body.$X
+              - pattern: $REQ.cookies.$X
+              - pattern: $REQ.headers.$X
+              - pattern: $REQ.query[$K]
+              - pattern: $REQ.params[$K]
+              - pattern: $REQ.body[$K]
+              - pattern: $REQ.cookies[$K]
+              - pattern: $REQ.headers[$K]
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|ctx|context|c|event|r)$
     pattern-sanitizers:
       # Routing the value through a host allow-list / validation helper clears
       # the taint: only the vetted destination (not the raw request input)
-      # reaches the request. Matched by a conventional validation-helper call,
-      # or by an allow-list membership test (`Set.has` / `Array.includes`) that
-      # the value is passed through.
+      # reaches the request.
       - pattern: isAllowedUrl(...)
       - pattern: validateUrl(...)
       - pattern: assertAllowedHost(...)
-      - pattern: $ALLOW.includes(...)
-      - pattern: $ALLOW.has(...)
-      - pattern: $ALLOW.indexOf(...)
+      # An inline allow-list membership guard vets the value: a value used inside
+      # `if (allow.has(x)) { ... }` / `if (allow.includes(x)) { ... }` /
+      # `if (allow.indexOf(x) ...) { ... }` is treated as validated. The
+      # boolean-returning membership call itself does NOT sanitize its argument
+      # (that would only clear the boolean, not the value), so we clear taint by
+      # the if-guard, mirroring the Python rule's `if is_allowed_url(v): ...`.
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.has($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.includes($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ALLOW.indexOf($X) ...>) { ... }
     pattern-sinks:
       - patterns:
           - pattern-either:

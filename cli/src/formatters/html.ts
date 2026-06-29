@@ -55,6 +55,20 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Return a URL only when it is a safe `http(s)` link, otherwise `null`.
+ *
+ * `escapeHtml` neutralises markup/attribute breakouts but NOT the scheme: a
+ * `javascript:` (or `data:`) URL contains no HTML-significant characters, so it
+ * would survive escaping and render as a live, executable `href`. Restricting
+ * the scheme here is what actually prevents that XSS — callers must omit the
+ * link when this returns `null`.
+ */
+export function safeHref(url: unknown): string | null {
+  const s = String(url);
+  return /^https?:\/\//i.test(s) ? s : null;
+}
+
 function severityCounts(findings: Finding[]): Record<SeverityName, number> {
   const counts: Record<SeverityName, number> = {
     CRITICAL: 0,
@@ -273,8 +287,9 @@ function renderFinding(f: Finding, snippet: string | null): string {
     ? ` <span class="oid">(${escapeHtml(f.oauthlintRuleId)})</span>`
     : '';
   const message = escapeHtml(f.message).replace(/\r?\n/g, '<br>');
-  const doc = f.docUrl
-    ? `\n        <p class="doc">📖 <a href="${escapeHtml(f.docUrl)}" rel="noreferrer noopener">${escapeHtml(f.docUrl)}</a></p>`
+  const href = f.docUrl ? safeHref(f.docUrl) : null;
+  const doc = href
+    ? `\n        <p class="doc">📖 <a href="${escapeHtml(href)}" rel="noreferrer noopener">${escapeHtml(href)}</a></p>`
     : '';
   return `      <article class="finding ${f.severity}">
         <div class="head">

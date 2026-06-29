@@ -11,6 +11,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "typecheck": "astro check",
     "test": "vitest",
     "test:run": "vitest run"
   },
@@ -21,8 +22,10 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.9",
     "oauthlint-rules": "workspace:*",
     "tsx": "4.19.2",
+    "typescript": "5.7.3",
     "vitest": "2.1.9"
   }
 }

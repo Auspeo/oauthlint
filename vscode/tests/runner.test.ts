@@ -92,6 +92,29 @@ describe('runOAuthLint', () => {
     });
     expect(result.timedOut).toBe(true);
   }, 10_000);
+
+  it('aborts and flags `outputCapped` when the CLI floods stdout', async () => {
+    // Emit far more than the 20 MB cap so the guard trips and kills the child.
+    // `exec` so the spawned process *is* `yes` — killing it closes the pipe and
+    // lets `close` fire (a plain child would orphan `yes`, holding the pipe open).
+    const cli = await fakeCli('exec yes AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    const result = await runOAuthLint({ target: tmp, cliPath: cli });
+    expect(result.outputCapped).toBe(true);
+    expect(result.report).toBeNull();
+    expect(result.stderr).toContain('exceeded');
+  }, 20_000);
+
+  it('passes the target after a `--` separator so it is never read as a flag', async () => {
+    // The fake CLI echoes its own argv; a leading-dash target must survive as
+    // an operand rather than being parsed as an option.
+    const cli = await fakeCli('printf "%s\\n" "$@" 1>&2; echo "{}"');
+    const result = await runOAuthLint({ target: '--weird-path', cliPath: cli });
+    const args = result.stderr.split('\n');
+    const sep = args.indexOf('--');
+    expect(sep).toBeGreaterThanOrEqual(0);
+    // The target is the last argument and sits after the separator.
+    expect(args[sep + 1]).toBe('--weird-path');
+  });
 });
 
 describe('filterBySeverity', () => {

@@ -21,13 +21,24 @@ rules:
     # HttpClient's NoopHostnameVerifier. A HostnameVerifier with real
     # (non-trivial) logic and the default verifier are not matched.
     pattern-either:
-      # Lambda that always returns true: (hostname, session) -> true
-      - pattern: ($HOST, $SESSION) -> true
-      # Anonymous HostnameVerifier whose verify(...) just returns true.
-      - pattern: |
-          new HostnameVerifier() {
-            public boolean verify(String $H, SSLSession $S) { return true; }
-          }
+      # Lambda that always returns true, scoped to a hostname-verifier context
+      # so a generic two-arg lambda (BiPredicate, comparator, etc.) returning
+      # true is not mistaken for a permissive verifier.
+      - patterns:
+          - pattern: ($HOST, $SESSION) -> true
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
+      # Anonymous HostnameVerifier whose verify(...) just returns true, scoped to
+      # where it is actually installed as the verifier.
+      - patterns:
+          - pattern: |
+              new HostnameVerifier() {
+                public boolean verify(String $H, SSLSession $S) { return true; }
+              }
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
       # Apache HttpClient NoopHostnameVerifier (constructor or INSTANCE).
       - pattern: new org.apache.http.conn.ssl.NoopHostnameVerifier()
       - pattern: new NoopHostnameVerifier()

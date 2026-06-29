@@ -59,3 +59,23 @@ export function relayInternal(req: Request, res: Response): void {
   const dest = assertAllowedHost(req.params.target);
   http.get(dest, (upstream) => upstream.pipe(res));
 }
+
+const ALLOWED_URLS = new Set(['https://api.partner.com/data']);
+
+// Inline allow-list guard: the raw request value is only fetched inside the
+// `if (ALLOWED_URLS.has(...))` block, so it is validated before use.
+export function guardedFetch(req: Request, res: Response): void {
+  if (ALLOWED_URLS.has(req.query.url as string)) {
+    http.get(req.query.url as string, (upstream) => upstream.pipe(res));
+  }
+}
+
+const ALLOWED_LIST = ['https://api.partner.com/data'];
+
+// Inline allow-list guard using Array.includes.
+export async function guardedFetchIncludes(req: Request, res: Response): Promise<void> {
+  if (ALLOWED_LIST.includes(req.body.endpoint as string)) {
+    const r = await fetch(req.body.endpoint as string);
+    res.json(await r.json());
+  }
+}

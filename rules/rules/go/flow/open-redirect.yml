@@ -18,9 +18,11 @@ rules:
       redirecting. See CWE-601.
     # Taint mode so indirection (dest := r.FormValue("url"); http.Redirect(w,
     # r, dest, ...)) is caught, not just the inline form. The taint is cleared
-    # by an allow-list / validation helper that vets the destination, or by a
-    # url.Parse(...)-then-checked flow where the parsed value is inspected
-    # before use.
+    # by an allow-list / validation helper that vets the destination, or inside
+    # an `if`-guard that checks the parsed host against an allow-list. A bare
+    # `url.Parse(...)` is NOT a sanitizer: the parsed struct's Host/Path/Scheme
+    # are still attacker-controlled, so parse-then-reflect without a host check
+    # is a real open redirect and must still fire.
     mode: taint
     pattern-sources:
       # $R is the *http.Request. Cover the common net/http input shapes.
@@ -35,9 +37,17 @@ rules:
       - pattern: validateRedirect(...)
       - pattern: isAllowedRedirect(...)
       - pattern: $ALLOW.MatchString(...)
-      # url.Parse-then-checked: a parsed URL that has been inspected is treated
-      # as cleared (the result is rebuilt/validated rather than reflected raw).
-      - pattern: url.Parse(...)
+      # parse-then-host-checked: a value used inside an `if`-guard that looks the
+      # parsed host up in an allow-list map is treated as vetted, mirroring the
+      # Python rule's `if is_safe_url(...):` guard. A bare `url.Parse(...)` is
+      # deliberately NOT listed — it returns an attacker-controlled struct and
+      # does not validate anything, so parse-then-reflect still fires.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
     pattern-sinks:
       - patterns:
           - pattern-either:

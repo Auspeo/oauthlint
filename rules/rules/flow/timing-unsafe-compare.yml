@@ -16,7 +16,7 @@ rules:
         - "**/*.spec.*"
         - "**/example/**"
         - "**/examples/**"
-        - "**/apps/**"
+        - "**/demo/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"

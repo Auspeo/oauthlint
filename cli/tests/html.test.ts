@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runScan } from '../src/commands/scan.js';
-import { escapeHtml, renderHtmlReport } from '../src/formatters/html.js';
+import { escapeHtml, renderHtmlReport, safeHref } from '../src/formatters/html.js';
 import type { Finding, ScanResult } from '../src/types.js';
 
 const baseResult = (findings: Finding[], over: Partial<ScanResult> = {}): ScanResult => ({
@@ -156,6 +156,40 @@ describe('renderHtmlReport — escaping (injection safety)', () => {
     );
     expect(html).not.toContain('"><script>alert(1)</script>');
     expect(html).toContain('&quot;&gt;&lt;script&gt;');
+  });
+
+  it('does NOT render a javascript: docUrl as a live href', async () => {
+    const html = await render(
+      baseResult([finding({ docUrl: 'javascript:alert(document.cookie)' })]),
+    );
+    // No anchor pointing at the scheme is emitted, in any escaped form.
+    expect(html).not.toMatch(/href="javascript:/i);
+    expect(html).not.toContain('javascript:alert');
+    // The doc paragraph (and its 📖 marker) is omitted entirely for unsafe URLs.
+    expect(html).not.toContain('class="doc"');
+  });
+
+  it('does not render other dangerous schemes (data:) as a live href', async () => {
+    const html = await render(
+      baseResult([finding({ docUrl: 'data:text/html,<script>alert(1)</script>' })]),
+    );
+    expect(html).not.toMatch(/href="data:/i);
+    expect(html).not.toContain('class="doc"');
+  });
+});
+
+describe('safeHref', () => {
+  it('passes through http(s) URLs unchanged', () => {
+    expect(safeHref('https://oauthlint.dev/rules/x')).toBe('https://oauthlint.dev/rules/x');
+    expect(safeHref('http://example.test')).toBe('http://example.test');
+  });
+
+  it('rejects javascript:, data:, and other non-http(s) schemes', () => {
+    expect(safeHref('javascript:alert(1)')).toBeNull();
+    expect(safeHref('data:text/html,x')).toBeNull();
+    expect(safeHref('vbscript:msgbox(1)')).toBeNull();
+    expect(safeHref('  https://leading-space.test')).toBeNull();
+    expect(safeHref(undefined)).toBeNull();
   });
 });
 

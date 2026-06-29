@@ -588,11 +588,19 @@ rules:
         - javax.net.ssl
         - apache-httpclient
     pattern-either:
-      - pattern: ($HOST, $SESSION) -> true
-      - pattern: |
-          new HostnameVerifier() {
-            public boolean verify(String $H, SSLSession $S) { return true; }
-          }
+      - patterns:
+          - pattern: ($HOST, $SESSION) -> true
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
+      - patterns:
+          - pattern: |
+              new HostnameVerifier() {
+                public boolean verify(String $H, SSLSession $S) { return true; }
+              }
+          - pattern-either:
+              - pattern-inside: $X.setHostnameVerifier(...)
+              - pattern-inside: $X.setDefaultHostnameVerifier(...)
       - pattern: new org.apache.http.conn.ssl.NoopHostnameVerifier()
       - pattern: new NoopHostnameVerifier()
       - pattern: org.apache.http.conn.ssl.NoopHostnameVerifier.INSTANCE
