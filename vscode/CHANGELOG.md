@@ -1,5 +1,15 @@
 # oauthlint-vscode
 
+## 0.4.0
+
+### Minor Changes
+
+- Added an "Apply fix" Quick Fix. When a finding carries an autofix, the
+  lightbulb now offers "Apply OAuthLint fix for `<rule-id>`", which applies the
+  replacement directly in the editor. It reads the per-finding fix the CLI
+  reports, so there is no separate `--fix` run. The existing Suppress and Open
+  documentation actions are unchanged.
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,158 @@
 # oauthlint-rules
 
+## 0.3.0
+
+### Minor Changes
+
+- da9c2b6: Expand and harden the `--fix` autofix capability.
+
+  Rules:
+
+  - Add safe, deterministic autofixes to the Go TLS/cookie rules:
+    `auth.go.tls.insecure-skip-verify` (`InsecureSkipVerify: true` → `false`),
+    `auth.go.tls.min-version` (obsolete `MinVersion` → `tls.VersionTLS12`), and
+    `auth.go.cookie.insecure` (`Secure`/`HttpOnly: false` → `true`). Each is a
+    literal replacement scoped to the offending field via `pattern-inside`, so
+    surrounding code is untouched, and each is covered by the autofix safety
+    contract (`fixes.test.ts`).
+  - Remove the `fix:` from the JavaScript cookie rules (`auth.cookie.no-secure`,
+    `auth.cookie.no-httponly`, `auth.cookie.no-samesite`). Their single
+    rule-level spread template could corrupt source: on the 2-argument
+    `res.cookie(name, value)` form it emitted a literal `$OPTS`, and it left an
+    explicit `secure: false`/`httpOnly: false` in place. A correct fix isn't a
+    clean literal replacement for these, so they now ship no autofix.
+
+  CLI:
+
+  - Add `--fix-dry-run`, which previews exactly what `--fix` would change as a
+    unified diff per file without writing anything.
+  - After a real `--fix`, print a summary of which files changed and how many
+    fixes were applied. `--fix` is idempotent — running it twice is a no-op.
+
+- 4a573c3: Add Go and Rust OAuth/OIDC/JWT rule coverage.
+
+  Go:
+
+  - `auth.go.oauth.ropc-grant` (AUTH-GO-OAUTH-001) — flags the Resource Owner
+    Password Credentials grant via `oauth2.Config.PasswordCredentialsToken` or a
+    hand-built `grant_type=password` token request. CWE-522.
+  - `auth.go.oauth.insecure-token-endpoint` (AUTH-GO-OAUTH-002) — flags an OAuth
+    authorize/token endpoint contacted over cleartext `http://`, excluding
+    localhost/loopback. CWE-319.
+  - `auth.go.oauth.static-state` (AUTH-GO-OAUTH-003) — flags a hardcoded `state`
+    literal passed to `oauth2.Config.AuthCodeURL`. CWE-330.
+  - `auth.go.flow.oauth-credential-in-log` (AUTH-GO-FLOW-005) — taint rule for an
+    OAuth credential from the request (code/token/`Authorization`) flowing into a
+    `log`/`slog`/`fmt`/logger call. CWE-532.
+  - `auth.go.jwt.untrusted-verify-key` (AUTH-GO-JWT-006) — taint rule for
+    request-controlled input reaching a `golang-jwt` keyfunc's returned key or
+    `jwt.WithValidMethods`. CWE-347.
+
+  Rust:
+
+  - `auth.rust.oauth.ropc-grant` (AUTH-RUST-OAUTH-001) — flags the password grant
+    via the `oauth2` crate's `exchange_password` or a hand-built
+    `grant_type=password` request. CWE-522.
+  - `auth.rust.oauth.insecure-token-endpoint` (AUTH-RUST-OAUTH-002) — flags an
+    OAuth endpoint over cleartext `http://`, excluding localhost/loopback.
+    CWE-319.
+  - `auth.rust.oauth.static-state` (AUTH-RUST-OAUTH-003) — flags a hardcoded
+    `CsrfToken::new("literal")` state. CWE-330.
+
+- 4a573c3: Add seven Java rules covering OAuth, JWT, Spring Security, and CORS
+  anti-patterns that LLM-generated code commonly introduces:
+
+  - `auth.java.oauth.ropc-grant` — Resource Owner Password Credentials grant
+    (`grant_type=password`) in a token-request body (CWE-522).
+  - `auth.java.oauth.insecure-token-endpoint` — cleartext `http://` OAuth/OIDC
+    authorize/token endpoint, excluding localhost and loopback (CWE-319).
+  - `auth.java.oauth.static-state` — hardcoded constant `state` in an authorize
+    URL, which provides no CSRF protection (CWE-330).
+  - `auth.java.jwt.untrusted-verify-key` — taint rule: request input flowing into
+    the JWT verification key (jjwt `setSigningKey`/`verifyWith`, Nimbus
+    `MACVerifier`) (CWE-347).
+  - `auth.java.jwt.none-algorithm` — the unsecured `none` algorithm in jjwt
+    (`SignatureAlgorithm.NONE`) or Auth0 java-jwt (`Algorithm.none()`) (CWE-347).
+  - `auth.java.web.permit-all-actuator` — Spring Security `permitAll()` on a
+    sensitive management/diagnostics path such as `/actuator/**` (CWE-862).
+  - `auth.java.cors.credentialed-wildcard` — a wildcard CORS origin combined with
+    credentials, including the `addAllowedOriginPattern("*")` API (CWE-942).
+
+  Each rule ships annotated `vulnerable.java` / `safe.java` fixtures enforced by
+  the fixture harness.
+
+- 9d86336: Add three dataflow (taint) rules that track untrusted request input into
+  OAuth/OIDC-sensitive sinks:
+
+  - `auth.flow.oauth-credential-in-log` (JS/TS, CWE-532): an OAuth credential
+    from the request — an authorization `code`, `access_token` / `refresh_token`
+    / `id_token`, bearer `token`, `client_secret`, or the raw `Authorization`
+    header — flowing into a `console.*` / `logger.*` call. Keyed on the request
+    source (not the logged variable name, as `auth.flow.secret-in-log` is), so it
+    catches the leak through arbitrarily-named intermediates while a redacting or
+    truncating helper clears the taint.
+  - `auth.jwt.untrusted-verify-key` (JS/TS, CWE-347): request input flowing into
+    the verification key or the `algorithms` allowlist of `jwt.verify(...)`. The
+    sink focuses the key/algorithms argument (never the token), so it fires only
+    on attacker-controlled verification — distinct from the
+    algorithm-confusion and missing-allowlist rules.
+  - `auth.py.flow.oauth-credential-in-log` (Python/Flask, CWE-532): the Flask
+    variant of the credential-in-log rule, tracking credential-named
+    `request.*`/header values into `print` / `logging.*` / `logger.*`.
+
+  Each ships annotated `vulnerable` and `safe` fixtures, including a sanitizer
+  true-negative.
+
+- da9c2b6: feat(rules): three new OAuth rules — ROPC grant, cleartext endpoint, static state
+
+  - `auth.oauth.ropc-grant` (AUTH-OAUTH-014, CWE-522): flags the Resource Owner
+    Password Credentials grant (`grant_type=password`), forbidden by RFC 9700 and
+    removed in OAuth 2.1.
+  - `auth.oauth.insecure-token-endpoint` (AUTH-OAUTH-015, CWE-319): flags OAuth/OIDC
+    authorize and token endpoints contacted over cleartext `http://`; `localhost`
+    loopback dev hosts are not flagged.
+  - `auth.oauth.static-state` (AUTH-OAUTH-016, CWE-330): flags a hardcoded constant
+    `state` in an authorization request, which provides no CSRF protection.
+
+  All three are JS/TS, low-false-positive, and ship vulnerable/safe fixtures.
+
+- 4a573c3: feat(rules): six new Python OAuth/OIDC/JWT rules
+
+  Ports of the JS/TS OAuth and JWT rules to Python, plus two Python-native rules:
+
+  - `auth.py.oauth.ropc-grant` (AUTH-PY-OAUTH-001, CWE-522): flags the Resource
+    Owner Password Credentials grant (`grant_type=password`) in a `requests` /
+    `httpx` / `urllib` body or an OAuth client call — forbidden by RFC 9700 and
+    removed in OAuth 2.1.
+  - `auth.py.oauth.insecure-token-endpoint` (AUTH-PY-OAUTH-002, CWE-319): flags
+    OAuth/OIDC authorize, token, and `.well-known` endpoints contacted over
+    cleartext `http://`; `localhost` and loopback dev hosts are not flagged.
+  - `auth.py.oauth.static-state` (AUTH-PY-OAUTH-003, CWE-330): flags a hardcoded
+    constant `state` in an authorization request, which provides no CSRF
+    protection.
+  - `auth.py.jwt.untrusted-verify-key` (AUTH-PY-JWT-007, CWE-347): taint rule for
+    request-controlled key / `algorithms` reaching `jwt.decode` (PyJWT,
+    python-jose); the sink is focused on the key and algorithms, never the token.
+  - `auth.py.oauth.insecure-transport-env` (AUTH-PY-OAUTH-004, CWE-319, native):
+    flags setting `OAUTHLIB_INSECURE_TRANSPORT`, which disables oauthlib's HTTPS
+    requirement for OAuth flows.
+  - `auth.py.oauth.token-request-verify-disabled` (AUTH-PY-OAUTH-005, CWE-295,
+    native): flags `verify=False` on Authlib / requests-oauthlib token-exchange
+    calls (`fetch_token` / `refresh_token` / `fetch_access_token`).
+
+  All six are low-false-positive and ship vulnerable/safe fixtures.
+
+### Patch Changes
+
+- 9d86336: Add a safe, deterministic autofix to `auth.jwt.ignore-expiration`: flip
+  `ignoreExpiration: true` to `ignoreExpiration: false` so the `jsonwebtoken`
+  expiry check is re-enabled. The matched node is narrowed to the offending
+  property (the `verify` call is scoped with `pattern-inside`), so the rewrite
+  touches only that boolean and leaves every sibling option intact; `false` is the
+  library default and the value the rule already treats as compliant. Detection is
+  unchanged, and the fix is covered by the autofix safety contract
+  (`fixes.test.ts`).
+
 ## 0.2.6
 
 ### Patch Changes

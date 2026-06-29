@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "Use with Semgrep"
-description: "Run the full OAuthLint pack with one Semgrep command and no install — semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src — plus per-language bundles."
+description: "Run the full OAuthLint pack with one Semgrep command and no install (semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src), plus per-language bundles."
 section: "semgrep"
 ---
 

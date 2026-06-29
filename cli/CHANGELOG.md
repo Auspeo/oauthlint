@@ -1,5 +1,60 @@
 # oauthlint
 
+## 0.7.0
+
+### Minor Changes
+
+- da9c2b6: Expand and harden the `--fix` autofix capability.
+
+  Rules:
+
+  - Add safe, deterministic autofixes to the Go TLS/cookie rules:
+    `auth.go.tls.insecure-skip-verify` (`InsecureSkipVerify: true` → `false`),
+    `auth.go.tls.min-version` (obsolete `MinVersion` → `tls.VersionTLS12`), and
+    `auth.go.cookie.insecure` (`Secure`/`HttpOnly: false` → `true`). Each is a
+    literal replacement scoped to the offending field via `pattern-inside`, so
+    surrounding code is untouched, and each is covered by the autofix safety
+    contract (`fixes.test.ts`).
+  - Remove the `fix:` from the JavaScript cookie rules (`auth.cookie.no-secure`,
+    `auth.cookie.no-httponly`, `auth.cookie.no-samesite`). Their single
+    rule-level spread template could corrupt source: on the 2-argument
+    `res.cookie(name, value)` form it emitted a literal `$OPTS`, and it left an
+    explicit `secure: false`/`httpOnly: false` in place. A correct fix isn't a
+    clean literal replacement for these, so they now ship no autofix.
+
+  CLI:
+
+  - Add `--fix-dry-run`, which previews exactly what `--fix` would change as a
+    unified diff per file without writing anything.
+  - After a real `--fix`, print a summary of which files changed and how many
+    fixes were applied. `--fix` is idempotent — running it twice is a no-op.
+
+- 9d86336: Surface per-finding autofix data in the machine-readable report.
+
+  When a matched rule ships a `fix:`, the finding now carries an optional `fix`
+  object with the rendered replacement text and the exact span it overwrites
+  (1-based line/column plus 0-based byte offsets). This is exposed in two places:
+
+  - `--json` adds the optional `fix` field to each finding (omitted when there is
+    no fix, so existing consumers are byte-compatible).
+  - `--format sarif` populates the standard SARIF 2.1.0 `fixes` array on the
+    result (`artifactChanges` → `replacements`), which SARIF-aware tools can
+    apply directly.
+
+  The pretty and HTML formatters are unchanged. This is what lets the VS Code
+  extension offer a per-finding "Apply fix" Quick Fix without re-running `--fix`.
+
+### Patch Changes
+
+- Updated dependencies [da9c2b6]
+- Updated dependencies [4a573c3]
+- Updated dependencies [4a573c3]
+- Updated dependencies [9d86336]
+- Updated dependencies [9d86336]
+- Updated dependencies [da9c2b6]
+- Updated dependencies [4a573c3]
+  - oauthlint-rules@0.3.0
+
 ## 0.6.1
 
 ### Patch Changes

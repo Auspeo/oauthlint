@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "Recipes"
-description: "A copy-paste integration cookbook for OAuthLint — gate PRs and upload SARIF, inline annotations, pre-commit, Semgrep one-liners, baselines, changed-files scans, HTML reports, Docker/CI, and editors."
+description: "A copy-paste integration cookbook for OAuthLint: gate PRs and upload SARIF, inline annotations, pre-commit, Semgrep one-liners, baselines, changed-files scans, HTML reports, Docker/CI, and editors."
 section: "recipes"
 ---
 
@@ -9,7 +9,7 @@ section: "recipes"
 
 A cookbook of copy-paste integrations. Each recipe is one snippet you can drop in as-is. For the full flag set and behaviour behind these, see the [CLI reference](/docs/cli) and the [GitHub Action](/docs/github-action) docs.
 
-## GitHub Action — gate PRs + upload SARIF to Code Scanning
+## GitHub Action: gate PRs and upload SARIF to Code Scanning
 
 Fail the job on HIGH+ findings and surface them in the **Security → Code scanning** tab as inline annotations.
 
@@ -41,7 +41,7 @@ jobs:
 
 > The SARIF pass never fails the job on its own; gating is controlled solely by `fail-on`. `if: always()` ensures the upload still runs when findings exist.
 
-## GitHub Action — inline PR annotations
+## GitHub Action: inline PR annotations
 
 Annotations are **on by default** (`annotations: 'true'`), with no token, no extra permission, and no SARIF upload required.
 
@@ -61,7 +61,7 @@ Scan only the files each commit touches, before they leave your machine. Add OAu
 ```yaml
 repos:
   - repo: https://github.com/Auspeo/oauthlint
-    rev: oauthlint@0.4.0
+    rev: oauthlint@0.7.0
     hooks:
       - id: oauthlint
         args: [--fail-on, HIGH]
@@ -69,7 +69,7 @@ repos:
 
 > Then run `pre-commit install`. The hook needs Node (≥ 20) and Semgrep on `PATH`; omit `args` to report without blocking. See [pre-commit](/docs/pre-commit).
 
-## Run from Semgrep — no install
+## Run from Semgrep: no install
 
 Already have [Semgrep](https://semgrep.dev)? Run the entire pack with one command. No install, no config file, no account:
 

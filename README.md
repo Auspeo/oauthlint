@@ -28,7 +28,7 @@ npx oauthlint scan ./src
 
 ## What it is
 
-AI coding assistants — tools like GitHub Copilot, Cursor, and Claude Code, and others — ship the same OAuth/JWT bugs across every project they touch:
+AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and others) ship the same OAuth/JWT bugs across every project they touch:
 
 - JWT verified with `alg: none` accepted
 - `client_secret` hard-coded in source
@@ -39,7 +39,7 @@ AI coding assistants — tools like GitHub Copilot, Cursor, and Claude Code, and
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
-- …and 100+ more, across JS/TS · Python · Go · Java · Rust
+- …and many more: 138 rules across JavaScript/TypeScript, Python, Go, Rust, and Java
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -84,7 +84,8 @@ npx oauthlint scan ./src --format sarif > oauthlint.sarif
 # a shareable, self-contained HTML audit report
 npx oauthlint scan ./src --format html > report.html
 
-# auto-apply safe fixes (e.g. cookie flags)
+# auto-apply safe fixes (e.g. cookie flags); preview them first with --fix-dry-run
+npx oauthlint scan ./src --fix-dry-run
 npx oauthlint scan ./src --fix
 
 # incremental: scan only what changed (fast; great for pre-commit hooks)
@@ -96,7 +97,7 @@ npx oauthlint baseline ./src
 npx oauthlint scan ./src --baseline --fail-on HIGH
 ```
 
-Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a config), `oauthlint doctor` (check your setup).
+Other commands: `oauthlint list` (browse rules), `oauthlint explain <rule-id>` (read a rule's why and fix in your terminal), `oauthlint init` (write a config), `oauthlint doctor` (check your setup).
 
 ### GitHub Action
 
@@ -107,11 +108,11 @@ Other commands: `oauthlint list` (browse rules), `oauthlint init` (write a confi
     fail-on: HIGH
 ```
 
-The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language. `Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint; the original `Auspeo/oauthlint/action@v1` subpath still works and behaves identically.
+The Action is **Docker-based**, so it runs in any repository's CI regardless of the project's language. `Auspeo/oauthlint@v1` is the [GitHub Marketplace](https://github.com/marketplace) entrypoint; the original `Auspeo/oauthlint/action@v1` subpath still works and behaves identically. The SARIF output (`--format sarif`) uploads to [GitHub Code Scanning](https://oauthlint.dev/docs/code-scanning), and there's a recipe for [GitLab CI](https://oauthlint.dev/docs/gitlab-ci) too.
 
 ### VS Code / Cursor / Windsurf
 
-Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace (or [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) for Cursor / Windsurf) for inline diagnostics on save, a status-bar finding count, plus Quick Fix suppressions.
+Install **[oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)** from the VS Code Marketplace (or [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) for Cursor / Windsurf) for inline diagnostics on save, a status-bar finding count, an "Apply fix" Quick Fix where a rule ships a safe autofix, and Quick Fix suppressions.
 
 ### Use directly with Semgrep
 
@@ -134,7 +135,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**100+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Java and Rust. Each is mapped to CWE & OWASP and has a documentation page. Some are **taint-mode dataflow rules** (open-redirect, SSRF) that follow untrusted input to its sink rather than matching a single line. The catalogue grows with every release.
+**138 rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 

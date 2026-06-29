@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "Suppressing rules"
-description: "Silence a single finding with an auditable inline comment — naming the rule and, ideally, the reason — when you've made a deliberate, documented exception."
+description: "Silence a single finding with an auditable inline comment (naming the rule and, ideally, the reason) when you've made a deliberate, documented exception."
 section: "suppressing"
 ---
 

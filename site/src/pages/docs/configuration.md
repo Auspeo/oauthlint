@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "Configuration"
-description: "Configure OAuthLint with an .oauthlintrc file — scope paths, toggle rules, set a severity floor, and load custom rules."
+description: "Configure OAuthLint with an .oauthlintrc file: scope paths, toggle rules, set a severity floor, and load custom rules."
 section: "configuration"
 ---
 
