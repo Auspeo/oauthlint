@@ -1,0 +1,90 @@
+rules:
+  - id: auth.rust.flow.ssrf
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the URL of an outbound HTTP request.
+      Because the destination is attacker-controlled, this is a Server-Side
+      Request Forgery (CWE-918): an attacker can point the request at internal
+      services behind your firewall, or at the cloud metadata endpoint
+      (http://169.254.169.254/...) to steal IAM/instance credentials and pivot
+      deeper into your infrastructure.
+
+      Never pass a request-derived `String` (an axum/actix handler parameter, or
+      a value taken from request input) straight into `reqwest::get(...)` or a
+      `Client::get(...)` / `Client::post(...).send()`. Validate the destination
+      host against an explicit allow-list (parse the URL and check the resolved
+      host/scheme, rejecting private/loopback/link-local ranges) before issuing
+      the request.
+    # Taint mode so indirection (let u = params.url; reqwest::get(u)) is caught,
+    # not just the inline form. The source is narrowed to function PARAMETERS
+    # (the shape an axum/actix handler takes its request data in) so an
+    # arbitrary local `let url = "https://constant"` is not treated as untrusted
+    # — only data arriving as a handler/function parameter is. The taint is
+    # cleared by an allow-list / host-validation if-guard, mirroring the Python
+    # and Go SSRF rules.
+    mode: taint
+    pattern-sources:
+      # A function parameter carrying request data: a bare `String` (the typical
+      # axum `String` / extracted field), or an axum `Query`/`Path` extractor
+      # (both the type-position and the destructured forms). Focus the parameter
+      # so the taint tracks the value rather than the whole function.
+      - patterns:
+          - pattern-either:
+              - pattern: "fn $F(..., $P: String, ...) {...}"
+              - pattern: "fn $F(..., $P: Query<$T>, ...) {...}"
+              - pattern: "fn $F(..., $P: Path<$T>, ...) {...}"
+              - pattern: "fn $F(..., Query($P): Query<$T>, ...) {...}"
+              - pattern: "fn $F(..., Path($P): Path<$T>, ...) {...}"
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      # A value used inside an allow-list / host-validation if-guard is treated
+      # as vetted, so the guarded request does not fire. A bare `Url::parse(...)`
+      # is deliberately NOT a sanitizer: the parsed URL is still
+      # attacker-controlled, so parse-then-use without a host check must fire.
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if is_allowed_url(<... $V ...>) {
+                  ...
+              }
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if validate_host(<... $V ...>) {
+                  ...
+              }
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW.contains(<... $V ...>) {
+                  ...
+              }
+    pattern-sinks:
+      # Focus the URL argument so the finding lands on the tainted destination.
+      - patterns:
+          - pattern-either:
+              - pattern: reqwest::get($URL)
+              - pattern: reqwest::blocking::get($URL)
+              - pattern: $C.get($URL).send()
+              - pattern: $C.post($URL).send()
+              - pattern: $C.put($URL).send()
+              - pattern: $C.delete($URL).send()
+              - pattern: $C.head($URL).send()
+              - pattern: $C.request($M, $URL).send()
+          - focus-metavariable: $URL
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - reqwest
+        - axum
+        - actix-web
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/918.html
