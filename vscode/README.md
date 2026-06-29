@@ -64,7 +64,7 @@ If the CLI is not found, the extension shows a one-time notice with setup steps.
 - **oauthlint: Open rule documentation**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
-pack covers **138 rules across JavaScript/TypeScript, Python, Go, Rust, and Java**,
+pack covers **140+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java**,
 including dataflow (taint) rules for open-redirect and SSRF, and
 runs from the [CLI](https://www.npmjs.com/package/oauthlint) and
 [GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action).
@@ -73,3 +73,6 @@ runs from the [CLI](https://www.npmjs.com/package/oauthlint) and
 
 Full rule catalogue and guides at **[oauthlint.dev](https://oauthlint.dev)** ·
 source on [GitHub](https://github.com/Auspeo/oauthlint).
+
+See also: the [MCP server](https://oauthlint.dev/docs/mcp) lets AI coding tools
+scan the auth code they generate, in the loop, before it reaches your editor.

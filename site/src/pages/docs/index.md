@@ -44,13 +44,14 @@ npx oauthlint scan ./src --fail-on HIGH
 
 See every flag in the [CLI reference](/docs/cli).
 
-## Three ways to run it
+## Where to run it
 
 OAuthLint meets your code where it already lives:
 
 - **CLI / CI**: `npx oauthlint scan`, locally or in any pipeline. → [CLI reference](/docs/cli)
 - **GitHub Action**: PR annotations and SARIF upload to GitHub code scanning. It's Docker-based, so it runs for any language. → [GitHub Action](/docs/github-action)
 - **VS Code**: inline diagnostics as you type, with Quick Fix suppressions. → [VS Code extension](/docs/vscode)
+- **AI coding tools**: an MCP server so Claude Code, Cursor, Windsurf and others scan the auth code they generate, in the loop. → [MCP server](/docs/mcp)
 
 ## Tune it to your project
 
