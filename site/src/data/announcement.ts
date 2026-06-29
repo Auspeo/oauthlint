@@ -18,7 +18,7 @@ export interface Announcement {
 
 export const announcement: Announcement | null = {
   version: 'v0.7.0',
-  text: 'v0.7.0 is out: 130+ rules across five languages, autofix with a dry-run preview, and dataflow analysis.',
+  text: 'v0.7.0 is out: 130+ rules across JavaScript, TypeScript, Python, Go, Java, and Rust, plus autofix with a dry-run preview and dataflow analysis.',
   href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.7.0',
 };
 

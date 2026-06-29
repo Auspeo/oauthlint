@@ -46,4 +46,16 @@ describe('announcement config', () => {
     // "100+" is fine; "103 rules" would freeze a count that drifts.
     expect(announcement.text).not.toMatch(/\b\d{2,3} rules\b/);
   });
+
+  it('keeps the language count count-resilient (list languages, never "N languages")', () => {
+    if (announcement === null) return;
+    // "five languages" / "6 languages" freezes a count that drifts as families
+    // are added. List the languages (or drop the count) instead.
+    expect(announcement.text).not.toMatch(/\b(five|six|seven|\d+)\s+languages\b/i);
+  });
+
+  it('carries no personal names or legacy product names', () => {
+    if (announcement === null) return;
+    expect(announcement.text).not.toMatch(/OAuthHound/i);
+  });
 });

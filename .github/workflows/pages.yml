@@ -14,16 +14,21 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Deploys to Cloudflare Pages via wrangler (API-token auth), not GitHub Pages,
+# so the job only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Build & deploy to Cloudflare Pages
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 10.26.2
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '22'
           cache: pnpm
