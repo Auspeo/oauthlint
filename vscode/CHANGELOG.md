@@ -4,6 +4,14 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.2] - 2026-06-29
+
+### Changed
+
+- The Marketplace and Open VSX overview now leads with the project banner, and
+  this changelog is restructured to the Keep a Changelog format with dates. No
+  functional changes to the extension.
+
 ## [0.4.1] - 2026-06-29
 
 ### Fixed
