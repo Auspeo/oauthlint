@@ -1,5 +1,8 @@
-import pc from 'picocolors';
+import { readFileSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
+import pc, { createColors } from 'picocolors';
 import type { Finding, ScanResult, SeverityName } from '../types.js';
+import { renderCodeFrame } from './code-frame.js';
 
 const SEVERITY_COLOR: Record<SeverityName, (s: string) => string> = {
   CRITICAL: (s) => pc.bgRed(pc.white(s)),
@@ -9,20 +12,61 @@ const SEVERITY_COLOR: Record<SeverityName, (s: string) => string> = {
   INFO: pc.gray,
 };
 
+/**
+ * Foreground accent per severity, used for the code-frame gutter and caret.
+ * Distinct from {@link SEVERITY_COLOR} so CRITICAL renders as plain red here
+ * rather than the inverted badge used for the severity tag.
+ */
+type Colors = ReturnType<typeof createColors>;
+function accentFor(severity: SeverityName, colors: Colors): (s: string) => string {
+  switch (severity) {
+    case 'CRITICAL':
+    case 'HIGH':
+      return colors.red;
+    case 'MEDIUM':
+      return colors.yellow;
+    case 'LOW':
+      return colors.cyan;
+    default:
+      return colors.gray;
+  }
+}
+
 export interface ReporterOptions {
   /** When true, emit machine-readable JSON instead of pretty output. */
   json?: boolean;
   /** Stream to write to (defaults to process.stdout). */
   stream?: NodeJS.WritableStream;
+  /**
+   * Show a source code frame (context lines + caret) under each finding in the
+   * pretty output. Default on; `--no-code-frame` disables it.
+   */
+  codeFrame?: boolean;
+  /**
+   * Whether to emit ANSI colour. Defaults to picocolors' own detection
+   * (honours NO_COLOR / `--no-color` / non-TTY). Mainly an injection point for
+   * deterministic tests.
+   */
+  color?: boolean;
+  /** Directory relative finding paths resolve against (defaults to cwd). */
+  cwd?: string;
 }
 
 export class Reporter {
   private readonly json: boolean;
   private readonly stream: NodeJS.WritableStream;
+  private readonly codeFrame: boolean;
+  private readonly cwd: string;
+  private readonly colors: Colors;
+  /** Per-path source cache so each file is read at most once per report. */
+  private readonly fileCache = new Map<string, string | null>();
 
   constructor(opts: ReporterOptions = {}) {
     this.json = opts.json ?? false;
     this.stream = opts.stream ?? process.stdout;
+    this.codeFrame = opts.codeFrame ?? true;
+    this.cwd = opts.cwd ?? process.cwd();
+    this.colors = createColors(opts.color ?? pc.isColorSupported);
   }
 
   reportStart(target: string, ruleCount: number): void {
@@ -122,6 +166,7 @@ export class Reporter {
     const id = pc.bold(f.ruleId);
     this.line(`${tag} ${id}${f.oauthlintRuleId ? pc.dim(` (${f.oauthlintRuleId})`) : ''}`);
     this.line(pc.dim(`  ${f.filePath}:${f.startLine}`));
+    if (this.codeFrame) this.printCodeFrame(f);
     const firstLine = f.message.split('\n')[0]?.trim() ?? '';
     if (firstLine) this.line(pc.dim('  → ') + firstLine);
     if (f.docUrl) this.line(pc.dim(`  📖 ${f.docUrl}`));
@@ -130,6 +175,57 @@ export class Reporter {
     // touch the Reporter, so machine-readable output stays uncorrupted.
     this.line(pc.dim(`  ↳ run \`oauthlint explain ${f.ruleId}\` for details + the fix`));
     this.line('');
+  }
+
+  /**
+   * Print a source code frame beneath the `file:line` line. Degrades gracefully
+   * — and silently — when the columns are missing (no precise span to point at)
+   * or the file can't be read, leaving the existing terse output intact.
+   */
+  private printCodeFrame(f: Finding): void {
+    if (f.startCol === undefined || f.endCol === undefined) return;
+    const source = this.readSource(f.filePath);
+    if (source === null) return;
+
+    const frame = renderCodeFrame(
+      source,
+      { startLine: f.startLine, endLine: f.endLine, startCol: f.startCol, endCol: f.endCol },
+      {
+        accent: accentFor(f.severity, this.colors),
+        dim: this.colors.dim,
+        maxWidth: this.terminalWidth(),
+      },
+    );
+    if (frame.length === 0) return;
+    this.line('');
+    for (const row of frame) this.line(`  ${row}`);
+    this.line('');
+  }
+
+  /** Read and cache a file's contents; `null` when it can't be read. */
+  private readSource(filePath: string): string | null {
+    const abs = isAbsolute(filePath) ? filePath : resolve(this.cwd, filePath);
+    const cached = this.fileCache.get(abs);
+    if (cached !== undefined) return cached;
+    let source: string | null;
+    try {
+      source = readFileSync(abs, 'utf8');
+    } catch {
+      source = null;
+    }
+    this.fileCache.set(abs, source);
+    return source;
+  }
+
+  /**
+   * Usable width for the frame. Reserves a small margin off the terminal width
+   * (the frame is already indented two spaces) and clamps to a sane range so a
+   * very wide or unknown-width terminal never produces an unwieldy frame.
+   */
+  private terminalWidth(): number {
+    const cols = (this.stream as { columns?: number }).columns;
+    const width = typeof cols === 'number' && cols > 0 ? cols : 80;
+    return Math.max(40, Math.min(width - 2, 120));
   }
 
   private line(s = ''): void {
