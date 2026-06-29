@@ -311,7 +311,12 @@ rules:
       - pattern: validateRedirect(...)
       - pattern: isAllowedRedirect(...)
       - pattern: $ALLOW.MatchString(...)
-      - pattern: url.Parse(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
   - id: auth.go.flow.secret-in-response
     languages:
       - go
@@ -419,7 +424,12 @@ rules:
       - pattern: validateURL(...)
       - pattern: isAllowedHost(...)
       - pattern: $ALLOW.MatchString(...)
-      - pattern: url.Parse(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if $ALLOW[$U.Host] {
+                ...
+              }
   - id: auth.go.flow.weak-rand
     languages:
       - go
