@@ -103,4 +103,50 @@ describe('Reporter (JSON)', () => {
     expect(findings[0]?.ruleId).toBe('auth.jwt.alg-none');
     expect(findings[0]?.severity).toBe('HIGH');
   });
+
+  it('includes a finding `fix` when present, and omits the key when absent', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      json: true,
+      stream: out as unknown as NodeJS.WritableStream,
+    });
+    const withFix: Finding = {
+      ruleId: 'auth.go.tls.insecure-skip-verify',
+      severity: 'HIGH',
+      filePath: 'tls.go',
+      startLine: 3,
+      endLine: 3,
+      message: 'InsecureSkipVerify disables certificate validation.',
+      fix: {
+        replacement: 'false',
+        range: {
+          startLine: 3,
+          startCol: 22,
+          endLine: 3,
+          endCol: 26,
+          startOffset: 40,
+          endOffset: 44,
+        },
+      },
+    };
+    const noFix: Finding = {
+      ruleId: 'auth.jwt.alg-none',
+      severity: 'HIGH',
+      filePath: 'jwt.ts',
+      startLine: 1,
+      endLine: 1,
+      message: 'JWT alg:none accepted.',
+    };
+    reporter.reportResult(baseResult([withFix, noFix]));
+    const payload = JSON.parse(out.toString()) as {
+      findings: Array<Record<string, unknown>>;
+    };
+    expect(payload.findings[0]?.fix).toEqual({
+      replacement: 'false',
+      range: { startLine: 3, startCol: 22, endLine: 3, endCol: 26, startOffset: 40, endOffset: 44 },
+    });
+    // A finding without a fix must not carry the key at all (JSON.stringify
+    // drops `undefined`), so existing consumers see byte-identical output.
+    expect(payload.findings[1]).not.toHaveProperty('fix');
+  });
 });

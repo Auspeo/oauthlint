@@ -54,6 +54,7 @@ A few details worth knowing:
 
 - `--severity` controls **what is printed**; `--fail-on` controls **what fails the build**. They are independent.
 - `--severity` and `--fail-on` accept any case (`high`, `HIGH`); an unrecognised value is rejected with an error.
+- When a finding ships a safe autofix, the machine-readable formats carry it per finding: `--json` adds an optional `fix` object (`{ replacement, range }`, where `range` has 1-based `startLine`/`startCol`/`endLine`/`endCol` plus 0-based byte `startOffset`/`endOffset`), and `--format sarif` populates the standard SARIF `fixes` array on the result. The field is omitted entirely for findings with no fix, so existing consumers are unaffected. The [VS Code extension](/docs/vscode) uses this to offer a per-finding **Apply fix** action.
 - Inline `oauthlint-disable` suppressions are applied before the severity filter. See [Suppressing rules](/docs/suppressing).
 - Config-file values (`failOn`, `customRulesDir`, path scoping) are read from `.oauthlintrc.yml` and overridden by the matching flag. See [Configuration](/docs/configuration).
 

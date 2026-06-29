@@ -1,0 +1,15 @@
+name: "OAuthLint CodeQL config"
+
+# OAuthLint ships intentionally-vulnerable code on purpose: the rule test
+# fixtures, the CLI/extension/action test suites, and the demo "vulnerable
+# example" app all contain the exact OAuth/OIDC/JWT anti-patterns OAuthLint is
+# built to detect. Scanning them produces expected, by-design alerts (a
+# dataflow fixture for "credential in log" is a log-injection finding by
+# construction) that are not defects in shipped code. Exclude them so CodeQL
+# focuses on the product source (cli/src, vscode/src, rules/src, site/src).
+paths-ignore:
+  - "**/tests/**"
+  - "**/*.test.ts"
+  - "rules/tests/fixtures/**"
+  - "examples/**"
+  - ".validation/**"

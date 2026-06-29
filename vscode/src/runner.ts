@@ -5,6 +5,25 @@ import { spawn } from 'node:child_process';
  * Kept intentionally small + decoupled so we can unit-test the runner
  * without pulling the VS Code module into the test environment.
  */
+/**
+ * The exact span an autofix replacement overwrites. Mirrors the CLI's
+ * `FixRange`: lines/columns are 1-based and `endCol` is exclusive.
+ */
+export interface OAuthLintFixRange {
+  startLine: number;
+  startCol: number;
+  endLine: number;
+  endCol: number;
+  startOffset?: number;
+  endOffset?: number;
+}
+
+/** Per-finding autofix data — present only when the rule ships a `fix:`. */
+export interface OAuthLintFix {
+  replacement: string;
+  range: OAuthLintFixRange;
+}
+
 export interface OAuthLintFinding {
   ruleId: string;
   oauthlintRuleId?: string;
@@ -16,6 +35,8 @@ export interface OAuthLintFinding {
   docUrl?: string;
   cwe?: string;
   llmPrevalence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** Autofix data — present only when the rule ships a `fix:` for this match. */
+  fix?: OAuthLintFix;
 }
 
 export interface OAuthLintReport {

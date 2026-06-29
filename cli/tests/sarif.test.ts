@@ -89,6 +89,49 @@ describe('toSarif', () => {
     expect(loc?.region.startLine).toBe(12);
     expect(loc?.region.endLine).toBe(14);
   });
+
+  it('emits a valid `fixes` entry for a finding that carries a fix', async () => {
+    const sarif = await toSarif(
+      baseResult([
+        finding({
+          ruleId: 'auth.go.tls.insecure-skip-verify',
+          filePath: '/repo/root/tls.go',
+          fix: {
+            replacement: 'false',
+            range: {
+              startLine: 3,
+              startCol: 22,
+              endLine: 3,
+              endCol: 27,
+              startOffset: 40,
+              endOffset: 45,
+            },
+          },
+        }),
+      ]),
+    );
+    const result = sarif.runs[0]?.results[0];
+    expect(result?.fixes).toHaveLength(1);
+    const fix = result?.fixes?.[0];
+    expect(fix?.description.text).toContain('auth.go.tls.insecure-skip-verify');
+    const change = fix?.artifactChanges[0];
+    // The artifact path is relativised exactly like the result location.
+    expect(change?.artifactLocation.uri).toBe(relativise('/repo/root/tls.go'));
+    const replacement = change?.replacements[0];
+    // SARIF columns are 1-based and endColumn is exclusive — passed through verbatim.
+    expect(replacement?.deletedRegion).toEqual({
+      startLine: 3,
+      startColumn: 22,
+      endLine: 3,
+      endColumn: 27,
+    });
+    expect(replacement?.insertedContent.text).toBe('false');
+  });
+
+  it('omits `fixes` entirely for findings without a fix', async () => {
+    const sarif = await toSarif(baseResult([finding()]));
+    expect(sarif.runs[0]?.results[0]?.fixes).toBeUndefined();
+  });
 });
 
 describe('relativise', () => {

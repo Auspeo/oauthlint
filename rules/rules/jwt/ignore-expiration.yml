@@ -18,17 +18,27 @@ rules:
     # pass `ignoreExpiration: true`; `verify(...)` without that option, and
     # `ignoreExpiration: false`, are never matched. We also support the
     # destructured import `import { verify } from 'jsonwebtoken'`, scoped to that
-    # import so an unrelated `verify()` is safe. The options object is matched
-    # with `{ ..., ignoreExpiration: true, ... }` so the flag is caught
-    # regardless of which other options (algorithms, maxAge, audience, ...)
-    # appear alongside it.
-    pattern-either:
-      - pattern: 'jwt.verify($T, $K, { ..., ignoreExpiration: true, ... })'
-      - patterns:
-          - pattern-inside: |
-              import { ..., verify, ... } from 'jsonwebtoken'
-              ...
-          - pattern: 'verify($T, $K, { ..., ignoreExpiration: true, ... })'
+    # import so an unrelated `verify()` is safe. The verify call is matched with
+    # `pattern-inside` (any options object), and the matched node is narrowed to
+    # the `ignoreExpiration: true` property itself — this keeps detection
+    # identical (the flag is still caught regardless of which other options
+    # appear alongside it) while letting the autofix below rewrite just that
+    # property and leave every sibling option untouched.
+    patterns:
+      - pattern-either:
+          - pattern-inside: 'jwt.verify($T, $K, {...})'
+          - patterns:
+              - pattern-inside: |
+                  import { ..., verify, ... } from 'jsonwebtoken'
+                  ...
+              - pattern-inside: 'verify($T, $K, {...})'
+      - pattern: 'ignoreExpiration: true'
+    # Safe, deterministic autofix: flip the disabled check back on. `false` is the
+    # secure value — it is the library default (expiry enforced) and the exact
+    # value the rule treats as compliant — so the rewrite fully resolves the
+    # finding. The match is narrowed to the property, so `ignoreExpiration: true`
+    # becomes `ignoreExpiration: false` with the rest of the options object intact.
+    fix: 'ignoreExpiration: false'
     metadata:
       oauthlint-rule-id: AUTH-JWT-011
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-ignore-expiration

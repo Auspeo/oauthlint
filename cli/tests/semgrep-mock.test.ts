@@ -86,6 +86,34 @@ describe('SemgrepAdapter.scan (mocked execa)', () => {
     expect(f.message).toBe('JWT alg:none accepted.'); // trimmed
   });
 
+  it('surfaces a per-finding `fix` from extra.fix (line/col + byte offsets)', async () => {
+    resolveWith({
+      stdout: JSON.stringify({
+        results: [
+          semgrepResult({
+            check_id: 'rules.tls.auth.go.tls.insecure-skip-verify',
+            start: { line: 3, col: 22, offset: 40 },
+            end: { line: 3, col: 27, offset: 45 },
+            extra: { severity: 'ERROR', message: 'x', fix: 'false', metadata: {} },
+          }),
+        ],
+      }),
+    });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    const result = await adapter.scan('/target');
+    expect(result.findings[0].fix).toEqual({
+      replacement: 'false',
+      range: { startLine: 3, startCol: 22, endLine: 3, endCol: 27, startOffset: 40, endOffset: 45 },
+    });
+  });
+
+  it('leaves `fix` absent when the result carries no extra.fix', async () => {
+    resolveWith({ stdout: JSON.stringify({ results: [semgrepResult()] }) });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    const result = await adapter.scan('/target');
+    expect(result.findings[0].fix).toBeUndefined();
+  });
+
   it('defaults severity to MEDIUM for unknown semgrep severities', async () => {
     resolveWith({
       stdout: JSON.stringify({

@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# javascript subset — 53 rules.
+# javascript subset — 55 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -512,6 +512,85 @@ rules:
       - metavariable-regex:
           metavariable: $PATH
           regex: ^['"][^'"]*\/(?:login|signin|sign-in|signup|sign-up|authenticate|auth|reset-password|forgot-password)(?![a-z-])[^'"]*['"]$
+  - id: auth.flow.oauth-credential-in-log
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An OAuth/OIDC credential taken from the request — an authorization
+      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
+      `token`, a `client_secret`, or the raw `Authorization` header — flows
+      into a logging call (`console.*` or `logger.*`). Logs are written to
+      files, shipped to aggregators (Datadog, Splunk, CloudWatch) and read by
+      people and systems that should never see live credentials. A leaked
+      authorization code or token can be replayed to impersonate the user or
+      complete the OAuth exchange (CWE-532).
+
+      Never log the raw credential. Redact or mask it before logging
+      (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
+      (a user id, a key id), or drop the field entirely.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-013
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-oauth-credential-in-log
+      category: security
+      cwe: CWE-532
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/532.html
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.3
+        - https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
+      technology:
+        - express
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query.$K
+              - pattern: $REQ.body.$K
+              - pattern: $REQ.params.$K
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^(?:code|access[_-]?token|accesstoken|refresh[_-]?token|refreshtoken|id[_-]?token|idtoken|token|client[_-]?secret|clientsecret)$
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.query[$K]
+              - pattern: $REQ.body[$K]
+              - pattern: $REQ.params[$K]
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["'](?:code|access[_-]?token|accesstoken|refresh[_-]?token|refreshtoken|id[_-]?token|idtoken|token|client[_-]?secret|clientsecret)["']$
+      - pattern: $REQ.headers.authorization
+      - pattern: $REQ.headers['authorization']
+      - pattern: $REQ.headers["authorization"]
+      - pattern: $REQ.get('authorization')
+      - pattern: $REQ.get('Authorization')
+      - pattern: $REQ.header('authorization')
+      - pattern: $REQ.header('Authorization')
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: console.log(...)
+              - pattern: console.info(...)
+              - pattern: console.debug(...)
+              - pattern: console.warn(...)
+              - pattern: console.error(...)
+      - patterns:
+          - pattern: $LOG.$LEVEL(...)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^.*log(?:ger)?$
+          - metavariable-regex:
+              metavariable: $LEVEL
+              regex: ^(?:log|info|debug|warn|warning|error|trace|fatal|verbose|silly)$
+    pattern-sanitizers:
+      - pattern: redact(...)
+      - pattern: mask(...)
+      - pattern: maskToken(...)
+      - pattern: $S.slice(...)
+      - pattern: $S.substring(...)
+      - pattern: $S.substr(...)
   - id: auth.flow.open-redirect
     languages:
       - javascript
@@ -1301,13 +1380,16 @@ rules:
         - https://cwe.mitre.org/data/definitions/613.html
       technology:
         - jsonwebtoken
-    pattern-either:
-      - pattern: "jwt.verify($T, $K, { ..., ignoreExpiration: true, ... })"
-      - patterns:
-          - pattern-inside: |
-              import { ..., verify, ... } from 'jsonwebtoken'
-              ...
-          - pattern: "verify($T, $K, { ..., ignoreExpiration: true, ... })"
+    patterns:
+      - pattern-either:
+          - pattern-inside: jwt.verify($T, $K, {...})
+          - patterns:
+              - pattern-inside: |
+                  import { ..., verify, ... } from 'jsonwebtoken'
+                  ...
+              - pattern-inside: verify($T, $K, {...})
+      - pattern: "ignoreExpiration: true"
+    fix: "ignoreExpiration: false"
   - id: auth.jwt.in-url
     languages:
       - javascript
@@ -1518,6 +1600,69 @@ rules:
                 - pattern-not: "{..., issuer: ..., ...}"
                 - pattern: "{...}"
       - pattern: jwt.verify($TOKEN, $SECRET)
+  - id: auth.jwt.untrusted-verify-key
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key or the
+      `algorithms` allowlist of `jwt.verify(...)`. When the attacker controls
+      the key, they sign their own forged token and supply the matching key,
+      so every token "verifies" — a complete authentication bypass. When the
+      attacker controls `algorithms`, they can downgrade verification (e.g. to
+      `HS256` against a public key, or to `none` on older libraries) and defeat
+      the signature check (CWE-347, Improper Verification of Cryptographic
+      Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Pin `algorithms` to a constant allowlist
+      (`{ algorithms: ['RS256'] }`) and resolve the key from trusted
+      configuration or a vetted key set keyed by a validated `kid` — never from
+      `req.query` / `req.body` / `req.params` / `req.headers`.
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-012
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
+      technology:
+        - jsonwebtoken
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.headers
+      - pattern: $REQ.query.$X
+      - pattern: $REQ.params.$X
+      - pattern: $REQ.body.$X
+      - pattern: $REQ.headers.$X
+      - pattern: $REQ.query[$K]
+      - pattern: $REQ.params[$K]
+      - pattern: $REQ.body[$K]
+      - pattern: $REQ.headers[$K]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.verify($T, $SINK)
+              - pattern: jwt.verify($T, $SINK, $OPTS)
+          - focus-metavariable: $SINK
+      - patterns:
+          - pattern: "jwt.verify($T, $KEY, {..., algorithms: $SINK, ...})"
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: isAllowedAlgorithm(...)
+      - pattern: validateAlgorithm(...)
+      - pattern: isAllowedKey(...)
+      - pattern: $ALLOW.includes(...)
+      - pattern: $ALLOW.has(...)
+      - pattern: $ALLOW.indexOf(...)
   - id: auth.jwt.weak-secret
     languages:
       - javascript
