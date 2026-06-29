@@ -50,3 +50,22 @@ export function gatedLocation(req: Request, res: Response): void {
   const to = sanitizeRedirect(req.params.to);
   res.location(to);
 }
+
+const ALLOWED = new Set(['/account', '/billing']);
+
+// Inline allow-list guard: the raw request value only reaches res.redirect
+// inside the `if (ALLOWED.has(...))` block, so it is validated before use.
+export function guardedRedirect(req: Request, res: Response): void {
+  if (ALLOWED.has(req.query.next as string)) {
+    res.redirect(req.query.next as string);
+  }
+}
+
+const ALLOWED_ARR = ['/account', '/billing'];
+
+// Inline allow-list guard using Array.includes.
+export function guardedRedirectIncludes(req: Request, res: Response): void {
+  if (ALLOWED_ARR.includes(req.body.to as string)) {
+    res.redirect(req.body.to as string);
+  }
+}

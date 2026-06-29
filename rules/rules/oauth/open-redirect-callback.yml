@@ -25,9 +25,24 @@ rules:
       - pattern: '$REQ.query[$K]'
       - pattern: '$REQ.body[$K]'
     pattern-sanitizers:
-      - pattern: '$SET.has(...)'
-      - pattern: '$ARR.includes(...)'
-      - pattern: '$ARR.indexOf(...)'
+      # An inline allow-list membership guard vets the value: a value used inside
+      # `if (set.has(x)) { ... }` / `if (arr.includes(x)) { ... }` /
+      # `if (arr.indexOf(x) ...) { ... }` is treated as validated. The
+      # boolean-returning membership call itself does NOT sanitize its argument
+      # (that would only clear the boolean, not the value), so we clear taint by
+      # the if-guard, mirroring the Python rule's `if is_safe_url(v): ...`.
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $SET.has($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ARR.includes($X) ...>) { ... }
+      - patterns:
+          - pattern: $X
+          - pattern-inside: |
+              if (<... $ARR.indexOf($X) ...>) { ... }
     pattern-sinks:
       - patterns:
           - pattern-either:
