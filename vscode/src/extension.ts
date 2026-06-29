@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
+import { type ScanScope, applyScanDiagnostics } from './diagnostics.js';
 import { buildApplyFixEdit } from './fix.js';
 import { type FindingHoverData, buildFindingHoverMarkdown } from './hover.js';
 import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
@@ -87,7 +88,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('oauthlint.scanWorkspace', async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];
       if (!folder) return;
-      await scanUri(folder.uri, diagnostics, output, statusBar, findingByDiagnostic);
+      await scanUri(folder.uri, diagnostics, output, statusBar, findingByDiagnostic, 'workspace');
     }),
     vscode.commands.registerCommand('oauthlint.openDoc', (url: string) => {
       if (typeof url === 'string') vscode.env.openExternal(vscode.Uri.parse(url));
@@ -211,6 +212,7 @@ async function scanUri(
   output: vscode.OutputChannel,
   statusBar: StatusBarController,
   findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>,
+  scope: ScanScope = 'file',
 ): Promise<void> {
   if (uri.scheme !== 'file') return;
   const cfg = vscode.workspace.getConfiguration('oauthlint');
@@ -237,6 +239,11 @@ async function scanUri(
   if (result.timedOut) {
     output.appendLine('[oauthlint] scan timed out after 30s');
     statusBar.markError('scan timed out after 30s');
+    return;
+  }
+  if (result.outputCapped) {
+    output.appendLine('[oauthlint] scan aborted — output exceeded the size cap');
+    statusBar.markError('scan output too large');
     return;
   }
   if (!result.report) {
@@ -294,11 +301,16 @@ async function scanUri(
     bucket.push(diag);
   }
 
-  // Clear stale diagnostics for the scanned URI tree, then re-apply.
-  diagnostics.clear();
-  for (const [filePath, diags] of byFile) {
-    diagnostics.set(vscode.Uri.file(filePath), diags);
-  }
+  // Remove the previous scan's stale diagnostics, then re-apply. A single-file
+  // scan only drops its own file's entries (delete) so a concurrent scan of
+  // another file inside the debounce window isn't clobbered; a workspace scan
+  // is a full refresh and clears everything.
+  applyScanDiagnostics(diagnostics, {
+    scope,
+    scannedUri: uri,
+    byFile,
+    toUri: (filePath) => vscode.Uri.file(filePath),
+  });
 
   // Surface the fresh count for the active file (onDidChangeDiagnostics also
   // fires, but mark explicitly so the spinner clears even with no count change).
