@@ -1,0 +1,45 @@
+rules:
+  - id: auth.java.oauth.ropc-grant
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials grant
+      (`grant_type=password`). The application collects the user's password and
+      replays it to the authorization server — exactly what OAuth was designed
+      to avoid. It cannot support federation, MFA, or step-up auth, and any
+      compromise of your service exposes raw user passwords (CWE-522).
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or `client_credentials`
+      for machine-to-machine.
+    # Match `grant_type=password` only where it is a token-request body, so an
+    # unrelated `grant_type` variable is never flagged.
+    #   - URL-encoded form string body: "grant_type=password&username=…". The
+    #     value is bounded so `grant_type=password_reset` is NOT matched.
+    #   - Form builders that pair the key and value as two string-literal args:
+    #     OkHttp `FormBody.Builder().add("grant_type", "password")`, Spring
+    #     `BodyInserters.fromFormData("grant_type", "password")` /
+    #     `MultiValueMap.add(...)`, Apache `new BasicNameValuePair(...)`.
+    pattern-either:
+      - pattern-regex: |-
+          [?&"']grant_type=password(?:["'&\s]|$)
+      - pattern-regex: |-
+          ["']grant_type["']\s*,\s*["']password["']
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+        - spring-web
+        - okhttp
+        - apache-httpclient
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
