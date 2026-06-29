@@ -14,14 +14,15 @@ rules:
       substitute for `state` when handling browser sessions.
     pattern-either:
       # Inline authorize URL carrying both client_id and response_type but no
-      # state. The path is not hardcoded (Google uses /o/oauth2/v2/auth, etc.).
-      - patterns:
-          - pattern-regex: |-
-              ['"]https?://[^'"\s]+\?[^'"]*client_id=[^'"]*['"]
-          - pattern-regex: |-
-              response_type=
-          - pattern-not-regex: |-
-              state=
+      # state, evaluated per quoted URL literal (the lookaheads/lookbehind are
+      # bounded to the contents of one string by `[^'"]`). This avoids the
+      # file-level false negative where a `state=` elsewhere in the file (a
+      # comment, a different correct call) would suppress a genuinely
+      # state-less URL. The path is not hardcoded (Google uses
+      # /o/oauth2/v2/auth, etc.). Single/double quotes only — a dynamic
+      # template-literal URL (backticks) is excluded.
+      - pattern-regex: |-
+          ['"]https?://(?=[^'"]*[?&]client_id=)(?=[^'"]*[?&]response_type=)(?![^'"]*[?&]state=)[^'"]+['"]
       # Programmatic URLSearchParams build (AST object match — robust to key
       # order and length). Fires when client_id + response_type are present but
       # state is not (covers both `state: x` and the `state` shorthand).
