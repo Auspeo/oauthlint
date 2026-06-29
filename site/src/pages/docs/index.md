@@ -1,13 +1,13 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "Getting started"
-description: "Install and run OAuthLint in 30 seconds, read its findings, and wire it into CI — CLI, GitHub Action and VS Code."
+description: "Install and run OAuthLint in 30 seconds, read its findings, and wire it into CI: CLI, GitHub Action, and VS Code."
 section: "getting-started"
 ---
 
 # Getting started
 
-OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / CORS anti-patterns that AI coding assistants ship by default. It flags each one with a fix, before the code reaches a pull request.
+OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / CORS anti-patterns that AI coding tools ship by default. It flags each one with a fix, before the code reaches a pull request.
 
 ## Run your first scan
 
@@ -25,7 +25,7 @@ Each finding is one line of signal:
 
 ```
 CRITICAL  auth.jwt.no-verification  src/auth/session.ts:42
-  Decoding a JWT does not verify its signature — claims.sub can be forged.
+  Decoding a JWT does not verify its signature, so claims.sub can be forged.
   ✓ Fix: jwt.verify(token, key, { algorithms: ['RS256'] })
 ```
 

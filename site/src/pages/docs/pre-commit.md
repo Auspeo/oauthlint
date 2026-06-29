@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "pre-commit"
-description: "Run OAuthLint as a pre-commit framework hook — scan only the files a commit is about to capture, and catch OAuth / OIDC / JWT anti-patterns before they leave your machine."
+description: "Run OAuthLint as a pre-commit framework hook that scans only the files a commit is about to capture, catching OAuth / OIDC / JWT anti-patterns before they leave your machine."
 section: "pre-commit"
 ---
 
@@ -16,7 +16,7 @@ Add OAuthLint to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/Auspeo/oauthlint
-    rev: oauthlint@0.4.0
+    rev: oauthlint@0.7.0
     hooks:
       - id: oauthlint
 ```
@@ -53,7 +53,7 @@ By default the hook reports findings but stays out of your way. To block commits
 ```yaml
 repos:
   - repo: https://github.com/Auspeo/oauthlint
-    rev: oauthlint@0.4.0
+    rev: oauthlint@0.7.0
     hooks:
       - id: oauthlint
         args: [--fail-on, HIGH]
