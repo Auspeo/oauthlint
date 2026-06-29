@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://oauthlint.dev"><img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/public/banner.png" alt="OAuthLint: AI ships the auth bug. Catch it before the PR." width="840" /></a>
+</p>
+
 # oauthlint for VS Code
 
 Catch the OAuth, OIDC, JWT, session, and CORS anti-patterns that AI coding tools
