@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Java · Rust · CLI + GitHub Action + VS Code · free & MIT
+A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
@@ -38,6 +38,10 @@ npx oauthlint scan ./src --fail-on HIGH
 npx oauthlint scan ./src --format sarif > oauthlint.sarif
 npx oauthlint scan ./src --format html  > report.html
 
+# preview safe autofixes as a diff, then apply them
+npx oauthlint scan ./src --fix-dry-run
+npx oauthlint scan ./src --fix
+
 # learn a rule in the terminal: the why, the fix, and vulnerable/safe examples
 npx oauthlint explain auth.jwt.alg-none
 ```
@@ -50,12 +54,13 @@ Each finding ends with a hint, `↳ run \`oauthlint explain <rule-id>\` for deta
 
 ## What it catches
 
-AI coding assistants — tools like GitHub Copilot, Cursor, and Claude Code, and others — ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
+AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and others) ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-- **100+ rules** across **JS/TS · Python · Go · Java · Rust**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit).
-- **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks to catch **open-redirect** and **SSRF**.
+- **138 rules** across **JavaScript/TypeScript, Python, Go, Rust, and Java**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit).
+- **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks: an OAuth credential reaching a log sink, request input reaching a JWT verification key, **open-redirect** and **SSRF**.
+- **Autofix.** `--fix` applies safe rewrites (cookie flags and similar) in place; `--fix-dry-run` previews them as a unified diff first. Per-finding fix data also rides along in `--json` and SARIF under `fixes`.
 - **HTML report.** `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.
-- Plus **SARIF** for Code Scanning, `--fix` for safe auto-fixes, incremental `--diff`/`--staged`, and a [baseline](https://oauthlint.dev/docs/cli#baseline) for existing codebases.
+- Plus **SARIF** for Code Scanning, incremental `--diff`/`--staged`, and a [baseline](https://oauthlint.dev/docs/cli#baseline) for existing codebases.
 
 👉 **Browse the always-current catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -81,8 +86,9 @@ Use oauthlint when you'd rather not write and maintain an auth rule pack yoursel
 
 ## Also available
 
-- **GitHub Action.** `Auspeo/oauthlint/action@v1`, Docker-based (any language), with inline PR annotations and a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
-- **VS Code / Cursor / Windsurf.** [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, and Quick Fix suppressions.
+- **GitHub Action.** `Auspeo/oauthlint@v1` (the `Auspeo/oauthlint/action@v1` subpath still works), Docker-based (any language), with inline PR annotations and a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
+- **CI recipes.** SARIF uploads to [GitHub Code Scanning](https://oauthlint.dev/docs/code-scanning), and there's a worked example for [GitLab CI](https://oauthlint.dev/docs/gitlab-ci).
+- **VS Code / Cursor / Windsurf.** [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, an "Apply fix" Quick Fix where a rule ships a safe autofix, and Quick Fix suppressions.
 
 ## License
 
