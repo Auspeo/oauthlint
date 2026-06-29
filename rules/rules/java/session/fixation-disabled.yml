@@ -25,7 +25,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-session-fixation-disabled
       category: security
       cwe: CWE-384
-      owasp: A07:2021
+      owasp: API2:2023
       llm-prevalence: MEDIUM
       technology:
         - spring-security

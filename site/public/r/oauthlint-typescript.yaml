@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# typescript subset — 55 rules.
+# typescript subset — 56 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -123,7 +123,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-samesite
       category: security
       cwe: CWE-1275
-      owasp: API1:2023
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-rfc6265bis-13#section-4.1.2.7
@@ -227,7 +227,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-samesite-none-insecure
       category: security
       cwe: CWE-1275
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#samesitenone_requires_secure
@@ -287,7 +287,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/cors-null-origin
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://portswigger.net/web-security/cors
@@ -338,7 +338,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/cors-reflect-origin
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://portswigger.net/web-security/cors
@@ -419,6 +419,82 @@ rules:
               - pattern: "cors({ ..., credentials: true, ..., origin: ($O, $CB) => $CB(null, true), ... })"
       - pattern-regex: Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"][\s\S]{0,200}Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"]
       - pattern-regex: Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"][\s\S]{0,200}Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"]
+  - id: auth.flow.basic-auth-in-log
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      HTTP Basic credentials flow into a logging call (`console.*` or
+      `logger.*`). The `basic-auth` package returns the decoded `{ name, pass }`
+      for the request, and the `Proxy-Authorization` header carries
+      base64-encoded `user:password` just like `Authorization` does. Logs are
+      written to files, shipped to aggregators (Datadog, Splunk, CloudWatch) and
+      read by people and systems that should never see live credentials — the
+      base64 is trivially reversible, so a logged Basic header or a logged
+      `creds.pass` is a plaintext password leak (CWE-532).
+
+      Never log the raw credential. Redact or mask it before logging, log a
+      non-sensitive identifier instead (the username alone, a user id), or drop
+      the field entirely.
+    metadata:
+      oauthlint-rule-id: AUTH-FLOW-014
+      oauthlint-doc-url: https://oauthlint.dev/rules/flow-basic-auth-in-log
+      category: security
+      cwe: CWE-532
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/532.html
+        - https://www.npmjs.com/package/basic-auth
+        - https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
+      technology:
+        - express
+        - basic-auth
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: auth($REQ)
+              - pattern: basicAuth($REQ)
+              - pattern: auth($REQ).pass
+              - pattern: auth($REQ).name
+              - pattern: basicAuth($REQ).pass
+              - pattern: basicAuth($REQ).name
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request|ctx|context|c|r)$
+      - pattern: $REQ.headers['proxy-authorization']
+      - pattern: $REQ.headers["proxy-authorization"]
+      - pattern: $REQ.get('proxy-authorization')
+      - pattern: $REQ.get('Proxy-Authorization')
+      - pattern: $REQ.header('proxy-authorization')
+      - pattern: $REQ.header('Proxy-Authorization')
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: console.log(...)
+              - pattern: console.info(...)
+              - pattern: console.debug(...)
+              - pattern: console.warn(...)
+              - pattern: console.error(...)
+      - patterns:
+          - pattern: $LOG.$LEVEL(...)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^.*log(?:ger)?$
+          - metavariable-regex:
+              metavariable: $LEVEL
+              regex: ^(?:log|info|debug|warn|warning|error|trace|fatal|verbose|silly)$
+    pattern-sanitizers:
+      - pattern: $C.name
+      - pattern: $C.username
+      - pattern: redact(...)
+      - pattern: mask(...)
+      - pattern: maskToken(...)
+      - pattern: $S.slice(...)
+      - pattern: $S.substring(...)
+      - pattern: $S.substr(...)
   - id: auth.flow.credentials-in-url
     languages:
       - javascript
@@ -2620,7 +2696,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/tls-reject-unauthorized
       category: security
       cwe: CWE-295
-      owasp: A05:2021
+      owasp: A02:2021
       llm-prevalence: HIGH
       references:
         - https://nodejs.org/api/tls.html#tlsconnectoptions-callback

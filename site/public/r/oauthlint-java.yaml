@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# java subset — 20 rules.
+# java subset — 21 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -33,7 +33,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-cookie-insecure
       category: security
       cwe: CWE-614
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: HIGH
       references:
         - https://owasp.org/www-community/controls/SecureCookieAttribute
@@ -66,7 +66,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-cors-allow-all
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: HIGH
       references:
         - https://docs.spring.io/spring-framework/reference/web/webmvc-cors.html
@@ -104,7 +104,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-cors-credentialed-wildcard
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: MEDIUM
       references:
         - https://docs.spring.io/spring-framework/reference/web/webmvc-cors.html
@@ -282,6 +282,87 @@ rules:
       - pattern-inside: |
           MessageDigest $MD = MessageDigest.getInstance("=~/(?i)^(MD5|SHA-?1|SHA-?256|SHA-?512)$/");
           ...
+  - id: auth.java.flow.ssrf
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the URL of an outbound HTTP request.
+      Because the destination is attacker-controlled, this is a Server-Side
+      Request Forgery (CWE-918): an attacker can point the request at internal
+      services behind your firewall, or at the cloud metadata endpoint
+      (http://169.254.169.254/...) to steal IAM/instance credentials and pivot
+      deeper into your infrastructure.
+
+      Never build a request URL straight from a Spring `@RequestParam` /
+      `@RequestBody` value or a raw `HttpServletRequest.getParameter(...)` /
+      `getHeader(...)` value. Validate the destination against an explicit
+      allow-list of hosts (resolve the URL and check its host against the
+      allow-list, rejecting private/loopback ranges) before issuing the request
+      with `RestTemplate`, `WebClient`, OkHttp, or Apache HttpClient.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-flow-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/918.html
+      technology:
+        - spring
+        - resttemplate
+        - webclient
+        - okhttp
+        - apache-httpclient
+    paths:
+      exclude:
+        - "**/src/test/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/docs/**"
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $RET $M(..., @RequestParam $T $P, ...) {...}
+              - pattern: $RET $M(..., @RequestParam(...) $T $P, ...) {...}
+              - pattern: $RET $M(..., @RequestBody $T $P, ...) {...}
+          - focus-metavariable: $P
+      - pattern: (HttpServletRequest $REQ).getParameter(...)
+      - pattern: (HttpServletRequest $REQ).getParameterValues(...)
+      - pattern: (HttpServletRequest $REQ).getHeader(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RT.getForObject($URL, ...)
+              - pattern: $RT.getForEntity($URL, ...)
+              - pattern: $RT.postForObject($URL, ...)
+              - pattern: $RT.postForEntity($URL, ...)
+              - pattern: $RT.exchange($URL, ...)
+              - pattern: $RT.execute($URL, ...)
+              - pattern: $WC.uri($URL)
+              - pattern: $WC.uri($URL, ...)
+              - pattern: $B.url($URL)
+              - pattern: new HttpGet($URL)
+              - pattern: new HttpPost($URL)
+              - pattern: new HttpPut($URL)
+              - pattern: new HttpDelete($URL)
+              - pattern: new HttpHead($URL)
+              - pattern: new URL($URL)
+              - pattern: new URI($URL)
+          - focus-metavariable: $URL
+    pattern-sanitizers:
+      - pattern: isAllowedUrl(...)
+      - pattern: isAllowedHost(...)
+      - pattern: validateUrl(...)
+      - pattern: assertAllowedHost(...)
+      - patterns:
+          - pattern: $V
+          - pattern-inside: |
+              if (<... $ALLOW.contains(<... $V ...>) ...>) { ... }
   - id: auth.java.jwt.hardcoded-secret
     languages:
       - java
@@ -547,7 +628,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-session-fixation-disabled
       category: security
       cwe: CWE-384
-      owasp: A07:2021
+      owasp: API2:2023
       llm-prevalence: MEDIUM
       references:
         - https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
