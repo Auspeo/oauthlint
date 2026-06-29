@@ -1,0 +1,37 @@
+rules:
+  - id: auth.java.jwt.none-algorithm
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      A JWT is created or verified with the `none` algorithm, which means there
+      is no signature at all. An `alg=none` token can be forged by anyone —
+      changing the subject, roles, or expiry costs nothing because there is no
+      signature to verify (CWE-347). This is a common AI-generated mistake: the
+      "no signature" algorithm is reached for during prototyping or testing and
+      never swapped for a real signing key.
+
+      Always sign and verify with a real algorithm. With jjwt use
+      `Jwts.builder()...signWith(key)` and a keyed parser; with Auth0 java-jwt
+      use `Algorithm.HMAC256(secret)` / `Algorithm.RSA256(...)` instead of
+      `Algorithm.none()`.
+    # jjwt (io.jsonwebtoken): the SignatureAlgorithm.NONE enum constant.
+    # Auth0 java-jwt (com.auth0.jwt): the Algorithm.none() factory.
+    pattern-either:
+      - pattern: io.jsonwebtoken.SignatureAlgorithm.NONE
+      - pattern: SignatureAlgorithm.NONE
+      - pattern: com.auth0.jwt.algorithms.Algorithm.none()
+      - pattern: Algorithm.none()
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-none-algorithm
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jjwt
+        - java-jwt
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-2.1
+        - https://cwe.mitre.org/data/definitions/347.html

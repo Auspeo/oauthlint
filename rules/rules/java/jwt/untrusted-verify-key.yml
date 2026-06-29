@@ -1,0 +1,54 @@
+rules:
+  - id: auth.java.jwt.untrusted-verify-key
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the JWT verification key. When the
+      attacker controls the key, they sign their own forged token and supply the
+      matching key, so every token "verifies" — a complete authentication bypass
+      (CWE-347, Improper Verification of Cryptographic Signature).
+
+      The verification key must be fixed server-side. Resolve it from trusted
+      configuration, a keystore, or a vetted key set keyed by a validated `kid`
+      — never from `request.getParameter(...)` / `request.getHeader(...)` or a
+      `@RequestParam` / `@RequestHeader` value.
+    # Taint mode with the sink FOCUSED on the key argument — never the token. The
+    # token is supposed to come from the request, so focusing on it would
+    # false-positive on every correct call; focusing on the key fires only when
+    # the attacker controls verification itself. Sources are the servlet request
+    # accessors that return raw client input. A key fetched from a keystore
+    # (`KeyStore.getKey(...)`) clears the taint.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getParameterValues(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getHeaders(...)
+    pattern-sanitizers:
+      - pattern: $KS.getKey(...)
+    pattern-sinks:
+      # jjwt: the signing/verification key passed to the parser.
+      - patterns:
+          - pattern-either:
+              - pattern: $P.setSigningKey($SINK)
+              - pattern: $P.verifyWith($SINK)
+          - focus-metavariable: $SINK
+      # nimbus-jose-jwt: the HMAC secret handed to the verifier.
+      - patterns:
+          - pattern: new MACVerifier($SINK)
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - jjwt
+        - nimbus-jose-jwt
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/

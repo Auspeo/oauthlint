@@ -1,0 +1,68 @@
+rules:
+  - id: auth.go.jwt.untrusted-verify-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key returned by a
+      `golang-jwt` `Keyfunc` (or into the `WithValidMethods` allowlist). When
+      the attacker controls the key, they sign their own forged token and
+      supply the matching key, so every token "verifies" — a complete
+      authentication bypass. When the attacker controls the accepted methods,
+      they can downgrade verification and defeat the signature check (CWE-347,
+      Improper Verification of Cryptographic Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Return the key from trusted configuration or a vetted key
+      set keyed by a validated `kid`, and pin accepted methods to a constant
+      allowlist — never resolve them from `r.URL.Query()`, `r.FormValue`, or a
+      request header.
+    # Taint mode. The source is request input; the sink is the value RETURNED
+    # from a keyfunc (focused on the key expression, not the token) or the
+    # argument to `jwt.WithValidMethods`. Focusing on the key/methods — never
+    # the token, which is supposed to come from the request — keeps this from
+    # firing on every correct call. Distinct from auth.go.jwt.unchecked-method
+    # (a keyfunc that skips the `token.Method` check): this is about a
+    # request-CONTROLLED key or method list. Routing the value through an
+    # allow-list / validation helper clears the taint.
+    mode: taint
+    pattern-sources:
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+      - pattern: $R.PathValue(...)
+    pattern-sanitizers:
+      - pattern: isAllowedKey(...)
+      - pattern: validateKey(...)
+      - pattern: isAllowedAlgorithm(...)
+      - pattern: validateAlgorithm(...)
+    pattern-sinks:
+      # The key returned from a golang-jwt Keyfunc literal. Scoped with
+      # pattern-inside so only a keyfunc return is a sink, and focused on the
+      # returned key expression so the token argument is never the trigger.
+      - patterns:
+          - pattern-inside: |
+              func($T *jwt.Token) ($RET, error) {
+                ...
+              }
+          - pattern: return $SINK, $E
+          - focus-metavariable: $SINK
+      # Request input used as the accepted signing methods.
+      - patterns:
+          - pattern: jwt.WithValidMethods($SINK)
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - golang-jwt
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Keyfunc
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1

@@ -1,0 +1,50 @@
+rules:
+  - id: auth.py.oauth.ropc-grant
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine. In Python this covers a
+      `requests`/`httpx`/`urllib` body, an OAuth client call, or a
+      URL-encoded body string.
+    # Regex-based so it is library-agnostic across requests, httpx, urllib and
+    # OAuth clients. The `password` value is matched as an exact quoted literal
+    # (dict / kwarg form) or bounded token (URL-encoded form), so
+    # `grant_type=password_reset` and `grant_type=client_credentials` never
+    # fire, and a dynamic `grant_type=grant` variable is not a literal and is
+    # not flagged.
+    pattern-either:
+      # Dict entry `"grant_type": "password"` or keyword `grant_type="password"`.
+      # The optional quote after the key covers the dict form's closing `"`.
+      - pattern-regex: |-
+              grant_type['"]?\s*[:=]\s*['"]password['"]
+      # URL-encoded request body: "grant_type=password&username=…". The value is
+      # bounded so `grant_type=password_reset` is not flagged.
+      - pattern-regex: |-
+              [?&'"]grant_type=password(?:[&'"\s]|$)
+      # Tuple/list pair form: ("grant_type", "password").
+      - pattern-regex: |-
+              ['"]grant_type['"]\s*,\s*['"]password['"]
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - oauth2
+        - requests
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html

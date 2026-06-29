@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# go subset — 16 rules.
+# go subset — 21 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -189,6 +189,81 @@ rules:
       - metavariable-regex:
           metavariable: $PW
           regex: (?i).*(password|passwd|pwd).*
+  - id: auth.go.flow.oauth-credential-in-log
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An OAuth/OIDC credential taken from the HTTP request — an authorization
+      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
+      `token`, a `client_secret`, or the raw `Authorization` header — flows
+      into a logging call (`log.*`, `slog.*`, `fmt.Print*`, or a `logger.*`
+      method). Logs are written to files, shipped to aggregators (Datadog,
+      Splunk, CloudWatch) and read by people and systems that should never see
+      live credentials. A leaked authorization code or token can be replayed
+      to impersonate the user or complete the OAuth exchange (CWE-532).
+
+      Never log the raw credential. Redact or mask it before logging, log a
+      non-sensitive identifier instead (a user id, a key id), or drop the
+      field entirely.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-FLOW-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-flow-oauth-credential-in-log
+      category: security
+      cwe: CWE-532
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/532.html
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.3
+        - https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
+      technology:
+        - net/http
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.URL.Query().Get($K)
+              - pattern: $R.FormValue($K)
+              - pattern: $R.PostFormValue($K)
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^"(code|access[_-]?token|accesstoken|refresh[_-]?token|refreshtoken|id[_-]?token|idtoken|token|client[_-]?secret|clientsecret)"$
+      - patterns:
+          - pattern: $R.Header.Get($K)
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^"authorization"$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: log.Print(...)
+              - pattern: log.Printf(...)
+              - pattern: log.Println(...)
+              - pattern: log.Fatal(...)
+              - pattern: log.Fatalf(...)
+              - pattern: log.Fatalln(...)
+              - pattern: log.Panic(...)
+              - pattern: log.Panicf(...)
+              - pattern: slog.Info(...)
+              - pattern: slog.Debug(...)
+              - pattern: slog.Warn(...)
+              - pattern: slog.Error(...)
+              - pattern: fmt.Print(...)
+              - pattern: fmt.Printf(...)
+              - pattern: fmt.Println(...)
+      - patterns:
+          - pattern: $LOG.$LEVEL(...)
+          - metavariable-regex:
+              metavariable: $LOG
+              regex: (?i)^.*log(ger)?$
+          - metavariable-regex:
+              metavariable: $LEVEL
+              regex: ^(Print|Printf|Println|Info|Infof|Infow|Debug|Debugf|Debugw|Warn|Warnf|Warning|Error|Errorf|Errorw|Fatal|Fatalf|Panic|Panicf|Trace|Tracef)$
+    pattern-sanitizers:
+      - pattern: redact(...)
+      - pattern: mask(...)
+      - pattern: maskToken(...)
   - id: auth.go.flow.open-redirect
     languages:
       - go
@@ -574,6 +649,159 @@ rules:
             if <... $T.Method ...> { ... }
             ...
           })
+  - id: auth.go.jwt.untrusted-verify-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key returned by a
+      `golang-jwt` `Keyfunc` (or into the `WithValidMethods` allowlist). When
+      the attacker controls the key, they sign their own forged token and
+      supply the matching key, so every token "verifies" — a complete
+      authentication bypass. When the attacker controls the accepted methods,
+      they can downgrade verification and defeat the signature check (CWE-347,
+      Improper Verification of Cryptographic Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Return the key from trusted configuration or a vetted key
+      set keyed by a validated `kid`, and pin accepted methods to a constant
+      allowlist — never resolve them from `r.URL.Query()`, `r.FormValue`, or a
+      request header.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Keyfunc
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+      technology:
+        - golang-jwt
+    mode: taint
+    pattern-sources:
+      - pattern: $R.URL.Query().Get(...)
+      - pattern: $R.URL.Query()[$K]
+      - pattern: $R.FormValue(...)
+      - pattern: $R.PostFormValue(...)
+      - pattern: $R.Header.Get(...)
+      - pattern: $R.PathValue(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: |
+              func($T *jwt.Token) ($RET, error) {
+                ...
+              }
+          - pattern: return $SINK, $E
+          - focus-metavariable: $SINK
+      - patterns:
+          - pattern: jwt.WithValidMethods($SINK)
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: isAllowedKey(...)
+      - pattern: validateKey(...)
+      - pattern: isAllowedAlgorithm(...)
+      - pattern: validateAlgorithm(...)
+  - id: auth.go.oauth.insecure-token-endpoint
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
+      Authorization codes, `client_secret`, access/refresh tokens, and the
+      `code_verifier` then travel unencrypted — a network attacker can read
+      or rewrite them and take over the flow.
+
+      RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
+      endpoints. Use `https://` for every authorize, token, and userinfo
+      URL (including `oauth2.Endpoint{AuthURL, TokenURL}`).
+      `http://localhost` is fine for local development and is not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-insecure-token-endpoint
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.9
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - oauth2
+        - oidc
+    patterns:
+      - pattern-regex: '"http://[^"\s]+(?:response_type=|client_id=|client_secret=|grant_type=|code_challenge=|/oauth2?/|/connect/token|/o/oauth2|/authorize|/oauth/token)[^"]*"'
+      - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])
+  - id: auth.go.oauth.ropc-grant
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine. With `golang.org/x/oauth2`,
+      avoid `Config.PasswordCredentialsToken` and use `AuthCodeURL` /
+      `Exchange` instead.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - oauth2
+    pattern-either:
+      - pattern: $C.PasswordCredentialsToken(...)
+      - pattern-regex: '"grant_type"\s*,\s*"password"'
+      - pattern-regex: '"grant_type"\s*:\s*\[?\s*\{?\s*"password"'
+      - pattern-regex: '[?&"`]grant_type=password(?:[&"`\s\\]|$)'
+  - id: auth.go.oauth.static-state
+    languages:
+      - go
+    severity: WARNING
+    message: |
+      OAuth authorization request is built with a hardcoded, constant `state`
+      value. A static `state` provides ZERO CSRF protection — the whole point
+      is an unguessable, per-request value that you store and then compare on
+      the callback. A literal that ships in your source is known to everyone
+      and identical on every request, so an attacker can forge a matching
+      callback.
+
+      Generate `state` fresh per request from a CSPRNG (e.g.
+      `crypto/rand` -> `base64.URLEncoding.EncodeToString(b)`), persist it in
+      the session/cookie, and verify it when the provider redirects back. With
+      `golang.org/x/oauth2`, pass that random value as the first argument to
+      `Config.AuthCodeURL(state, ...)`.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - oauth2
+    patterns:
+      - pattern: $C.AuthCodeURL("...", ...)
+      - pattern-not: $C.AuthCodeURL("", ...)
   - id: auth.go.tls.insecure-skip-verify
     languages:
       - go

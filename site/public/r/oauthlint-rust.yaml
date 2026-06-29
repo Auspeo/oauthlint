@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# rust subset — 14 rules.
+# rust subset — 17 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -461,6 +461,102 @@ rules:
           let mut $V = ...;
           ...
           decode($TOKEN, $KEY, &$V)
+  - id: auth.rust.oauth.insecure-token-endpoint
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
+      Authorization codes, `client_secret`, access/refresh tokens, and the
+      `code_verifier` then travel unencrypted — a network attacker can read
+      or rewrite them and take over the flow.
+
+      RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
+      endpoints. Use `https://` for every authorize, token, and userinfo URL
+      (including the `oauth2` crate's `AuthUrl` / `TokenUrl`).
+      `http://localhost` is fine for local development and is not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-insecure-token-endpoint
+      category: security
+      cwe: CWE-319
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-3.1
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.9
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - oauth2
+        - oidc
+    patterns:
+      - pattern-regex: '"http://[^"\s]+(?:response_type=|client_id=|client_secret=|grant_type=|code_challenge=|/oauth2?/|/connect/token|/o/oauth2|/authorize|/oauth/token)[^"]*"'
+      - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])
+  - id: auth.rust.oauth.ropc-grant
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      OAuth token request uses the Resource Owner Password Credentials
+      grant (`grant_type=password`). The app collects the user's password
+      and replays it to the authorization server — exactly what OAuth was
+      designed to avoid. It cannot support federation, MFA, or step-up
+      auth, and any compromise of your service exposes raw user passwords.
+
+      The OAuth 2.0 Security BCP (RFC 9700 §2.4) forbids ROPC and OAuth 2.1
+      removes it entirely. Use the authorization-code flow with PKCE
+      (`grant_type=authorization_code`) for user login, or
+      `client_credentials` for machine-to-machine. With the `oauth2` crate,
+      use `authorize_url` / `exchange_code` instead of `exchange_password`.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-ropc-grant
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.4
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-2.4
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - oauth2
+    pattern-either:
+      - pattern: $C.exchange_password(...)
+      - pattern-regex: '"grant_type"\s*,\s*"password"'
+      - pattern-regex: '[?&"]grant_type=password(?:[&"\s\\]|$)'
+  - id: auth.rust.oauth.static-state
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      OAuth authorization request is built with a hardcoded, constant `state`
+      value (`CsrfToken::new("literal")`). A static `state` provides ZERO CSRF
+      protection — the whole point is an unguessable, per-request value that
+      you store and then compare on the callback. A literal that ships in your
+      source is known to everyone and identical on every request, so an
+      attacker can forge a matching callback.
+
+      Use `CsrfToken::new_random` (the `oauth2` crate's CSPRNG-backed
+      generator), pass it to `authorize_url`, persist it in the session, and
+      verify it when the provider redirects back.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-static-state
+      category: security
+      cwe: CWE-330
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - oauth2
+    pattern-either:
+      - pattern: CsrfToken::new("...".to_string())
+      - pattern: CsrfToken::new("...".to_owned())
+      - pattern: CsrfToken::new("...".into())
+      - pattern: CsrfToken::new(String::from("..."))
   - id: auth.rust.tls.accept-invalid-certs
     languages:
       - rust
