@@ -38,7 +38,7 @@ rules:
       oauthlint-doc-url: https://oauthlint.dev/rules/java-cors-allow-all
       category: security
       cwe: CWE-942
-      owasp: A05:2021
+      owasp: API8:2023
       llm-prevalence: HIGH
       technology:
         - spring-web
