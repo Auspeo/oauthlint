@@ -6,12 +6,12 @@
 
 A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · CLI + GitHub Action + VS Code · free & MIT
 
-[![npm](https://img.shields.io/npm/v/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
-[![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg)](https://www.npmjs.com/package/oauthlint)
-[![CI](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg)](https://oauthlint.dev)
-[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg)](https://semgrep.dev)
+[![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
+[![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
+[![CI](https://img.shields.io/github/actions/workflow/status/Auspeo/oauthlint/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg?style=flat-square)](https://oauthlint.dev)
+[![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg?style=flat-square)](https://semgrep.dev)
 
 </div>
 
