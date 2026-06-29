@@ -33,7 +33,7 @@
           <span style="font-family: var(--ol-font-mono); font-size: 12.5px; font-weight: 500; letter-spacing: 0.14em; color: var(--ol-text-muted);">OPEN SOURCE · MIT · BUILT ON SEMGREP</span>
         </div>
         <h1 style="font-family: var(--ol-font-display); font-weight: 700; font-size: clamp(2rem, 4.4vw, 3rem); line-height: 1.05; letter-spacing: -0.03em; text-wrap: balance; margin: 0 0 var(--ol-space-5);">AI ships the auth bug.<br>OAuthLint catches it before the PR.</h1>
-        <p style="font-size: var(--ol-text-body-l); line-height: var(--ol-leading-relaxed); color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-8); max-width: 50ch;">A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns that AI coding assistants — tools like GitHub Copilot, Cursor, and Claude Code, and others — generate by default. Hand-curated rules cover every language you ship auth in, with zero false positives on clean auth libraries.</p>
+        <p style="font-size: var(--ol-text-body-l); line-height: var(--ol-leading-relaxed); color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-8); max-width: 50ch;">A static-analysis linter for the OAuth, OIDC, JWT, session, and CORS anti-patterns that AI coding tools generate by default, including tools like GitHub Copilot, Cursor, and Claude Code. 138 hand-curated rules across five languages, with zero false positives on clean auth libraries.</p>
 
         <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding: 0px 6px 0px 16px; background: var(--ol-canvas); border: 1px solid var(--ol-border-strong); max-width: 400px; margin-bottom: var(--ol-space-4);">
           <span style="color: var(--ol-accent); font-family: var(--ol-font-mono); font-size: 15px;">$</span>
@@ -233,9 +233,9 @@
       </div>
       <div data-howcell="" style="padding: var(--ol-space-6);">
         <div style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-text-faint); margin-bottom: var(--ol-space-4);">03 / FIX</div>
-        <h3 style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-m); margin: 0 0 var(--ol-space-3);">A safe example for every rule</h3>
-        <p style="font-size: var(--ol-text-body-s); line-height: 1.6; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Every rule ships a vulnerable and a corrected snippet, so the fix is copy-paste obvious instead of a CWE number to go look up.</p>
-        <div style="font-family: var(--ol-font-mono); font-size: 13px; color: var(--ol-sev-pass); background: var(--ol-canvas); border: 1px solid var(--ol-border-subtle); padding: 9px 11px;"><span style="color: var(--ol-sev-pass);">✓</span> jwt.verify(token, key, {alg})</div>
+        <h3 style="font-family: var(--ol-font-ui); font-weight: 600; font-size: var(--ol-text-heading-m); margin: 0 0 var(--ol-space-3);">A fix for every finding</h3>
+        <p style="font-size: var(--ol-text-body-s); line-height: 1.6; color: var(--ol-text-secondary); margin: 0 0 var(--ol-space-4);">Many rules rewrite the code for you with <code>--fix</code> (preview with <code>--fix-dry-run</code>). The rest ship a vulnerable and a corrected snippet, so the fix is copy-paste obvious instead of a CWE number to go look up.</p>
+        <div style="font-family: var(--ol-font-mono); font-size: 13px; color: var(--ol-sev-pass); background: var(--ol-canvas); border: 1px solid var(--ol-border-subtle); padding: 9px 11px;"><span style="color: var(--ol-accent);">$</span> oauthlint scan --fix</div>
       </div>
     </div>
   </section>
@@ -477,7 +477,7 @@
   <section style="max-width: 1180px; margin: 0px auto; padding: var(--ol-space-16) var(--ol-space-6); border-top: 1px solid var(--ol-border);">
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: var(--ol-space-3);"><span style="width: 6px; height: 6px; background: var(--ol-text-muted);"></span><span style="font-family: var(--ol-font-mono); font-size: 12.5px; font-weight: 500; letter-spacing: 0.14em; color: var(--ol-text-muted);">HONEST ANSWER</span></div>
     <h2 style="font-family: var(--ol-font-display); font-weight: 600; font-size: clamp(1.7rem, 4vw, 2.2rem); letter-spacing: -0.02em; margin: 0 0 var(--ol-space-3); max-width: 26ch;">"Why not just use Semgrep?"</h2>
-    <p style="font-size: var(--ol-text-body-m); line-height: var(--ol-leading-relaxed); color: var(--ol-text-secondary); max-width: 64ch; margin: 0 0 var(--ol-space-8);">You can. OAuthLint is built on Semgrep's engine, and we love it. But a generic engine with a thousand community rules is a different thing from a curated, auth-only ruleset with a precision guarantee. The difference is the work we do so you don't have to.</p>
+    <p style="font-size: var(--ol-text-body-m); line-height: var(--ol-leading-relaxed); color: var(--ol-text-secondary); max-width: 64ch; margin: 0 0 var(--ol-space-8);">You can. OAuthLint is built on Semgrep's engine, and we love it. But a generic engine with a thousand community rules is a different thing from a curated, auth-only ruleset with dataflow and taint tracking and a precision guarantee. The difference is the work we do so you don't have to.</p>
     <div data-whygrid="" style="display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--ol-border);">
       <div data-whycell="" style="padding: var(--ol-space-6); border-right: 1px solid var(--ol-border);"><div style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-accent); margin-bottom: 10px;">CURATION</div><p style="font-size: var(--ol-text-body-s); color: var(--ol-text-secondary); line-height: 1.6; margin: 0px;">Rules chosen and tuned for AI-generated auth code, not thousands of generic patterns you have to triage.</p></div>
       <div data-whycell="" style="padding: var(--ol-space-6); border-right: 1px solid var(--ol-border);"><div style="font-family: var(--ol-font-mono); font-size: 12.5px; color: var(--ol-accent); margin-bottom: 10px;">PRECISION</div><p style="font-size: var(--ol-text-body-s); color: var(--ol-text-secondary); line-height: 1.6; margin: 0px;">A hard 0-false-positive bar on real auth libraries. Every benchmark finding hand-verified before release.</p></div>
@@ -510,7 +510,7 @@
           <svg width="22" height="22" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="13" y="11" width="38" height="27" stroke="var(--ol-accent)" stroke-width="5"/><path d="M11 50c3-5 6-5 9 0s6 5 9 0 6-5 9 0 6 5 9 0" stroke="var(--ol-sev-critical)" stroke-width="5" stroke-linecap="round"/></svg>
           <span style="font-family: var(--ol-font-display); font-weight: 700; font-size: 16px;">OAuthLint</span>
         </div>
-        <p style="font-size: var(--ol-text-body-s); color: var(--ol-text-muted); line-height: 1.6; margin: 0px; max-width: 38ch;">Catch the auth bugs AI assistants ship. Built by identity &amp; security engineers. Open source, MIT-licensed, obsessively low-noise.</p>
+        <p style="font-size: var(--ol-text-body-s); color: var(--ol-text-muted); line-height: 1.6; margin: 0px; max-width: 38ch;">Catch the auth bugs AI coding tools ship. Built by identity &amp; security engineers. Open source, MIT-licensed, obsessively low-noise.</p>
       </div>
       <div style="display: flex; gap: var(--ol-space-16); flex-wrap: wrap;">
         <div style="display: flex; flex-direction: column; gap: 10px;">

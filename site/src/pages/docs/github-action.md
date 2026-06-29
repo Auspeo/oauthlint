@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "GitHub Action"
-description: "Run OAuthLint in CI with a Docker-based GitHub Action — gate PRs by severity and upload findings to GitHub code scanning as SARIF."
+description: "Run OAuthLint in CI with a Docker-based GitHub Action that gates PRs by severity and uploads findings to GitHub code scanning as SARIF."
 section: "github-action"
 ---
 
