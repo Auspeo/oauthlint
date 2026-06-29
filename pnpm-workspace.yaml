@@ -1,6 +1,7 @@
 packages:
   - "rules"
   - "cli"
+  - "mcp"
   - "action"
   - "vscode"
   - "site"
