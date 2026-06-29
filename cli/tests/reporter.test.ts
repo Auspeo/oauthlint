@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Reporter } from '../src/core/reporter.js';
 import type { Finding, ScanResult } from '../src/types.js';
+
+// Strip ANSI before asserting so colour boundaries never make `toContain` flaky.
+const ESC = String.fromCharCode(27);
+const stripAnsi = (s: string): string => s.replace(new RegExp(`${ESC}\\[[0-9;]*m`, 'g'), '');
 
 class StringStream {
   private chunks: string[] = [];
@@ -75,6 +82,132 @@ describe('Reporter (pretty)', () => {
     expect(critIdx).toBeLessThan(highIdx);
     expect(highIdx).toBeLessThan(medIdx);
     expect(medIdx).toBeLessThan(lowIdx);
+  });
+});
+
+describe('Reporter (code frame)', () => {
+  let dir: string;
+  let file: string;
+  const SOURCE = [
+    'function verify(token) {', // 1
+    '  const opts = {', // 2
+    "    algorithms: ['none'],", // 3
+    '  };', // 4
+    '  return jwt.verify(token, secret, opts);', // 5
+    '}', // 6
+    '', // trailing newline
+  ].join('\n');
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'oauthlint-frame-'));
+    file = join(dir, 'jwt.ts');
+    writeFileSync(file, SOURCE, 'utf8');
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const frameFinding = (overrides: Partial<Finding> = {}): Finding => ({
+    ruleId: 'auth.jwt.alg-none',
+    severity: 'HIGH',
+    filePath: file,
+    startLine: 3,
+    endLine: 3,
+    startCol: 5,
+    endCol: 24,
+    message: 'JWT alg: none accepted.',
+    ...overrides,
+  });
+
+  it('renders context lines, a right-aligned gutter, and a caret at the column', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: false,
+    });
+    reporter.reportResult(baseResult([frameFinding()]));
+    const text = stripAnsi(out.toString());
+
+    // Two lines of context above and below the offending line are present.
+    expect(text).toContain('const opts = {');
+    expect(text).toContain("algorithms: ['none'],");
+    expect(text).toContain('return jwt.verify(token, secret, opts);');
+    // Gutter shows the surrounding line numbers.
+    expect(text).toContain('1');
+    expect(text).toContain('5');
+
+    // The caret sits under the matched span on its own line: startCol is 5, so
+    // four leading spaces after the gutter chrome precede the carets.
+    const caretRow = text.split('\n').find((l) => l.includes('^'));
+    expect(caretRow).toBeDefined();
+    const caretCount = (caretRow?.match(/\^/g) ?? []).length;
+    // endCol (24) is exclusive of startCol (5) → 19 carets.
+    expect(caretCount).toBe(19);
+    // Caret begins at the matched column: gutter chrome then 4 spaces then `^`.
+    expect(caretRow).toMatch(/│ {5}\^{19}$/);
+  });
+
+  it('degrades gracefully when the file cannot be read (keeps the file:line)', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: false,
+    });
+    reporter.reportResult(baseResult([frameFinding({ filePath: join(dir, 'does-not-exist.ts') })]));
+    const text = stripAnsi(out.toString());
+    expect(text).toContain('does-not-exist.ts:3');
+    expect(text).not.toContain('^');
+  });
+
+  it('skips the frame when column info is missing', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: false,
+    });
+    reporter.reportResult(baseResult([frameFinding({ startCol: undefined, endCol: undefined })]));
+    const text = stripAnsi(out.toString());
+    expect(text).toContain('jwt.ts:3');
+    expect(text).not.toContain('^');
+    // No source line should be echoed without a span to point at.
+    expect(text).not.toContain("algorithms: ['none'],");
+  });
+
+  it('omits the frame entirely when codeFrame is disabled', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: false,
+      codeFrame: false,
+    });
+    reporter.reportResult(baseResult([frameFinding()]));
+    const text = stripAnsi(out.toString());
+    expect(text).toContain('auth.jwt.alg-none');
+    expect(text).toContain('jwt.ts:3');
+    expect(text).not.toContain('^');
+    expect(text).not.toContain("algorithms: ['none'],");
+  });
+
+  it('emits no ANSI escapes when color is disabled', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: false,
+    });
+    reporter.reportResult(baseResult([frameFinding()]));
+    expect(out.toString()).not.toContain(ESC);
+  });
+
+  it('colors the caret with the severity accent when color is enabled', () => {
+    const out = new StringStream();
+    const reporter = new Reporter({
+      stream: out as unknown as NodeJS.WritableStream,
+      color: true,
+    });
+    reporter.reportResult(baseResult([frameFinding()]));
+    const raw = out.toString();
+    // HIGH → red accent (31) wrapping the caret run.
+    expect(raw).toContain(`${ESC}[31m^^^^^^^^^^^^^^^^^^^`);
+    // Stripping ANSI still leaves the caret intact.
+    expect(stripAnsi(raw)).toContain('^^^^^^^^^^^^^^^^^^^');
   });
 });
 

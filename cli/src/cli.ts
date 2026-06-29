@@ -103,6 +103,7 @@ export async function buildProgram(): Promise<Command> {
     .description('Scan files or directories for auth misconfigurations')
     .option('--json', 'Emit JSON (shortcut for --format json)')
     .option('--format <fmt>', 'Output format: pretty | json | sarif | html', parseFormat)
+    .option('--no-code-frame', 'Disable the source code frame under each finding (pretty output)')
     .option('--severity <level>', 'Only emit findings ≥ this severity', parseSeverity)
     .option(
       '--fail-on <level>',
@@ -137,6 +138,7 @@ export async function buildProgram(): Promise<Command> {
         fix: opts.fix,
         fixDryRun: opts.fixDryRun,
         baseline: opts.baseline,
+        codeFrame: opts.codeFrame,
       });
       const machineReadable =
         opts.json === true ||
@@ -239,6 +241,8 @@ interface ScanCliOptions {
   // commander gives `true` for a bare `--baseline`, or the string path for
   // `--baseline <file>`.
   baseline?: string | boolean;
+  // commander sets this to `false` when `--no-code-frame` is given (default true).
+  codeFrame?: boolean;
 }
 
 interface BaselineCliOptions {

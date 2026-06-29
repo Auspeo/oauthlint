@@ -11,6 +11,7 @@ const ConfigSchema = z.object({
   rules: z.record(z.union([z.literal('off'), z.literal('warn'), SeverityValue])).optional(),
   customRulesDir: z.string().optional(),
   failOn: z.union([SeverityValue, z.literal('off')]).default('HIGH'),
+  codeFrame: z.boolean().optional(),
 });
 
 export const DEFAULT_CONFIG: OAuthLintConfig = {
