@@ -22,13 +22,39 @@ Findings come back as structured data the model can act on (rule id, severity, l
 
 ## Install and run
 
-No install step is needed. MCP clients launch the server with `npx`:
+> **Availability:** `oauthlint-mcp` publishes to npm with the next OAuthLint release. The `npx` instructions below are how you will run it once it lands. Until then, run it from source (see "Run from source" below).
+
+Once it is published, no install step is needed. MCP clients launch the server with `npx`:
 
 ```bash
 npx oauthlint-mcp
 ```
 
 The server speaks the stdio transport, which is the standard wiring for a local server launched by a desktop AI tool.
+
+### Run from source (until the npm release)
+
+Clone the repo, install dependencies, and build this package:
+
+```bash
+git clone https://github.com/Auspeo/oauthlint
+cd oauthlint
+pnpm install
+pnpm --filter oauthlint-mcp build
+```
+
+That produces an executable entry point at `mcp/bin/oauthlint-mcp.js`. Point your client at it with `node` and the absolute path instead of `npx`:
+
+```json
+{
+  "mcpServers": {
+    "oauthlint": {
+      "command": "node",
+      "args": ["/absolute/path/to/oauthlint/mcp/bin/oauthlint-mcp.js"]
+    }
+  }
+}
+```
 
 ## Configuration
 
