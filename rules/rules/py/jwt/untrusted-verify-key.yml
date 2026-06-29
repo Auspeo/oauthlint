@@ -1,0 +1,75 @@
+rules:
+  - id: auth.py.jwt.untrusted-verify-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Untrusted request input flows into the verification key or the
+      `algorithms` allowlist of `jwt.decode(...)` (PyJWT / python-jose). When
+      the attacker controls the key, they sign their own forged token and
+      supply the matching key, so every token "verifies" — a complete
+      authentication bypass. When the attacker controls `algorithms`, they can
+      downgrade verification (e.g. to `HS256` against a public key, or to
+      `none` on older libraries) and defeat the signature check (CWE-347,
+      Improper Verification of Cryptographic Signature).
+
+      The verification key and the accepted algorithms must be fixed
+      server-side. Pin `algorithms` to a constant allowlist
+      (`algorithms=["RS256"]`) and resolve the key from trusted configuration or
+      a vetted key set keyed by a validated `kid` — never from `request.args`,
+      `request.form`, `request.json`, or `request.headers`.
+    # Taint mode with the sink FOCUSED on the key / algorithms argument — never
+    # the token. The token is supposed to come from the request, so focusing on
+    # it would false-positive on every correct call; focusing on the key and the
+    # `algorithms` value fires only when the attacker controls verification
+    # itself. Routing a candidate algorithm/key through an allow-list /
+    # validation helper clears the taint. Distinct from
+    # auth.py.jwt.algorithm-confusion (HS* + an asymmetric family) and
+    # auth.py.jwt.no-algorithms (a MISSING allowlist): this is about a
+    # request-CONTROLLED key or algorithm.
+    mode: taint
+    pattern-sources:
+      - pattern: request.args.get(...)
+      - pattern: request.args.getlist(...)
+      - pattern: request.args[...]
+      - pattern: request.form.get(...)
+      - pattern: request.form[...]
+      - pattern: request.values.get(...)
+      - pattern: request.json.get(...)
+      - pattern: request.headers.get(...)
+      - pattern: request.headers[...]
+      - pattern: flask.request.args.get(...)
+      - pattern: flask.request.headers.get(...)
+    pattern-sanitizers:
+      # A candidate algorithm or key vetted against an allow-list / validator is
+      # no longer attacker-controlled when it reaches decode().
+      - pattern: is_allowed_algorithm(...)
+      - pattern: validate_algorithm(...)
+      - pattern: is_allowed_key(...)
+      - pattern: load_trusted_key(...)
+    pattern-sinks:
+      # Request input used as the verification key (positional and keyword forms).
+      - patterns:
+          - pattern-either:
+              - pattern: jwt.decode($T, $SINK)
+              - pattern: jwt.decode($T, $SINK, ...)
+              - pattern: jwt.decode($T, key=$SINK, ...)
+          - focus-metavariable: $SINK
+      # Request input used as the accepted `algorithms`.
+      - patterns:
+          - pattern: jwt.decode(..., algorithms=$SINK, ...)
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-untrusted-verify-key
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - pyjwt
+        - python-jose
+      references:
+        - https://cwe.mitre.org/data/definitions/347.html
+        - https://datatracker.ietf.org/doc/html/rfc7518#section-3.1
+        - https://owasp.org/www-project-api-security/
