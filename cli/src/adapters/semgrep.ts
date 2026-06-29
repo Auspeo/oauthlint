@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { ExecaError, execa } from 'execa';
-import { type Finding, SEMGREP_SEVERITY_MAP, type ScanResult } from '../types.js';
+import { type Finding, type FindingFix, SEMGREP_SEVERITY_MAP, type ScanResult } from '../types.js';
 
 /**
  * Shape of `semgrep --json` output. We only declare the fields we read.
@@ -16,10 +16,13 @@ interface SemgrepJson {
 interface SemgrepResult {
   check_id: string;
   path: string;
-  // `offset` is the 0-based byte offset of the match into the file; present on
-  // every result and used to splice in autofix replacements precisely.
-  start: { line: number; offset?: number };
-  end: { line: number; offset?: number };
+  // `col` is the 1-based column of the match; `offset` is the 0-based byte
+  // offset of the match into the file. Both are present on every real result;
+  // `offset` is used to splice in autofix replacements precisely, and `col`
+  // is surfaced on the finding's `fix.range` for editors that build edits from
+  // line/column rather than byte offsets.
+  start: { line: number; col?: number; offset?: number };
+  end: { line: number; col?: number; offset?: number };
   extra: {
     severity?: string;
     message?: string;
@@ -302,7 +305,7 @@ function toFinding(r: SemgrepResult): Finding {
   const rawSeverity = (r.extra.severity ?? 'INFO').toUpperCase();
   const severity = SEMGREP_SEVERITY_MAP[rawSeverity] ?? 'MEDIUM';
 
-  return {
+  const finding: Finding = {
     ruleId: normaliseRuleId(r.check_id),
     oauthlintRuleId: r.extra.metadata?.['oauthlint-rule-id'],
     severity,
@@ -314,6 +317,32 @@ function toFinding(r: SemgrepResult): Finding {
     cwe: r.extra.metadata?.cwe,
     llmPrevalence: r.extra.metadata?.['llm-prevalence'],
   };
+
+  const fix = toFindingFix(r);
+  if (fix) finding.fix = fix;
+  return finding;
+}
+
+/**
+ * Surface a finding's autofix from `extra.fix`, when the matched rule ships a
+ * `fix:`. The replacement covers the match's exact span; we carry both the
+ * 1-based line/column range and the 0-based byte offsets (whichever a consumer
+ * prefers to build an edit from). Returns undefined when there is no fix, so
+ * `Finding.fix` stays absent rather than an empty object.
+ */
+function toFindingFix(r: SemgrepResult): FindingFix | undefined {
+  const replacement = r.extra.fix;
+  if (replacement === undefined) return undefined;
+
+  const range: FindingFix['range'] = {
+    startLine: r.start.line,
+    startCol: r.start.col ?? 1,
+    endLine: r.end.line,
+    endCol: r.end.col ?? 1,
+  };
+  if (r.start.offset !== undefined) range.startOffset = r.start.offset;
+  if (r.end.offset !== undefined) range.endOffset = r.end.offset;
+  return { replacement, range };
 }
 
 /**

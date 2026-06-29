@@ -1,5 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
+import { buildApplyFixEdit } from './fix.js';
 import { type FindingHoverData, buildFindingHoverMarkdown } from './hover.js';
 import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
 import { type StatusBarState, computeStatusBar } from './statusbar.js';
@@ -103,7 +104,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
       documentSelectors,
-      new OAuthLintCodeActionProvider(),
+      new OAuthLintCodeActionProvider(findingByDiagnostic),
       {
         providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
       },
@@ -310,6 +311,8 @@ async function scanUri(
 }
 
 class OAuthLintCodeActionProvider implements vscode.CodeActionProvider {
+  constructor(private readonly findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>) {}
+
   provideCodeActions(
     document: vscode.TextDocument,
     _range: vscode.Range | vscode.Selection,
@@ -325,6 +328,30 @@ class OAuthLintCodeActionProvider implements vscode.CodeActionProvider {
             ? diag.code
             : null;
       if (!ruleId) continue;
+
+      // "Apply fix" — offered first and marked preferred when the finding
+      // behind this diagnostic carries an autofix. We apply the edit ourselves
+      // (a WorkspaceEdit over the fix's exact span) rather than shelling out to
+      // `oauthlint --fix`, so it's instant and scoped to this one finding.
+      const finding = this.findingByDiagnostic.get(diag);
+      const fixEdit = finding ? buildApplyFixEdit(finding) : undefined;
+      if (fixEdit) {
+        const applyAction = new vscode.CodeAction(fixEdit.title, vscode.CodeActionKind.QuickFix);
+        applyAction.diagnostics = [diag];
+        applyAction.isPreferred = true;
+        applyAction.edit = new vscode.WorkspaceEdit();
+        applyAction.edit.replace(
+          document.uri,
+          new vscode.Range(
+            fixEdit.startLine,
+            fixEdit.startCharacter,
+            fixEdit.endLine,
+            fixEdit.endCharacter,
+          ),
+          fixEdit.replacement,
+        );
+        actions.push(applyAction);
+      }
 
       const lineText = document.lineAt(diag.range.start.line).text;
       const indent = leadingIndent(lineText);
