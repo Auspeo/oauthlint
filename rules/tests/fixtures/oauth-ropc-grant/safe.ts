@@ -35,3 +35,17 @@ export async function refresh(refreshToken: string) {
 export function resetForm(password: string) {
   return { action: 'reset', password };
 }
+
+// An OAuth library's own grant-type resolver binds the string to a local
+// variable; it is the implementation of the grant, not an application sending a
+// password token request. A bare assignment must not trip the rule.
+export function guessGrantType(kwargs: Record<string, unknown>): string {
+  // ok: auth.oauth.ropc-grant
+  let grant_type = 'client_credentials';
+  if ('code' in kwargs) {
+    grant_type = 'authorization_code';
+  } else if ('username' in kwargs && 'password' in kwargs) {
+    grant_type = 'password';
+  }
+  return grant_type;
+}

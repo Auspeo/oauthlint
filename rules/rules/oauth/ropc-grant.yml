@@ -16,10 +16,15 @@ rules:
       (`grant_type=authorization_code`) for user login, or
       `client_credentials` for machine-to-machine.
     pattern-either:
-      # Object literal / assignment: { grant_type: 'password' } or
-      # grant_type = 'password'. The `=` alt also covers `grant_type = "password"`.
+      # Object literal entry: `{ grant_type: 'password' }` (bare or quoted key).
+      # The colon anchors it to a property, not a bare variable assignment.
       - pattern-regex: |-
-              grant_type\s*[:=]\s*['"]password['"]
+              grant_type\s*:\s*['"]password['"]
+      # Property write that builds a request body: `body.grant_type = 'password'`.
+      # The leading `.` requires a member assignment, so a library's own bare
+      # local `grant_type = 'password'` (an internal constant) is NOT flagged.
+      - pattern-regex: |-
+              \.grant_type\s*=\s*['"]password['"]
       # URL-encoded request body: "grant_type=password&username=…" (single,
       # double, or template-literal string). The value is bounded so
       # `grant_type=password_reset` and friends are not flagged.
