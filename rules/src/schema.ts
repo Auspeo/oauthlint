@@ -42,6 +42,17 @@ const PatternEntrySchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([z.string(), z.record(z.string(), z.unknown()), z.array(PatternEntrySchema)]),
 );
 
+/**
+ * Semgrep `paths:` filter. Lets a rule scope itself to (or away from) files by
+ * glob. We use `exclude` to keep production-grant rules from firing on test,
+ * example, vendored, or generated code — locations that should never carry a
+ * real application's OAuth misuse. Passed straight through to Semgrep.
+ */
+const PathsSchema = z.object({
+  include: z.array(z.string()).optional(),
+  exclude: z.array(z.string()).optional(),
+});
+
 export const RuleSchema = z
   .object({
     // auth.<category>.<name> for the JS/TS pack; language packs prepend a
@@ -64,6 +75,8 @@ export const RuleSchema = z
     'pattern-either-regex': z.array(z.string()).optional(),
     patterns: z.array(PatternEntrySchema).optional(),
     fix: z.string().optional(),
+    // Scope a rule to/away from files by glob (passed through to Semgrep).
+    paths: PathsSchema.optional(),
     // Taint-mode rules (Semgrep dataflow).
     mode: z.enum(['search', 'taint']).optional(),
     'pattern-sources': z.array(PatternEntrySchema).optional(),

@@ -25,6 +25,23 @@ rules:
       # URL-encoded request body string: "grant_type=password&username=…".
       - pattern-regex: |-
               [?&"]grant_type=password(?:[&"\s\\]|$)
+    # We flag an application sending ROPC, not the example/test code or vendored
+    # client libraries that legitimately exercise the grant. Excluding these
+    # trees keeps the signal on first-party application code. (`tests.rs` is the
+    # Rust convention for a sibling test module file, e.g. oauth2-rs'
+    # `src/token/tests.rs`.)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
     metadata:
       oauthlint-rule-id: AUTH-RUST-OAUTH-001
       oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-ropc-grant
