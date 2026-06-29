@@ -71,6 +71,12 @@ export interface ScanCommandOptions {
    * error, never silently an empty allow-list.
    */
   baseline?: string | boolean;
+  /**
+   * Show a source code frame (context + caret) beneath each finding in the
+   * pretty output. Defaults to on; `--no-code-frame` (or `codeFrame: false` in
+   * the config) turns it off. Ignored for json/sarif/html.
+   */
+  codeFrame?: boolean;
   /** Used by tests to inject a mock adapter. */
   adapter?: SemgrepAdapter;
   /** Used by tests to capture output. */
@@ -165,7 +171,8 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   }
 
   const label = incremental ? `${targets.length} changed file(s)` : targets.join(', ');
-  const reporter = new Reporter({ json: format === 'json', stream });
+  const codeFrame = opts.codeFrame ?? config.codeFrame ?? true;
+  const reporter = new Reporter({ json: format === 'json', stream, codeFrame, cwd });
   if (format === 'pretty') reporter.reportStart(label, await countRuleFiles(rulesDir));
 
   const adapter = opts.adapter ?? new SemgrepAdapter({ configPath: rulesDir });

@@ -58,6 +58,15 @@ export interface Finding {
   filePath: string;
   startLine: number;
   endLine: number;
+  /**
+   * 1-based start/end columns of the match, mirroring Semgrep. The end column
+   * is exclusive (it points just past the last matched character). Optional and
+   * purely additive: surfaced when Semgrep reports them, and used to draw the
+   * caret span under the offending line in the pretty code frame. Absent
+   * findings simply render without a caret.
+   */
+  startCol?: number;
+  endCol?: number;
   message: string;
   docUrl?: string;
   cwe?: string;
@@ -80,4 +89,9 @@ export interface OAuthLintConfig {
   rules?: Record<string, 'off' | 'warn' | SeverityName>;
   customRulesDir?: string;
   failOn?: SeverityName | 'off';
+  /**
+   * Show a source code frame under each finding in the pretty output. Default
+   * on; overridden by the `--no-code-frame` CLI flag.
+   */
+  codeFrame?: boolean;
 }

@@ -365,6 +365,12 @@ function toFinding(r: SemgrepResult): Finding {
     llmPrevalence: r.extra.metadata?.['llm-prevalence'],
   };
 
+  // Surface match columns when Semgrep reports them (it does for every real
+  // result) so the pretty reporter can draw a caret under the matched span.
+  // Additive and optional — absent columns just render the frame without a caret.
+  if (r.start.col !== undefined) finding.startCol = r.start.col;
+  if (r.end.col !== undefined) finding.endCol = r.end.col;
+
   const fix = toFindingFix(r);
   if (fix) finding.fix = fix;
   return finding;
