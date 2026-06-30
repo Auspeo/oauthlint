@@ -1,0 +1,58 @@
+rules:
+  - id: auth.passport.jwt-ignore-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A `passport-jwt` strategy is configured with `ignoreExpiration: true`.
+
+      This disables the `exp` claim check, so the strategy authenticates expired
+      tokens forever. A leaked or long-old JWT then never stops working,
+      defeating short-lived access tokens. Remove `ignoreExpiration: true` (the
+      default is `false`, which enforces `exp`) and issue tokens with a short
+      lifetime. See CWE-613 (Insufficient Session Expiration).
+    # Scoped to `passport-jwt` so an unrelated `ignoreExpiration: true` (in some
+    # other library's options) never fires. The file must import the
+    # `passport-jwt` Strategy (named, aliased, default, or via `require`), and
+    # the option must sit inside a `new ...Strategy({...}, ...)` construction.
+    # `new $S({...}, ...)` matches passport-jwt's `(opts, verify)` constructor
+    # for any binding name, so the common `new JwtStrategy({ ... }, verify)`
+    # alias spelling is covered without relying on Semgrep alias resolution. The
+    # match is narrowed to the `ignoreExpiration: true` property itself, so it
+    # is caught regardless of which sibling options appear. Non-overlapping with
+    # auth.jwt.ignore-expiration, which is scoped to `jsonwebtoken`'s
+    # `jwt.verify(...)`.
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import { ..., Strategy, ... } from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              import Strategy from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt')
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt').Strategy
+              ...
+          - pattern-inside: |
+              { ..., Strategy, ... } = require('passport-jwt')
+              ...
+      - pattern-either:
+          - pattern-inside: 'new $S({...}, ...)'
+          - pattern-inside: 'new $S.Strategy({...}, ...)'
+      - pattern: 'ignoreExpiration: true'
+    metadata:
+      oauthlint-rule-id: AUTH-PASSPORT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/passport-jwt-ignore-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - passport-jwt
+      references:
+        - https://www.passportjs.org/packages/passport-jwt/
+        - https://cwe.mitre.org/data/definitions/613.html
