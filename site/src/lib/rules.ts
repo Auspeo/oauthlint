@@ -16,6 +16,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { titleAndBody } from './inline';
 
 // site/src/lib/rules.ts -> repo root is four levels up.
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -44,7 +45,7 @@ export interface RuleView {
   id: string;
   /** OAuthLint id, e.g. `AUTH-JWT-001`. */
   ruleId: string;
-  /** Human title derived from the first line of the message. */
+  /** Human title: the first sentence of the message (may contain `code` spans). */
   title: string;
   /** Design severity. */
   severity: Severity;
@@ -125,9 +126,13 @@ function categoryFromId(id: string): string {
   return parts[1] ?? 'misc';
 }
 
+/**
+ * The page title is the first sentence of the message (messages are flowing
+ * literal-block prose, not a title line plus body), kept with its inline-code
+ * spans so the detail/index pages can render them. See {@link titleAndBody}.
+ */
 function titleFromMessage(message: string): string {
-  const first = message.split('\n').find((l) => l.trim().length > 0) ?? '';
-  return first.trim();
+  return titleAndBody(message).title;
 }
 
 function readFixture(slug: string, kind: 'vulnerable' | 'safe'): Fixture | undefined {
