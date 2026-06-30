@@ -199,6 +199,40 @@ pnpm --filter oauthlint-site dev     # preview the docs site locally
 - **Git hooks** (husky): `pre-commit` runs Biome on staged files; `pre-push` runs typecheck + the full test suite.
 - **Releases** use [Changesets](https://github.com/changesets/changesets); see [RELEASE.md](RELEASE.md).
 
+## Roadmap
+
+Where OAuthLint stands, and where it is going. Want to help with any of it? See
+[Contributing](#contributing) below; false-positive reports and new rules are
+especially welcome.
+
+### Shipped
+
+- 141 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
+- Autofix with a dry-run preview, plus dataflow (taint) analysis
+- SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
+- VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
+- MCP server, so AI coding tools scan the auth code they generate, in-loop
+- Shareable HTML reports
+
+### Now
+
+- Framework-aware rules: NextAuth, Spring Security, Passport, FastAPI, and
+  Authlib, tuned for high signal and low false positives
+- A rule-authoring guide, so anyone can add a rule and grow the catalogue
+- Closing rule-parity gaps across the five supported languages
+
+### Next
+
+- A reproducible "auth and AI" benchmark: which OAuth/JWT anti-patterns each AI
+  coding tool actually produces
+- More integrations: JetBrains IDEs, Azure and Bitbucket pipelines
+- Wider autofix coverage, so more findings ship a safe one-click rewrite
+
+### Exploring
+
+- Interprocedural dataflow for deeper taint tracking
+- A hosted MCP endpoint for cloud-based agents
+
 ## Contributing
 
 The most useful contribution is telling us when a rule is wrong: open a
