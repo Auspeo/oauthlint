@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# javascript subset — 56 rules.
+# javascript subset — 58 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -1864,6 +1864,55 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.nextauth.hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The NextAuth/Auth.js `secret` is set to a hard-coded string literal.
+
+      This value signs and encrypts every session JWT and CSRF token. Committed
+      to git it is one search away from compromise, letting an attacker forge
+      sessions for any user. Read it from the environment instead:
+      `secret: process.env.AUTH_SECRET` (or `NEXTAUTH_SECRET`) and add the
+      variable to `.env.example` with a placeholder.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://authjs.dev/getting-started/deployment#auth_secret
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern: 'secret: "..."'
+      - pattern-not-regex: (?i)secret\s*:\s*['"]\$\{?[A-Za-z_]+\}?['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"]<[^'"]*>['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
   - id: auth.oauth.access-token-in-url
     languages:
       - javascript
@@ -2471,6 +2520,52 @@ rules:
       - patterns:
           - pattern-regex: redirect_uri\s*[:=]\s*['"]http://[^'"]*['"]
           - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|\[::1\])
+  - id: auth.passport.jwt-ignore-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A `passport-jwt` strategy is configured with `ignoreExpiration: true`.
+
+      This disables the `exp` claim check, so the strategy authenticates expired
+      tokens forever. A leaked or long-old JWT then never stops working,
+      defeating short-lived access tokens. Remove `ignoreExpiration: true` (the
+      default is `false`, which enforces `exp`) and issue tokens with a short
+      lifetime. See CWE-613 (Insufficient Session Expiration).
+    metadata:
+      oauthlint-rule-id: AUTH-PASSPORT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/passport-jwt-ignore-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.passportjs.org/packages/passport-jwt/
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - passport-jwt
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import { ..., Strategy, ... } from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              import Strategy from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt')
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt').Strategy
+              ...
+          - pattern-inside: |
+              { ..., Strategy, ... } = require('passport-jwt')
+              ...
+      - pattern-either:
+          - pattern-inside: new $S({...}, ...)
+          - pattern-inside: new $S.Strategy({...}, ...)
+      - pattern: "ignoreExpiration: true"
   - id: auth.secret.provider-key
     languages:
       - javascript

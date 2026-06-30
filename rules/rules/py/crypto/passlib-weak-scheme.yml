@@ -1,0 +1,40 @@
+rules:
+  - id: auth.py.crypto.passlib-weak-scheme
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      passlib configured with a weak or plaintext password scheme.
+
+      A `CryptContext` lists a password hashing scheme that is broken for
+      storing credentials: unsalted or fast digests (`hex_md5`, `hex_sha1`,
+      `hex_sha256`, `md5_crypt`, `ldap_md5`), legacy `des_crypt`, or outright
+      `plaintext` / `ldap_plaintext`. These are trivially brute-forced or
+      reversed, so any leaked hash exposes the underlying password (CWE-916).
+
+      Use a slow, salted, memory-hard scheme as the default, e.g.
+      `CryptContext(schemes=["argon2"])` or
+      `CryptContext(schemes=["bcrypt"])`. Keep a weak scheme only as a
+      `deprecated` verifier during migration, never as an active hashing scheme.
+    # Match the passlib `CryptContext(schemes=[...])` config where any element of
+    # the schemes list is in a CLOSED list of genuinely broken schemes. The
+    # `"$SCHEME"` string-literal metavariable captures each list element's text,
+    # and the anchored metavariable-regex matches ONLY the weak names, so modern
+    # schemes (bcrypt, argon2, scrypt, pbkdf2_sha256, ...) never fire.
+    patterns:
+      - pattern: CryptContext(..., schemes=[..., "$SCHEME", ...], ...)
+      - metavariable-regex:
+          metavariable: $SCHEME
+          regex: ^(md5_crypt|des_crypt|plaintext|hex_md5|hex_sha1|hex_sha256|ldap_md5|ldap_plaintext)$
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-crypto-passlib-weak-scheme
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - passlib
+      references:
+        - https://passlib.readthedocs.io/en/stable/lib/passlib.context.html
+        - https://cwe.mitre.org/data/definitions/916.html

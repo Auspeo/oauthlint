@@ -1,0 +1,45 @@
+rules:
+  - id: auth.py.jwt.verify-claims-disabled
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      PyJWT decode disables audience or issuer checks.
+
+      `jwt.decode(...)` is called with an `options` dict that turns off a claim
+      check: `"verify_aud": False`, `"verify_iss": False`, or
+      `"verify_nbf": False`. Skipping these lets a token minted for a different
+      audience or issuer (for example one from another tenant or a lower-trust
+      service) be accepted here, defeating the boundary those claims are meant
+      to enforce (CWE-347).
+
+      Remove the disabling option and validate the claim, e.g.
+      `jwt.decode(token, key, algorithms=["RS256"], audience="api",
+      issuer="https://issuer.example.com")`. PyJWT only checks `aud`/`iss` when
+      you pass the expected value, so supply it rather than disabling the check.
+    # Scoped to PyJWT's decode `options` dict. We match ONLY the aud/iss/nbf
+    # keys; `verify_signature` is reported by auth.py.jwt.no-verify and
+    # `verify_exp` by auth.py.jwt.no-expiration, so neither is matched here and
+    # we avoid duplicate findings.
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - pattern: decode(..., options=$OPTS, ...)
+      - metavariable-pattern:
+          metavariable: $OPTS
+          pattern-either:
+            - pattern: '{..., "verify_aud": False, ...}'
+            - pattern: '{..., "verify_iss": False, ...}'
+            - pattern: '{..., "verify_nbf": False, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-verify-claims-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - pyjwt
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html

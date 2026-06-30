@@ -207,7 +207,7 @@ especially welcome.
 
 ### Shipped
 
-- 141 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
+- 149 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
