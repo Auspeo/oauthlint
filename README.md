@@ -213,12 +213,12 @@ especially welcome.
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
 - MCP server, so AI coding tools scan the auth code they generate, in-loop
 - Shareable HTML reports
+- A guide for writing your own low-false-positive rules ([docs](https://oauthlint.dev/docs/writing-rules))
 
 ### Now
 
-- Framework-aware rules: NextAuth, Spring Security, Passport, FastAPI, and
-  Authlib, tuned for high signal and low false positives
-- A rule-authoring guide, so anyone can add a rule and grow the catalogue
+- More framework-aware rules: Django REST, Express/Helmet, Laravel, and more,
+  tuned for high signal and low false positives
 - Closing rule-parity gaps across the five supported languages
 
 ### Next
