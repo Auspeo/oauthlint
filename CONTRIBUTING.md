@@ -97,8 +97,31 @@ pnpm test:run
 directly from the rule pack and fixtures at build time, so there's nothing to
 regenerate by hand. Preview locally with `pnpm --filter oauthlint-site dev`.
 
-**5. Add a changeset:** `pnpm changeset` (pick a `patch` for a new rule), then
-commit it with your change.
+**5. Add a changeset:** `pnpm changeset` (pick `oauthlint-rules`, `patch` for a
+single rule or `minor` for a set), then commit it with your change.
+
+## Keep it low false-positive
+
+This is the whole game: a rule that fires on correct code is a bug. Make the
+dangerous shape unambiguous and subtract the safe one.
+
+- Match the exact API and argument, not a vague resemblance.
+- Anchor a generic key (e.g. `ignoreExpiration: true`) to its library with a
+  `pattern-inside` import guard so unrelated code never trips it.
+- Require co-occurrence when one signal is not enough (a wildcard CORS origin is
+  only dangerous *with* credentials).
+- Carve out the safe form with `pattern-not`; use closed allow-lists for "weak X".
+- Prefer pattern mode; reserve `mode: taint` for real source-to-sink flows.
+
+Then validate against real code, not just your fixtures:
+
+```bash
+pnpm validate     # scans real public repos from scripts/validation-targets.yml
+```
+
+A new rule should fire **zero** times on the mature `expectedSignal: low`
+targets. Anything that does is a false positive to triage and tighten. The full
+walkthrough is at <https://oauthlint.dev/docs/writing-rules>.
 
 ## Commits, hooks, and PRs
 
