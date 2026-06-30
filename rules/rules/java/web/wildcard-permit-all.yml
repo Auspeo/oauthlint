@@ -1,0 +1,37 @@
+rules:
+  - id: auth.java.web.wildcard-permit-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring permits every request via a catch-all matcher.
+
+      The `/**` matcher matches every path, so granting it `permitAll()` makes
+      the whole application reachable without authentication, including
+      state-changing and sensitive endpoints (CWE-862, broken access control).
+      This is a common AI-generated Spring mistake: a wide-open matcher is
+      pasted in to "make it work" and the intended access rules are never added.
+
+      Open only the specific public routes explicitly, e.g.
+      `requestMatchers("/public/**").permitAll()`, and require authentication by
+      default with `anyRequest().authenticated()`. Granting `permitAll()` on a
+      scoped path is fine; granting it on `/**` is not.
+    # Literal `/**` wildcard granted permitAll across the three matcher APIs
+    # (requestMatchers in Security 6, antMatchers/mvcMatchers in the legacy
+    # chain). Scoped paths like "/public/**" do not match the literal "/**".
+    pattern-either:
+      - pattern: $X.requestMatchers("/**").permitAll()
+      - pattern: $X.antMatchers("/**").permitAll()
+      - pattern: $X.mvcMatchers("/**").permitAll()
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-wildcard-permit-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html
+        - https://cwe.mitre.org/data/definitions/862.html
