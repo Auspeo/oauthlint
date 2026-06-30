@@ -1,0 +1,38 @@
+rules:
+  - id: auth.java.web.security-ignoring-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring excludes all paths from the security filter chain.
+
+      `WebSecurity.ignoring()` removes the matched paths from the Spring
+      Security filter chain entirely, so they get no authentication,
+      authorization, CSRF, or header protection at all. Passing the `/**`
+      wildcard excludes every request, leaving the whole application unprotected
+      (CWE-862). This is a common AI-generated shortcut to silence security
+      errors during development that then ships to production.
+
+      Never `ignoring()` a broad wildcard. Limit it to genuinely static,
+      non-sensitive assets, e.g.
+      `web.ignoring().requestMatchers("/css/**", "/js/**")`, or better, handle
+      authorization inside the filter chain with `permitAll()` on scoped paths
+      so the security headers still apply.
+    # Literal `/**` passed to ignoring() across the Security 6 (requestMatchers)
+    # and legacy (antMatchers) APIs. A scoped asset path like "/css/**" does not
+    # match the literal "/**", so static-resource excludes do not fire.
+    pattern-either:
+      - pattern: $WEB.ignoring().requestMatchers("/**")
+      - pattern: $WEB.ignoring().antMatchers("/**")
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-security-ignoring-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - spring-security
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/configuration/java.html
+        - https://cwe.mitre.org/data/definitions/862.html

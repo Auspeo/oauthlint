@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 141 rules across every supported language.
+# Full pack — 149 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -2433,6 +2433,40 @@ rules:
           - metavariable-regex:
               metavariable: $BUF
               regex: (?i).*(token|secret|key|password|passwd|nonce|otp|salt).*
+  - id: auth.java.crypto.noop-password-encoder
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring stores passwords with no hashing.
+
+      `NoOpPasswordEncoder` keeps passwords in plaintext and
+      `withDefaultPasswordEncoder()` is a builder helper that Spring explicitly
+      marks for non-production use only. Either way the stored credential is not
+      hashed, so anyone who reads the database or a backup recovers every
+      password directly (CWE-256). This is a common AI-generated shortcut: the
+      no-op encoder is pasted in to "get login working" and never replaced.
+
+      Hash passwords with a dedicated, slow, salted algorithm. Use
+      `new BCryptPasswordEncoder()`, `Argon2PasswordEncoder`, or
+      `Pbkdf2PasswordEncoder` instead. A `DelegatingPasswordEncoder` built via
+      `PasswordEncoderFactories.createDelegatingPasswordEncoder()` is the
+      recommended default.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-CRYPTO-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-crypto-noop-password-encoder
+      category: security
+      cwe: CWE-256
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.spring.io/spring-security/reference/features/authentication/password-storage.html
+        - https://cwe.mitre.org/data/definitions/256.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: NoOpPasswordEncoder.getInstance()
+      - pattern: $U.withDefaultPasswordEncoder()
   - id: auth.java.crypto.weak-hash
     languages:
       - java
@@ -3040,6 +3074,73 @@ rules:
       - metavariable-regex:
           metavariable: $P
           regex: (?s).*/(?:actuator|jolokia|heapdump|threaddump|internal)\b.*
+  - id: auth.java.web.security-ignoring-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring excludes all paths from the security filter chain.
+
+      `WebSecurity.ignoring()` removes the matched paths from the Spring
+      Security filter chain entirely, so they get no authentication,
+      authorization, CSRF, or header protection at all. Passing the `/**`
+      wildcard excludes every request, leaving the whole application unprotected
+      (CWE-862). This is a common AI-generated shortcut to silence security
+      errors during development that then ships to production.
+
+      Never `ignoring()` a broad wildcard. Limit it to genuinely static,
+      non-sensitive assets, e.g.
+      `web.ignoring().requestMatchers("/css/**", "/js/**")`, or better, handle
+      authorization inside the filter chain with `permitAll()` on scoped paths
+      so the security headers still apply.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-security-ignoring-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/configuration/java.html
+        - https://cwe.mitre.org/data/definitions/862.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $WEB.ignoring().requestMatchers("/**")
+      - pattern: $WEB.ignoring().antMatchers("/**")
+  - id: auth.java.web.wildcard-permit-all
+    languages:
+      - java
+    severity: ERROR
+    message: |
+      Spring permits every request via a catch-all matcher.
+
+      The `/**` matcher matches every path, so granting it `permitAll()` makes
+      the whole application reachable without authentication, including
+      state-changing and sensitive endpoints (CWE-862, broken access control).
+      This is a common AI-generated Spring mistake: a wide-open matcher is
+      pasted in to "make it work" and the intended access rules are never added.
+
+      Open only the specific public routes explicitly, e.g.
+      `requestMatchers("/public/**").permitAll()`, and require authentication by
+      default with `anyRequest().authenticated()`. Granting `permitAll()` on a
+      scoped path is fine; granting it on `/**` is not.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-WEB-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-web-wildcard-permit-all
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html
+        - https://cwe.mitre.org/data/definitions/862.html
+      technology:
+        - spring-security
+    pattern-either:
+      - pattern: $X.requestMatchers("/**").permitAll()
+      - pattern: $X.antMatchers("/**").permitAll()
+      - pattern: $X.mvcMatchers("/**").permitAll()
   - id: auth.jwt.alg-none
     languages:
       - javascript
@@ -3542,6 +3643,55 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.nextauth.hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The NextAuth/Auth.js `secret` is set to a hard-coded string literal.
+
+      This value signs and encrypts every session JWT and CSRF token. Committed
+      to git it is one search away from compromise, letting an attacker forge
+      sessions for any user. Read it from the environment instead:
+      `secret: process.env.AUTH_SECRET` (or `NEXTAUTH_SECRET`) and add the
+      variable to `.env.example` with a placeholder.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://authjs.dev/getting-started/deployment#auth_secret
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern: 'secret: "..."'
+      - pattern-not-regex: (?i)secret\s*:\s*['"]\$\{?[A-Za-z_]+\}?['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"]<[^'"]*>['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
   - id: auth.oauth.access-token-in-url
     languages:
       - javascript
@@ -4149,6 +4299,52 @@ rules:
       - patterns:
           - pattern-regex: redirect_uri\s*[:=]\s*['"]http://[^'"]*['"]
           - pattern-not-regex: http://(?:localhost|127\.0\.0\.1|\[::1\])
+  - id: auth.passport.jwt-ignore-expiration
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A `passport-jwt` strategy is configured with `ignoreExpiration: true`.
+
+      This disables the `exp` claim check, so the strategy authenticates expired
+      tokens forever. A leaked or long-old JWT then never stops working,
+      defeating short-lived access tokens. Remove `ignoreExpiration: true` (the
+      default is `false`, which enforces `exp`) and issue tokens with a short
+      lifetime. See CWE-613 (Insufficient Session Expiration).
+    metadata:
+      oauthlint-rule-id: AUTH-PASSPORT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/passport-jwt-ignore-expiration
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.passportjs.org/packages/passport-jwt/
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - passport-jwt
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import { ..., Strategy, ... } from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              import Strategy from 'passport-jwt'
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt')
+              ...
+          - pattern-inside: |
+              $S = require('passport-jwt').Strategy
+              ...
+          - pattern-inside: |
+              { ..., Strategy, ... } = require('passport-jwt')
+              ...
+      - pattern-either:
+          - pattern-inside: new $S({...}, ...)
+          - pattern-inside: new $S.Strategy({...}, ...)
+      - pattern: "ignoreExpiration: true"
   - id: auth.py.cookie.insecure-flags
     languages:
       - python
@@ -4231,6 +4427,82 @@ rules:
       - patterns:
           - pattern: "@cross_origin(..., supports_credentials=True, ...)"
           - pattern-not: "@cross_origin(..., origins=$ORIGINS, ...)"
+  - id: auth.py.cors.fastapi-wildcard-credentials
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      FastAPI CORS allows any origin with credentials.
+
+      Starlette's `CORSMiddleware` is configured with a wildcard origin
+      (`allow_origins=["*"]` or `allow_origin_regex=".*"`) together with
+      `allow_credentials=True`. The CORS spec forbids
+      `Access-Control-Allow-Origin: *` alongside
+      `Access-Control-Allow-Credentials: true`, so Starlette silently reflects
+      the caller's `Origin` instead, turning the wildcard into "allow every
+      site" for credentialed requests. Any website can then read authenticated
+      responses, leaking cookies, session and OAuth tokens cross-origin
+      (CWE-942).
+
+      Credentialed CORS needs an explicit allow-list of trusted origins, e.g.
+      `allow_origins=["https://app.example.com"], allow_credentials=True`. If
+      the endpoint is genuinely public, drop credentials:
+      `allow_origins=["*"], allow_credentials=False`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CORS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-cors-fastapi-wildcard-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://www.starlette.io/middleware/#corsmiddleware
+        - https://fastapi.tiangolo.com/tutorial/cors/
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - fastapi
+    patterns:
+      - pattern-either:
+          - pattern: $APP.add_middleware(CORSMiddleware, ...)
+          - pattern: CORSMiddleware(...)
+      - pattern: $F(..., allow_credentials=True, ...)
+      - pattern-either:
+          - pattern: $F(..., allow_origins=["*"], ...)
+          - pattern: $F(..., allow_origin_regex=".*", ...)
+  - id: auth.py.crypto.passlib-weak-scheme
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      passlib configured with a weak or plaintext password scheme.
+
+      A `CryptContext` lists a password hashing scheme that is broken for
+      storing credentials: unsalted or fast digests (`hex_md5`, `hex_sha1`,
+      `hex_sha256`, `md5_crypt`, `ldap_md5`), legacy `des_crypt`, or outright
+      `plaintext` / `ldap_plaintext`. These are trivially brute-forced or
+      reversed, so any leaked hash exposes the underlying password (CWE-916).
+
+      Use a slow, salted, memory-hard scheme as the default, e.g.
+      `CryptContext(schemes=["argon2"])` or
+      `CryptContext(schemes=["bcrypt"])`. Keep a weak scheme only as a
+      `deprecated` verifier during migration, never as an active hashing scheme.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-crypto-passlib-weak-scheme
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://passlib.readthedocs.io/en/stable/lib/passlib.context.html
+        - https://cwe.mitre.org/data/definitions/916.html
+      technology:
+        - passlib
+    patterns:
+      - pattern: CryptContext(..., schemes=[..., "$SCHEME", ...], ...)
+      - metavariable-regex:
+          metavariable: $SCHEME
+          regex: ^(md5_crypt|des_crypt|plaintext|hex_md5|hex_sha1|hex_sha256|ldap_md5|ldap_plaintext)$
   - id: auth.py.flow.csrf-exempt
     languages:
       - python
@@ -5044,6 +5316,46 @@ rules:
       - pattern: validate_algorithm(...)
       - pattern: is_allowed_key(...)
       - pattern: load_trusted_key(...)
+  - id: auth.py.jwt.verify-claims-disabled
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      PyJWT decode disables audience or issuer checks.
+
+      `jwt.decode(...)` is called with an `options` dict that turns off a claim
+      check: `"verify_aud": False`, `"verify_iss": False`, or
+      `"verify_nbf": False`. Skipping these lets a token minted for a different
+      audience or issuer (for example one from another tenant or a lower-trust
+      service) be accepted here, defeating the boundary those claims are meant
+      to enforce (CWE-347).
+
+      Remove the disabling option and validate the claim, e.g.
+      `jwt.decode(token, key, algorithms=["RS256"], audience="api",
+      issuer="https://issuer.example.com")`. PyJWT only checks `aud`/`iss` when
+      you pass the expected value, so supply it rather than disabling the check.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-verify-claims-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - pyjwt
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., options=$OPTS, ...)
+          - pattern: decode(..., options=$OPTS, ...)
+      - metavariable-pattern:
+          metavariable: $OPTS
+          pattern-either:
+            - pattern: '{..., "verify_aud": False, ...}'
+            - pattern: '{..., "verify_iss": False, ...}'
+            - pattern: '{..., "verify_nbf": False, ...}'
   - id: auth.py.oauth.insecure-token-endpoint
     languages:
       - python
