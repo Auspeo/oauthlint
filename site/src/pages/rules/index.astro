@@ -1,6 +1,7 @@
 ---
 import SiteChrome from '../../components/SiteChrome.astro';
 import Base from '../../layouts/Base.astro';
+import { renderInline, stripInline } from '../../lib/inline';
 import { type Severity, getRules } from '../../lib/rules';
 
 const rules = getRules();
@@ -146,7 +147,7 @@ const taintCount = rules.filter((r) => isTaint(r.id)).length;
                 <tr
                   data-row
                   data-id={r.id}
-                  data-title={r.title.toLowerCase()}
+                  data-title={stripInline(r.title).toLowerCase()}
                   data-sev={r.severity}
                   data-cat={r.category}
                   data-prev={r.llmPrevalence}
@@ -165,7 +166,7 @@ const taintCount = rules.filter((r) => isTaint(r.id)).length;
                         </span>
                       )}
                     </div>
-                    <div style="font-size:12.5px; color:var(--ol-text-secondary);">{r.title}</div>
+                    <div class="rule-row-title" style="font-size:12.5px; color:var(--ol-text-secondary);" set:html={renderInline(r.title)} />
                   </td>
                   <td style="padding:12px 16px; border-bottom:1px solid var(--ol-border-subtle); white-space:nowrap;">
                     <span style={`font-family:var(--ol-font-mono); font-size:10px; font-weight:600; color:${SEV[r.severity].color};`}>● {SEV[r.severity].label}</span>
@@ -326,4 +327,15 @@ const taintCount = rules.filter((r) => isTaint(r.id)).length;
       render();
     })();
   </script>
+
+  <style is:global>
+    /* Inline `code` spans in a catalogue row's summary, emitted by
+       renderInline() via set:html (global, since scoped styles do not reach
+       set:html content). Quiet mono so it reads as code, not a heavy chip. */
+    .rule-row-title code {
+      font-family: var(--ol-font-mono);
+      font-size: 0.9em;
+      color: var(--ol-text);
+    }
+  </style>
 </Base>
