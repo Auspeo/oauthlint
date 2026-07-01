@@ -5,11 +5,11 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      `Math.random()` is being assigned to (or used to compute) a value
-      whose name indicates it is security-sensitive — a token, a CSRF
-      value, an OAuth `state`, a session id, a nonce, or a verification
-      code. `Math.random()` is NOT cryptographically secure and is
-      predictable enough for an attacker with enough samples to recover
+      `Math.random()` produces a value whose name marks it as
+      security-sensitive. The value is assigned to (or computed for) a token,
+      a CSRF value, an OAuth `state`, a session id, a nonce, or a
+      verification code. `Math.random()` is NOT cryptographically secure and
+      is predictable enough for an attacker with enough samples to recover
       the seed.
 
       Use `crypto.randomBytes(N)` (Node) or `crypto.getRandomValues()`

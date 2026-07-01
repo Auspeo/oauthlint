@@ -5,16 +5,17 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      Disabling TLS certificate validation (`rejectUnauthorized: false` or
-      `NODE_TLS_REJECT_UNAUTHORIZED=0`) makes the connection accept ANY
-      certificate, including self-signed or attacker-supplied ones. This
-      removes the protection TLS provides against man-in-the-middle attacks:
-      anyone able to intercept the network path can present a forged
-      certificate, then read and modify the traffic (credentials, tokens, data).
+      TLS certificate validation is disabled for this connection.
+      Setting `rejectUnauthorized: false` or `NODE_TLS_REJECT_UNAUTHORIZED=0`
+      makes the connection accept ANY certificate, including self-signed or
+      attacker-supplied ones. This removes the protection TLS provides against
+      man-in-the-middle attacks: anyone able to intercept the network path can
+      present a forged certificate, then read and modify the traffic
+      (credentials, tokens, data).
 
       Keep certificate validation enabled. If the server uses a private or
       self-signed CA, supply that CA explicitly instead of turning validation
-      off — e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
+      off, e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
       CWE-295 and the Node.js TLS docs.
     # Matches an options object literal that contains `rejectUnauthorized: false`,
     # wherever it appears (https.request, new https.Agent, tls.connect, axios

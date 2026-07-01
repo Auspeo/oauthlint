@@ -4,9 +4,9 @@ rules:
       - python
     severity: ERROR
     message: |
-      `OAUTHLIB_INSECURE_TRANSPORT` is being set, which disables oauthlib's
-      HTTPS requirement for OAuth flows (`requests-oauthlib`, Authlib's
-      requests integration, Django OAuth Toolkit). oauthlib raises
+      `OAUTHLIB_INSECURE_TRANSPORT` is set, disabling oauthlib's HTTPS
+      requirement for OAuth flows. This affects `requests-oauthlib`, Authlib's
+      requests integration, and Django OAuth Toolkit. oauthlib raises
       `InsecureTransportError` to stop you exchanging codes and tokens over
       cleartext; setting this variable silences that guard, so authorization
       codes, `client_secret`, and access/refresh tokens travel over plain
