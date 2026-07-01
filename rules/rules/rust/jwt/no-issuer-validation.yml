@@ -4,13 +4,13 @@ rules:
       - rust
     severity: WARNING
     message: |
-      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the
-      expected issuer, so `decode` accepts a token minted by ANY issuer. The
-      `jsonwebtoken` crate does not validate the `iss` claim unless you opt in,
-      so a token signed by an attacker-controlled or otherwise untrusted issuer
-      passes validation as long as the signature checks out. For OAuth/OIDC this
-      lets a token from the wrong authorization server be replayed against this
-      API.
+      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the expected issuer.
+      Because the issuer is not pinned, `decode` accepts a token minted by ANY
+      issuer: the `jsonwebtoken` crate does not validate the `iss` claim unless
+      you opt in, so a token signed by an attacker-controlled or otherwise
+      untrusted issuer passes validation as long as the signature checks out.
+      For OAuth/OIDC this lets a token from the wrong authorization server be
+      replayed against this API.
 
       Pin the issuer before decoding, e.g.
       `validation.set_issuer(&["https://issuer.example.com"])` (or set

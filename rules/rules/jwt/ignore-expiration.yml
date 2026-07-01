@@ -5,10 +5,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      `jwt.verify(token, key, { ignoreExpiration: true })` from `jsonwebtoken`
-      disables the `exp` (expiry) claim check, so an expired token is accepted
-      as valid forever. A stolen or long-old token then never stops working,
-      defeating the whole point of short-lived access tokens.
+      `ignoreExpiration: true` in a `jsonwebtoken` `verify()` call disables the
+      `exp` claim check. An expired token is then accepted as valid forever, so
+      a stolen or long-old token never stops working, defeating the whole point
+      of short-lived access tokens.
 
       Remove `ignoreExpiration: true` so the `exp` claim is enforced, and set a
       sane `expiresIn` when signing (`jwt.sign(payload, key, { expiresIn: '15m'

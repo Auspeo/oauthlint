@@ -4,12 +4,12 @@ rules:
       - go
     severity: WARNING
     message: |
-      A JWT parser is configured with `jwt.WithoutClaimsValidation()`, which
-      turns OFF the standard registered-claims validation golang-jwt performs by
-      default — the `exp` (expiry), `nbf` (not-before) and `iat` (issued-at)
-      checks. With validation disabled an expired or not-yet-valid token still
-      parses successfully, so a stolen or long-expired token is accepted as if
-      it were current (CWE-613).
+      A JWT parser turns off registered-claims validation with
+      `jwt.WithoutClaimsValidation()`. That option disables the `exp`
+      (expiry), `nbf` (not-before) and `iat` (issued-at) checks golang-jwt
+      performs by default. With validation disabled an expired or
+      not-yet-valid token still parses successfully, so a stolen or
+      long-expired token is accepted as if it were current (CWE-613).
 
       Remove `jwt.WithoutClaimsValidation()` and let golang-jwt validate the
       time-based claims. If a specific claim must be relaxed, scope it narrowly

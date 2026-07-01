@@ -194,14 +194,15 @@ rules:
       - go
     severity: ERROR
     message: |
-      An OAuth/OIDC credential taken from the HTTP request — an authorization
-      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
-      `token`, a `client_secret`, or the raw `Authorization` header — flows
-      into a logging call (`log.*`, `slog.*`, `fmt.Print*`, or a `logger.*`
-      method). Logs are written to files, shipped to aggregators (Datadog,
-      Splunk, CloudWatch) and read by people and systems that should never see
-      live credentials. A leaked authorization code or token can be replayed
-      to impersonate the user or complete the OAuth exchange (CWE-532).
+      An OAuth/OIDC credential from the HTTP request flows into a logging call.
+      The tainted value is an authorization `code`, an `access_token` /
+      `refresh_token` / `id_token`, a bearer `token`, a `client_secret`, or
+      the raw `Authorization` header, and the sink is a `log.*`, `slog.*`,
+      `fmt.Print*`, or `logger.*` call. Logs are written to files, shipped to
+      aggregators (Datadog, Splunk, CloudWatch) and read by people and systems
+      that should never see live credentials. A leaked authorization code or
+      token can be replayed to impersonate the user or complete the OAuth
+      exchange (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging, log a
       non-sensitive identifier instead (a user id, a key id), or drop the
@@ -435,9 +436,9 @@ rules:
       - go
     severity: ERROR
     message: |
-      A security-sensitive value — its name indicates a token, secret, key,
-      password, nonce, OTP, or salt — is being generated with the `math/rand`
-      package. `math/rand` is a deterministic PRNG: its output is predictable
+      A security-sensitive value is being generated with the `math/rand`
+      package. Its name indicates a token, secret, key, password, nonce, OTP,
+      or salt. `math/rand` is a deterministic PRNG: its output is predictable
       and an attacker who observes enough values can recover the seed and
       forecast every future token. For OAuth/OIDC this means forgeable
       `state` values, guessable authorization codes, and predictable refresh
@@ -571,12 +572,12 @@ rules:
       - go
     severity: WARNING
     message: |
-      A JWT parser is configured with `jwt.WithoutClaimsValidation()`, which
-      turns OFF the standard registered-claims validation golang-jwt performs by
-      default — the `exp` (expiry), `nbf` (not-before) and `iat` (issued-at)
-      checks. With validation disabled an expired or not-yet-valid token still
-      parses successfully, so a stolen or long-expired token is accepted as if
-      it were current (CWE-613).
+      A JWT parser turns off registered-claims validation with
+      `jwt.WithoutClaimsValidation()`. That option disables the `exp`
+      (expiry), `nbf` (not-before) and `iat` (issued-at) checks golang-jwt
+      performs by default. With validation disabled an expired or
+      not-yet-valid token still parses successfully, so a stolen or
+      long-expired token is accepted as if it were current (CWE-613).
 
       Remove `jwt.WithoutClaimsValidation()` and let golang-jwt validate the
       time-based claims. If a specific claim must be relaxed, scope it narrowly
@@ -599,12 +600,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `Keyfunc` passed to `jwt.Parse`/`jwt.ParseWithClaims` returns the
-      verification key WITHOUT first checking `token.Method` (the signing
-      algorithm). This enables an algorithm-confusion attack: if the server
-      verifies RS256 tokens with an RSA public key, an attacker can forge a
-      token signed with HS256 using that public key as the HMAC secret, and the
-      library will accept it — a complete authentication bypass (CWE-347).
+      A JWT `Keyfunc` returns the verification key without checking `token.Method`, enabling algorithm confusion.
+      It is passed to `jwt.Parse`/`jwt.ParseWithClaims` and hands back the key
+      without first asserting the signing algorithm. If the server verifies
+      RS256 tokens with an RSA public key, an attacker can forge an HS256 token
+      using that public key as the HMAC secret, and the library will accept it:
+      a complete authentication bypass (CWE-347).
 
       Always assert the signing method inside the keyfunc before returning the
       key, e.g.:
@@ -828,12 +829,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `tls.Config` is created with `InsecureSkipVerify: true`, which disables
-      verification of the server's certificate chain and host name. Any
-      attacker who can intercept the connection can present any certificate
-      and read or tamper with the traffic — a classic man-in-the-middle hole.
-      For OAuth/OIDC this leaks authorization codes, access tokens, and client
-      secrets in transit.
+      A `tls.Config` sets `InsecureSkipVerify: true`, disabling TLS certificate verification.
+      This turns off verification of the server's certificate chain and host
+      name, so any attacker who can intercept the connection can present any
+      certificate and read or tamper with the traffic: a classic
+      man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
+      access tokens, and client secrets in transit.
 
       Never set `InsecureSkipVerify: true`. Leave verification on (the default).
       To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`

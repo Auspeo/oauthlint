@@ -20,8 +20,8 @@ rules:
     severity: INFO
     message: |
       An auth-looking cookie is being set with a `maxAge` greater than
-      30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
-      milliseconds). Long-lived session cookies expand the blast radius
+      30 days. The threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+      milliseconds. Long-lived session cookies expand the blast radius
       of any single token theft and bypass server-side revocation if
       the application doesn't validate freshness on every request.
 
@@ -565,11 +565,11 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      `Math.random()` is being assigned to (or used to compute) a value
-      whose name indicates it is security-sensitive — a token, a CSRF
-      value, an OAuth `state`, a session id, a nonce, or a verification
-      code. `Math.random()` is NOT cryptographically secure and is
-      predictable enough for an attacker with enough samples to recover
+      `Math.random()` produces a value whose name marks it as
+      security-sensitive. The value is assigned to (or computed for) a token,
+      a CSRF value, an OAuth `state`, a session id, a nonce, or a
+      verification code. `Math.random()` is NOT cryptographically secure and
+      is predictable enough for an attacker with enough samples to recover
       the seed.
 
       Use `crypto.randomBytes(N)` (Node) or `crypto.getRandomValues()`
@@ -644,14 +644,15 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      An OAuth/OIDC credential taken from the request — an authorization
-      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
-      `token`, a `client_secret`, or the raw `Authorization` header — flows
-      into a logging call (`console.*` or `logger.*`). Logs are written to
-      files, shipped to aggregators (Datadog, Splunk, CloudWatch) and read by
-      people and systems that should never see live credentials. A leaked
-      authorization code or token can be replayed to impersonate the user or
-      complete the OAuth exchange (CWE-532).
+      An OAuth/OIDC credential from the request flows into a logging call.
+      The tainted value is an authorization `code`, an `access_token` /
+      `refresh_token` / `id_token`, a bearer `token`, a `client_secret`, or
+      the raw `Authorization` header, and the sink is a `console.*` or
+      `logger.*` call. Logs are written to files, shipped to aggregators
+      (Datadog, Splunk, CloudWatch) and read by people and systems that should
+      never see live credentials. A leaked authorization code or token can be
+      replayed to impersonate the user or complete the OAuth exchange
+      (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging
       (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
@@ -921,12 +922,13 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
-      `accessToken`, `refreshToken`, `privateKey`, `clientSecret`, …) is
-      being passed to a logging call (`console.*` or `logger.*`). Logs are
-      routinely written to files, shipped to aggregators (Datadog, Splunk,
-      CloudWatch) and read by people who should never see the raw secret —
-      this is a textbook credential leak.
+      A secret-shaped value is passed to a logging call. The logged
+      identifier is named like a credential (`password`, `token`, `secret`,
+      `apiKey`, `accessToken`, `refreshToken`, `privateKey`, `clientSecret`,
+      …) and the sink is a `console.*` or `logger.*` call. Logs are routinely
+      written to files, shipped to aggregators (Datadog, Splunk, CloudWatch)
+      and read by people who should never see the raw secret. This is a
+      textbook credential leak.
 
       Never log secrets. Redact or mask them before logging
       (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
@@ -1547,10 +1549,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      `jwt.verify(token, key, { ignoreExpiration: true })` from `jsonwebtoken`
-      disables the `exp` (expiry) claim check, so an expired token is accepted
-      as valid forever. A stolen or long-old token then never stops working,
-      defeating the whole point of short-lived access tokens.
+      `ignoreExpiration: true` in a `jsonwebtoken` `verify()` call disables the
+      `exp` claim check. An expired token is then accepted as valid forever, so
+      a stolen or long-old token never stops working, defeating the whole point
+      of short-lived access tokens.
 
       Remove `ignoreExpiration: true` so the `exp` claim is enforced, and set a
       sane `expiresIn` when signing (`jwt.sign(payload, key, { expiresIn: '15m'
@@ -2044,9 +2046,9 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      OAuth implicit flow (`response_type=token` or `response_type=id_token
-      token`) is deprecated by OAuth 2.0 Security BCP (RFC 9700) and the
-      OAuth 2.1 working draft. The access token leaks into the URL
+      OAuth implicit flow is deprecated by the OAuth 2.0 Security BCP (RFC 9700)
+      and the OAuth 2.1 draft. It is triggered by `response_type=token` or
+      `response_type=id_token token`. The access token leaks into the URL
       fragment, browser history, and referrer headers, and there is no
       refresh-token mechanism.
 
@@ -2107,9 +2109,9 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth `expires_in` (or comparable token-lifetime field) is being
-      set to a literal value greater than 86_400 seconds — i.e. longer
-      than 24 hours. Long-lived access tokens make every token theft
+      An OAuth token-lifetime field is set to a literal value longer than
+      24 hours. The value of `expires_in` (or a comparable field) exceeds
+      86_400 seconds. Long-lived access tokens make every token theft
       catastrophic because they remain valid for days or weeks; the
       industry standard is 15-60 minutes for access tokens, paired with
       a refresh-token rotation flow for longer sessions.
@@ -2195,10 +2197,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      OAuth 2.0 authorization request looks like a public client (SPA,
-      mobile, or native app) but does not include a `code_challenge`
-      parameter. Without PKCE, the authorization code can be intercepted
-      and exchanged by an attacker.
+      OAuth authorization request from a public client omits the PKCE `code_challenge` parameter.
+      The request looks like a public client (SPA, mobile, or native app) yet
+      carries no `code_challenge`. Without PKCE, the authorization code can be
+      intercepted and exchanged by an attacker.
 
       RFC 8252 §6 mandates PKCE for native/SPA clients. RFC 9700 (OAuth 2.0
       Security BCP) recommends PKCE for ALL clients, including confidential
@@ -2466,17 +2468,16 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth/OIDC token is being written to `localStorage` /
-      `sessionStorage` under a token-named key (`access_token`,
-      `refresh_token`, `id_token`, …). Web storage is readable by any
-      script on the origin, so any XSS — including a compromised
-      third-party dependency — can exfiltrate the token via
-      `getItem(...)`. There is no browser-side mitigation, unlike
+      An OAuth/OIDC token is written to `localStorage` / `sessionStorage`, readable by any script on the origin.
+      The key is token-named (`access_token`, `refresh_token`, `id_token`, …),
+      and web storage is exposed to every script on the page, so any XSS,
+      including a compromised third-party dependency, can exfiltrate the token
+      via `getItem(...)`. There is no browser-side mitigation, unlike
       `HttpOnly` cookies.
 
       Keep access/refresh/id tokens in memory only, or have the server
       issue them in a `Secure; HttpOnly; SameSite=Strict` cookie.
-      `sessionStorage` is no safer than `localStorage` against XSS — it
+      `sessionStorage` is no safer than `localStorage` against XSS: it
       grants the same attacker capability.
 
       See CWE-922: Insecure Storage of Sensitive Information.
@@ -2698,9 +2699,9 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      An `express-session` / `cookie-session` `secret` is set to a hard-coded
-      string literal (the infamous `secret: 'keyboard cat'` is the canonical
-      AI-generated example). This key signs the session cookie: anyone who
+      An `express-session` / `cookie-session` `secret` is a hard-coded string
+      literal. The infamous `secret: 'keyboard cat'` is the canonical
+      AI-generated example. This key signs the session cookie: anyone who
       reads it from your source or git history can forge arbitrary session
       cookies and impersonate any user.
 
@@ -2762,11 +2763,12 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      The user is being marked as logged in (`req.session.user = ...`,
-      `req.session.userId = ...`, etc.) WITHOUT first regenerating the
-      session id. This opens the door to session-fixation attacks: an
-      attacker who plants a known session id in the victim's browser
-      before login retains access after authentication succeeds.
+      The user is marked as logged in without first regenerating the session id.
+      The identity is written onto the session (`req.session.user = ...`,
+      `req.session.userId = ...`, etc.) before the session id is rotated. This
+      opens the door to session-fixation attacks: an attacker who plants a
+      known session id in the victim's browser before login retains access
+      after authentication succeeds.
 
       Call `req.session.regenerate(cb)` (or your framework's equivalent)
       between authenticating the credentials and writing the user
@@ -2810,16 +2812,17 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      Disabling TLS certificate validation (`rejectUnauthorized: false` or
-      `NODE_TLS_REJECT_UNAUTHORIZED=0`) makes the connection accept ANY
-      certificate, including self-signed or attacker-supplied ones. This
-      removes the protection TLS provides against man-in-the-middle attacks:
-      anyone able to intercept the network path can present a forged
-      certificate, then read and modify the traffic (credentials, tokens, data).
+      TLS certificate validation is disabled for this connection.
+      Setting `rejectUnauthorized: false` or `NODE_TLS_REJECT_UNAUTHORIZED=0`
+      makes the connection accept ANY certificate, including self-signed or
+      attacker-supplied ones. This removes the protection TLS provides against
+      man-in-the-middle attacks: anyone able to intercept the network path can
+      present a forged certificate, then read and modify the traffic
+      (credentials, tokens, data).
 
       Keep certificate validation enabled. If the server uses a private or
       self-signed CA, supply that CA explicitly instead of turning validation
-      off — e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
+      off, e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
       CWE-295 and the Node.js TLS docs.
     metadata:
       oauthlint-rule-id: AUTH-TLS-001

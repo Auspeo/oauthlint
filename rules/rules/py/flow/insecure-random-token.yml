@@ -4,11 +4,12 @@ rules:
       - python
     severity: ERROR
     message: |
-      A security-sensitive value (token, secret, password, OTP, nonce, API key,
-      reset/verification code) is being generated with the `random` module.
-      `random` is a pseudo-random number generator seeded from predictable state
-      and is NOT cryptographically secure — its output can be predicted or
-      reproduced by an attacker, defeating the secret entirely.
+      A security-sensitive value is being generated with the `random` module.
+      The value is a token, secret, password, OTP, nonce, API key, or
+      reset/verification code. `random` is a pseudo-random number generator
+      seeded from predictable state and is NOT cryptographically secure: its
+      output can be predicted or reproduced by an attacker, defeating the
+      secret entirely.
 
       Use the `secrets` module or `os.urandom` instead:
       `secrets.token_urlsafe(32)`, `secrets.token_hex(16)`,

@@ -20,8 +20,8 @@ rules:
     severity: INFO
     message: |
       An auth-looking cookie is being set with a `maxAge` greater than
-      30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
-      milliseconds). Long-lived session cookies expand the blast radius
+      30 days. The threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+      milliseconds. Long-lived session cookies expand the blast radius
       of any single token theft and bypass server-side revocation if
       the application doesn't validate freshness on every request.
 
@@ -565,11 +565,11 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      `Math.random()` is being assigned to (or used to compute) a value
-      whose name indicates it is security-sensitive — a token, a CSRF
-      value, an OAuth `state`, a session id, a nonce, or a verification
-      code. `Math.random()` is NOT cryptographically secure and is
-      predictable enough for an attacker with enough samples to recover
+      `Math.random()` produces a value whose name marks it as
+      security-sensitive. The value is assigned to (or computed for) a token,
+      a CSRF value, an OAuth `state`, a session id, a nonce, or a
+      verification code. `Math.random()` is NOT cryptographically secure and
+      is predictable enough for an attacker with enough samples to recover
       the seed.
 
       Use `crypto.randomBytes(N)` (Node) or `crypto.getRandomValues()`
@@ -644,14 +644,15 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      An OAuth/OIDC credential taken from the request — an authorization
-      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
-      `token`, a `client_secret`, or the raw `Authorization` header — flows
-      into a logging call (`console.*` or `logger.*`). Logs are written to
-      files, shipped to aggregators (Datadog, Splunk, CloudWatch) and read by
-      people and systems that should never see live credentials. A leaked
-      authorization code or token can be replayed to impersonate the user or
-      complete the OAuth exchange (CWE-532).
+      An OAuth/OIDC credential from the request flows into a logging call.
+      The tainted value is an authorization `code`, an `access_token` /
+      `refresh_token` / `id_token`, a bearer `token`, a `client_secret`, or
+      the raw `Authorization` header, and the sink is a `console.*` or
+      `logger.*` call. Logs are written to files, shipped to aggregators
+      (Datadog, Splunk, CloudWatch) and read by people and systems that should
+      never see live credentials. A leaked authorization code or token can be
+      replayed to impersonate the user or complete the OAuth exchange
+      (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging
       (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
@@ -921,12 +922,13 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      A secret-shaped value (`password`, `token`, `secret`, `apiKey`,
-      `accessToken`, `refreshToken`, `privateKey`, `clientSecret`, …) is
-      being passed to a logging call (`console.*` or `logger.*`). Logs are
-      routinely written to files, shipped to aggregators (Datadog, Splunk,
-      CloudWatch) and read by people who should never see the raw secret —
-      this is a textbook credential leak.
+      A secret-shaped value is passed to a logging call. The logged
+      identifier is named like a credential (`password`, `token`, `secret`,
+      `apiKey`, `accessToken`, `refreshToken`, `privateKey`, `clientSecret`,
+      …) and the sink is a `console.*` or `logger.*` call. Logs are routinely
+      written to files, shipped to aggregators (Datadog, Splunk, CloudWatch)
+      and read by people who should never see the raw secret. This is a
+      textbook credential leak.
 
       Never log secrets. Redact or mask them before logging
       (`token.slice(0, 4) + '…'`), log a non-sensitive identifier instead
@@ -1578,14 +1580,15 @@ rules:
       - go
     severity: ERROR
     message: |
-      An OAuth/OIDC credential taken from the HTTP request — an authorization
-      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
-      `token`, a `client_secret`, or the raw `Authorization` header — flows
-      into a logging call (`log.*`, `slog.*`, `fmt.Print*`, or a `logger.*`
-      method). Logs are written to files, shipped to aggregators (Datadog,
-      Splunk, CloudWatch) and read by people and systems that should never see
-      live credentials. A leaked authorization code or token can be replayed
-      to impersonate the user or complete the OAuth exchange (CWE-532).
+      An OAuth/OIDC credential from the HTTP request flows into a logging call.
+      The tainted value is an authorization `code`, an `access_token` /
+      `refresh_token` / `id_token`, a bearer `token`, a `client_secret`, or
+      the raw `Authorization` header, and the sink is a `log.*`, `slog.*`,
+      `fmt.Print*`, or `logger.*` call. Logs are written to files, shipped to
+      aggregators (Datadog, Splunk, CloudWatch) and read by people and systems
+      that should never see live credentials. A leaked authorization code or
+      token can be replayed to impersonate the user or complete the OAuth
+      exchange (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging, log a
       non-sensitive identifier instead (a user id, a key id), or drop the
@@ -1819,9 +1822,9 @@ rules:
       - go
     severity: ERROR
     message: |
-      A security-sensitive value — its name indicates a token, secret, key,
-      password, nonce, OTP, or salt — is being generated with the `math/rand`
-      package. `math/rand` is a deterministic PRNG: its output is predictable
+      A security-sensitive value is being generated with the `math/rand`
+      package. Its name indicates a token, secret, key, password, nonce, OTP,
+      or salt. `math/rand` is a deterministic PRNG: its output is predictable
       and an attacker who observes enough values can recover the seed and
       forecast every future token. For OAuth/OIDC this means forgeable
       `state` values, guessable authorization codes, and predictable refresh
@@ -1955,12 +1958,12 @@ rules:
       - go
     severity: WARNING
     message: |
-      A JWT parser is configured with `jwt.WithoutClaimsValidation()`, which
-      turns OFF the standard registered-claims validation golang-jwt performs by
-      default — the `exp` (expiry), `nbf` (not-before) and `iat` (issued-at)
-      checks. With validation disabled an expired or not-yet-valid token still
-      parses successfully, so a stolen or long-expired token is accepted as if
-      it were current (CWE-613).
+      A JWT parser turns off registered-claims validation with
+      `jwt.WithoutClaimsValidation()`. That option disables the `exp`
+      (expiry), `nbf` (not-before) and `iat` (issued-at) checks golang-jwt
+      performs by default. With validation disabled an expired or
+      not-yet-valid token still parses successfully, so a stolen or
+      long-expired token is accepted as if it were current (CWE-613).
 
       Remove `jwt.WithoutClaimsValidation()` and let golang-jwt validate the
       time-based claims. If a specific claim must be relaxed, scope it narrowly
@@ -1983,12 +1986,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `Keyfunc` passed to `jwt.Parse`/`jwt.ParseWithClaims` returns the
-      verification key WITHOUT first checking `token.Method` (the signing
-      algorithm). This enables an algorithm-confusion attack: if the server
-      verifies RS256 tokens with an RSA public key, an attacker can forge a
-      token signed with HS256 using that public key as the HMAC secret, and the
-      library will accept it — a complete authentication bypass (CWE-347).
+      A JWT `Keyfunc` returns the verification key without checking `token.Method`, enabling algorithm confusion.
+      It is passed to `jwt.Parse`/`jwt.ParseWithClaims` and hands back the key
+      without first asserting the signing algorithm. If the server verifies
+      RS256 tokens with an RSA public key, an attacker can forge an HS256 token
+      using that public key as the HMAC secret, and the library will accept it:
+      a complete authentication bypass (CWE-347).
 
       Always assert the signing method inside the keyfunc before returning the
       key, e.g.:
@@ -2212,12 +2215,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `tls.Config` is created with `InsecureSkipVerify: true`, which disables
-      verification of the server's certificate chain and host name. Any
-      attacker who can intercept the connection can present any certificate
-      and read or tamper with the traffic — a classic man-in-the-middle hole.
-      For OAuth/OIDC this leaks authorization codes, access tokens, and client
-      secrets in transit.
+      A `tls.Config` sets `InsecureSkipVerify: true`, disabling TLS certificate verification.
+      This turns off verification of the server's certificate chain and host
+      name, so any attacker who can intercept the connection can present any
+      certificate and read or tamper with the traffic: a classic
+      man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
+      access tokens, and client secrets in transit.
 
       Never set `InsecureSkipVerify: true`. Leave verification on (the default).
       To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`
@@ -3326,10 +3329,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      `jwt.verify(token, key, { ignoreExpiration: true })` from `jsonwebtoken`
-      disables the `exp` (expiry) claim check, so an expired token is accepted
-      as valid forever. A stolen or long-old token then never stops working,
-      defeating the whole point of short-lived access tokens.
+      `ignoreExpiration: true` in a `jsonwebtoken` `verify()` call disables the
+      `exp` claim check. An expired token is then accepted as valid forever, so
+      a stolen or long-old token never stops working, defeating the whole point
+      of short-lived access tokens.
 
       Remove `ignoreExpiration: true` so the `exp` claim is enforced, and set a
       sane `expiresIn` when signing (`jwt.sign(payload, key, { expiresIn: '15m'
@@ -3823,9 +3826,9 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      OAuth implicit flow (`response_type=token` or `response_type=id_token
-      token`) is deprecated by OAuth 2.0 Security BCP (RFC 9700) and the
-      OAuth 2.1 working draft. The access token leaks into the URL
+      OAuth implicit flow is deprecated by the OAuth 2.0 Security BCP (RFC 9700)
+      and the OAuth 2.1 draft. It is triggered by `response_type=token` or
+      `response_type=id_token token`. The access token leaks into the URL
       fragment, browser history, and referrer headers, and there is no
       refresh-token mechanism.
 
@@ -3886,9 +3889,9 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth `expires_in` (or comparable token-lifetime field) is being
-      set to a literal value greater than 86_400 seconds — i.e. longer
-      than 24 hours. Long-lived access tokens make every token theft
+      An OAuth token-lifetime field is set to a literal value longer than
+      24 hours. The value of `expires_in` (or a comparable field) exceeds
+      86_400 seconds. Long-lived access tokens make every token theft
       catastrophic because they remain valid for days or weeks; the
       industry standard is 15-60 minutes for access tokens, paired with
       a refresh-token rotation flow for longer sessions.
@@ -3974,10 +3977,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      OAuth 2.0 authorization request looks like a public client (SPA,
-      mobile, or native app) but does not include a `code_challenge`
-      parameter. Without PKCE, the authorization code can be intercepted
-      and exchanged by an attacker.
+      OAuth authorization request from a public client omits the PKCE `code_challenge` parameter.
+      The request looks like a public client (SPA, mobile, or native app) yet
+      carries no `code_challenge`. Without PKCE, the authorization code can be
+      intercepted and exchanged by an attacker.
 
       RFC 8252 §6 mandates PKCE for native/SPA clients. RFC 9700 (OAuth 2.0
       Security BCP) recommends PKCE for ALL clients, including confidential
@@ -4245,17 +4248,16 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth/OIDC token is being written to `localStorage` /
-      `sessionStorage` under a token-named key (`access_token`,
-      `refresh_token`, `id_token`, …). Web storage is readable by any
-      script on the origin, so any XSS — including a compromised
-      third-party dependency — can exfiltrate the token via
-      `getItem(...)`. There is no browser-side mitigation, unlike
+      An OAuth/OIDC token is written to `localStorage` / `sessionStorage`, readable by any script on the origin.
+      The key is token-named (`access_token`, `refresh_token`, `id_token`, …),
+      and web storage is exposed to every script on the page, so any XSS,
+      including a compromised third-party dependency, can exfiltrate the token
+      via `getItem(...)`. There is no browser-side mitigation, unlike
       `HttpOnly` cookies.
 
       Keep access/refresh/id tokens in memory only, or have the server
       issue them in a `Secure; HttpOnly; SameSite=Strict` cookie.
-      `sessionStorage` is no safer than `localStorage` against XSS — it
+      `sessionStorage` is no safer than `localStorage` against XSS: it
       grants the same attacker capability.
 
       See CWE-922: Insecure Storage of Sensitive Information.
@@ -4422,14 +4424,15 @@ rules:
       - python
     severity: ERROR
     message: |
-      Flask-CORS is configured with `supports_credentials=True` together with a
-      wildcard origin (`origins="*"`, `origins=["*"]`, or — since Flask-CORS
-      defaults to `*` — no `origins` argument at all). The CORS spec forbids the
+      Flask-CORS allows any origin while credentials are enabled.
+      This configuration pairs `supports_credentials=True` with a wildcard
+      origin (`origins="*"`, `origins=["*"]`, or no `origins` argument at all,
+      since Flask-CORS defaults to `*`). The CORS spec forbids the
       `Access-Control-Allow-Origin: *` + `Access-Control-Allow-Credentials: true`
-      combination, so browsers will block it; the dangerous "fix" is to leave the
-      wildcard in place while keeping credentials on, which exposes credentialed
-      cross-origin access to ANY website (CWE-942). For OAuth/OIDC this leaks
-      cookies, session tokens and CSRF protections cross-origin.
+      combination, so browsers will block it; the dangerous "fix" is to leave
+      the wildcard in place while keeping credentials on, which exposes
+      credentialed cross-origin access to ANY website (CWE-942). For OAuth/OIDC
+      this leaks cookies, session tokens and CSRF protections cross-origin.
 
       Credentialed requests must use an explicit allow-list of trusted origins,
       e.g. `CORS(app, origins=["https://app.example.com"], supports_credentials=True)`.
@@ -4768,11 +4771,12 @@ rules:
       - python
     severity: ERROR
     message: |
-      A security-sensitive value (token, secret, password, OTP, nonce, API key,
-      reset/verification code) is being generated with the `random` module.
-      `random` is a pseudo-random number generator seeded from predictable state
-      and is NOT cryptographically secure — its output can be predicted or
-      reproduced by an attacker, defeating the secret entirely.
+      A security-sensitive value is being generated with the `random` module.
+      The value is a token, secret, password, OTP, nonce, API key, or
+      reset/verification code. `random` is a pseudo-random number generator
+      seeded from predictable state and is NOT cryptographically secure: its
+      output can be predicted or reproduced by an attacker, defeating the
+      secret entirely.
 
       Use the `secrets` module or `os.urandom` instead:
       `secrets.token_urlsafe(32)`, `secrets.token_hex(16)`,
@@ -4815,14 +4819,15 @@ rules:
       - python
     severity: ERROR
     message: |
-      An OAuth/OIDC credential taken from the request — an authorization
-      `code`, an `access_token` / `refresh_token` / `id_token`, a bearer
-      `token`, a `client_secret`, or the raw `Authorization` header — flows
-      into a logging call (`print`, `logging.*`, or a `logger.*`). Logs are
-      written to files, shipped to aggregators (Datadog, Splunk, CloudWatch)
-      and read by people and systems that should never see live credentials. A
-      leaked authorization code or token can be replayed to impersonate the
-      user or complete the OAuth exchange (CWE-532).
+      An OAuth/OIDC credential from the request flows into a logging call.
+      The tainted value is an authorization `code`, an `access_token` /
+      `refresh_token` / `id_token`, a bearer `token`, a `client_secret`, or
+      the raw `Authorization` header, and the sink is `print`, `logging.*`,
+      or a `logger.*` call. Logs are written to files, shipped to aggregators
+      (Datadog, Splunk, CloudWatch) and read by people and systems that should
+      never see live credentials. A leaked authorization code or token can be
+      replayed to impersonate the user or complete the OAuth exchange
+      (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging, log a
       non-sensitive identifier instead (a user id, a key id), or drop the field
@@ -5283,15 +5288,16 @@ rules:
       - python
     severity: ERROR
     message: |
-      A JWT is decoded with an `algorithms` allowlist that mixes a symmetric
-      HMAC algorithm (HS256/HS384/HS512) with an asymmetric one (RS*/ES*/PS*).
-      This enables the "algorithm confusion" attack: an attacker who knows your
-      RSA/EC PUBLIC key can sign a forged token with HMAC, using that public key
-      string as the shared secret. Because HS* is also accepted, PyJWT verifies
-      the forgery with the public key as the HMAC secret and treats it as valid
-      — a complete authentication bypass.
+      A JWT is decoded with an `algorithms` allowlist that mixes an HMAC algorithm with an asymmetric one.
+      The list combines a symmetric HMAC algorithm (HS256/HS384/HS512) with an
+      asymmetric one (RS*/ES*/PS*). This enables the "algorithm confusion"
+      attack: an attacker who knows your RSA/EC PUBLIC key can sign a forged
+      token with HMAC, using that public key string as the shared secret.
+      Because HS* is also accepted, PyJWT verifies the forgery with the public
+      key as the HMAC secret and treats it as valid: a complete authentication
+      bypass.
 
-      Allow only ONE algorithm family — the one you actually use. If you issue
+      Allow only ONE algorithm family, the one you actually use. If you issue
       RS256 tokens, pin `jwt.decode(token, public_key, algorithms=["RS256"])`
       and never also accept an HS* algorithm with the same verification key.
 
@@ -5589,9 +5595,9 @@ rules:
       - python
     severity: ERROR
     message: |
-      `OAUTHLIB_INSECURE_TRANSPORT` is being set, which disables oauthlib's
-      HTTPS requirement for OAuth flows (`requests-oauthlib`, Authlib's
-      requests integration, Django OAuth Toolkit). oauthlib raises
+      `OAUTHLIB_INSECURE_TRANSPORT` is set, disabling oauthlib's HTTPS
+      requirement for OAuth flows. This affects `requests-oauthlib`, Authlib's
+      requests integration, and Django OAuth Toolkit. oauthlib raises
       `InsecureTransportError` to stop you exchanging codes and tokens over
       cleartext; setting this variable silences that guard, so authorization
       codes, `client_secret`, and access/refresh tokens travel over plain
@@ -5933,11 +5939,12 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A password is being hashed with a fast, general-purpose digest (MD5 via
-      the `md5` crate, or SHA-1/SHA-256/SHA-512 via the RustCrypto `sha1`/`sha2`
-      crates). These algorithms are designed to be fast, which makes offline
-      brute-force and rainbow-table attacks cheap — they are NOT suitable for
-      storing passwords (CWE-916).
+      A password is hashed with a fast, general-purpose digest unsuitable for
+      password storage. The digest is MD5 (via the `md5` crate) or
+      SHA-1/SHA-256/SHA-512 (via the RustCrypto `sha1`/`sha2` crates). These
+      algorithms are designed to be fast, which makes offline brute-force and
+      rainbow-table attacks cheap; they are NOT suitable for storing passwords
+      (CWE-916).
 
       Use a dedicated, slow password-hashing function with a per-password salt
       and a tunable work factor: Argon2 (`argon2` crate,
@@ -6110,13 +6117,14 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A `jsonwebtoken` `Validation` accepts a list of algorithms that MIXES an
-      HMAC family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
-      (`Algorithm::RS*`/`ES*`/`PS*`). This is the "algorithm confusion" attack:
-      when both families are accepted, an attacker takes your RSA/EC PUBLIC key
-      (which is not secret) and signs a forged token with HS*, using the public
-      key bytes as the HMAC shared secret. `decode` then verifies that forged
-      token as valid, letting the attacker mint arbitrary identities and claims.
+      A `jsonwebtoken` `Validation` accepts both HMAC and asymmetric algorithms,
+      enabling algorithm confusion. The accepted-algorithm list MIXES an HMAC
+      family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
+      (`Algorithm::RS*`/`ES*`/`PS*`). When both families are accepted, an
+      attacker takes your RSA/EC PUBLIC key (which is not secret) and signs a
+      forged token with HS*, using the public key bytes as the HMAC shared
+      secret. `decode` then verifies that forged token as valid, letting the
+      attacker mint arbitrary identities and claims.
 
       Pin `validation.algorithms` to a SINGLE family you actually use, e.g.
       `validation.algorithms = vec![Algorithm::RS256];` when your issuer signs
@@ -6179,10 +6187,11 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A JWT HMAC signing/verification key is hardcoded as a literal in a call
-      to jsonwebtoken's `EncodingKey::from_secret` / `DecodingKey::from_secret`.
-      Anyone who can read the source or git history can forge or tamper with
-      tokens, which is a complete authentication bypass.
+      A JWT HMAC signing/verification key is hardcoded as a literal. It is
+      passed directly to jsonwebtoken's `EncodingKey::from_secret` /
+      `DecodingKey::from_secret`. Anyone who can read the source or git history
+      can forge or tamper with tokens, which is a complete authentication
+      bypass.
 
       Load the secret at runtime from the environment or a secret manager
       instead, e.g. `let key = std::env::var("JWT_SECRET")?;` followed by
@@ -6268,13 +6277,13 @@ rules:
       - rust
     severity: WARNING
     message: |
-      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the
-      expected issuer, so `decode` accepts a token minted by ANY issuer. The
-      `jsonwebtoken` crate does not validate the `iss` claim unless you opt in,
-      so a token signed by an attacker-controlled or otherwise untrusted issuer
-      passes validation as long as the signature checks out. For OAuth/OIDC this
-      lets a token from the wrong authorization server be replayed against this
-      API.
+      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the expected issuer.
+      Because the issuer is not pinned, `decode` accepts a token minted by ANY
+      issuer: the `jsonwebtoken` crate does not validate the `iss` claim unless
+      you opt in, so a token signed by an attacker-controlled or otherwise
+      untrusted issuer passes validation as long as the signature checks out.
+      For OAuth/OIDC this lets a token from the wrong authorization server be
+      replayed against this API.
 
       Pin the issuer before decoding, e.g.
       `validation.set_issuer(&["https://issuer.example.com"])` (or set
@@ -6588,9 +6597,9 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      An `express-session` / `cookie-session` `secret` is set to a hard-coded
-      string literal (the infamous `secret: 'keyboard cat'` is the canonical
-      AI-generated example). This key signs the session cookie: anyone who
+      An `express-session` / `cookie-session` `secret` is a hard-coded string
+      literal. The infamous `secret: 'keyboard cat'` is the canonical
+      AI-generated example. This key signs the session cookie: anyone who
       reads it from your source or git history can forge arbitrary session
       cookies and impersonate any user.
 
@@ -6652,11 +6661,12 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      The user is being marked as logged in (`req.session.user = ...`,
-      `req.session.userId = ...`, etc.) WITHOUT first regenerating the
-      session id. This opens the door to session-fixation attacks: an
-      attacker who plants a known session id in the victim's browser
-      before login retains access after authentication succeeds.
+      The user is marked as logged in without first regenerating the session id.
+      The identity is written onto the session (`req.session.user = ...`,
+      `req.session.userId = ...`, etc.) before the session id is rotated. This
+      opens the door to session-fixation attacks: an attacker who plants a
+      known session id in the victim's browser before login retains access
+      after authentication succeeds.
 
       Call `req.session.regenerate(cb)` (or your framework's equivalent)
       between authenticating the credentials and writing the user
@@ -6700,16 +6710,17 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      Disabling TLS certificate validation (`rejectUnauthorized: false` or
-      `NODE_TLS_REJECT_UNAUTHORIZED=0`) makes the connection accept ANY
-      certificate, including self-signed or attacker-supplied ones. This
-      removes the protection TLS provides against man-in-the-middle attacks:
-      anyone able to intercept the network path can present a forged
-      certificate, then read and modify the traffic (credentials, tokens, data).
+      TLS certificate validation is disabled for this connection.
+      Setting `rejectUnauthorized: false` or `NODE_TLS_REJECT_UNAUTHORIZED=0`
+      makes the connection accept ANY certificate, including self-signed or
+      attacker-supplied ones. This removes the protection TLS provides against
+      man-in-the-middle attacks: anyone able to intercept the network path can
+      present a forged certificate, then read and modify the traffic
+      (credentials, tokens, data).
 
       Keep certificate validation enabled. If the server uses a private or
       self-signed CA, supply that CA explicitly instead of turning validation
-      off — e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
+      off, e.g. `new https.Agent({ ca: fs.readFileSync('ca.pem') })`. See
       CWE-295 and the Node.js TLS docs.
     metadata:
       oauthlint-rule-id: AUTH-TLS-001

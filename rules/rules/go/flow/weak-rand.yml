@@ -4,9 +4,9 @@ rules:
       - go
     severity: ERROR
     message: |
-      A security-sensitive value — its name indicates a token, secret, key,
-      password, nonce, OTP, or salt — is being generated with the `math/rand`
-      package. `math/rand` is a deterministic PRNG: its output is predictable
+      A security-sensitive value is being generated with the `math/rand`
+      package. Its name indicates a token, secret, key, password, nonce, OTP,
+      or salt. `math/rand` is a deterministic PRNG: its output is predictable
       and an attacker who observes enough values can recover the seed and
       forecast every future token. For OAuth/OIDC this means forgeable
       `state` values, guessable authorization codes, and predictable refresh

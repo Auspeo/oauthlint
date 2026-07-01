@@ -5,9 +5,9 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      OAuth implicit flow (`response_type=token` or `response_type=id_token
-      token`) is deprecated by OAuth 2.0 Security BCP (RFC 9700) and the
-      OAuth 2.1 working draft. The access token leaks into the URL
+      OAuth implicit flow is deprecated by the OAuth 2.0 Security BCP (RFC 9700)
+      and the OAuth 2.1 draft. It is triggered by `response_type=token` or
+      `response_type=id_token token`. The access token leaks into the URL
       fragment, browser history, and referrer headers, and there is no
       refresh-token mechanism.
 

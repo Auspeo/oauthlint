@@ -4,15 +4,16 @@ rules:
       - python
     severity: ERROR
     message: |
-      A JWT is decoded with an `algorithms` allowlist that mixes a symmetric
-      HMAC algorithm (HS256/HS384/HS512) with an asymmetric one (RS*/ES*/PS*).
-      This enables the "algorithm confusion" attack: an attacker who knows your
-      RSA/EC PUBLIC key can sign a forged token with HMAC, using that public key
-      string as the shared secret. Because HS* is also accepted, PyJWT verifies
-      the forgery with the public key as the HMAC secret and treats it as valid
-      — a complete authentication bypass.
+      A JWT is decoded with an `algorithms` allowlist that mixes an HMAC algorithm with an asymmetric one.
+      The list combines a symmetric HMAC algorithm (HS256/HS384/HS512) with an
+      asymmetric one (RS*/ES*/PS*). This enables the "algorithm confusion"
+      attack: an attacker who knows your RSA/EC PUBLIC key can sign a forged
+      token with HMAC, using that public key string as the shared secret.
+      Because HS* is also accepted, PyJWT verifies the forgery with the public
+      key as the HMAC secret and treats it as valid: a complete authentication
+      bypass.
 
-      Allow only ONE algorithm family — the one you actually use. If you issue
+      Allow only ONE algorithm family, the one you actually use. If you issue
       RS256 tokens, pin `jwt.decode(token, public_key, algorithms=["RS256"])`
       and never also accept an HS* algorithm with the same verification key.
 
