@@ -111,6 +111,24 @@ const FIXED_RULES: FixedRule[] = [
     absent: ['Secure: false', 'HttpOnly: false', '$FIELD'],
     survives: ['http.Cookie{', 'Name: "session"'],
   },
+  {
+    dir: 'py-flow-requests-verify-disabled',
+    ruleFile: join(rulesRoot, 'py', 'flow', 'requests-verify-disabled.yml'),
+    ext: 'py',
+    // TLS verification is turned back on; only the flag changes.
+    contains: ['verify=True'],
+    absent: ['verify=False'],
+    // Sibling args and the call itself must survive untouched.
+    survives: ['requests.request("GET", url', 'timeout=10'],
+  },
+  {
+    dir: 'py-oauth-token-request-verify-disabled',
+    ruleFile: join(rulesRoot, 'py', 'oauth', 'token-request-verify-disabled.yml'),
+    ext: 'py',
+    contains: ['verify=True'],
+    absent: ['verify=False'],
+    survives: ['fetch_token(TOKEN_URL, code=code', 'refresh_token=rt'],
+  },
 ];
 
 const workDirs: string[] = [];

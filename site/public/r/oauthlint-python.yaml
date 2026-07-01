@@ -466,23 +466,29 @@ rules:
         - https://cwe.mitre.org/data/definitions/295.html
       technology:
         - requests
-    pattern-either:
-      - pattern: requests.get(..., verify=False, ...)
-      - pattern: requests.post(..., verify=False, ...)
-      - pattern: requests.put(..., verify=False, ...)
-      - pattern: requests.delete(..., verify=False, ...)
-      - pattern: requests.patch(..., verify=False, ...)
-      - pattern: requests.head(..., verify=False, ...)
-      - pattern: requests.options(..., verify=False, ...)
-      - pattern: requests.request(..., verify=False, ...)
-      - pattern: $SESSION.get(..., verify=False, ...)
-      - pattern: $SESSION.post(..., verify=False, ...)
-      - pattern: $SESSION.put(..., verify=False, ...)
-      - pattern: $SESSION.delete(..., verify=False, ...)
-      - pattern: $SESSION.patch(..., verify=False, ...)
-      - pattern: $SESSION.head(..., verify=False, ...)
-      - pattern: $SESSION.options(..., verify=False, ...)
-      - pattern: $SESSION.request(..., verify=False, ...)
+    patterns:
+      - pattern-either:
+          - pattern: requests.get(..., verify=$V, ...)
+          - pattern: requests.post(..., verify=$V, ...)
+          - pattern: requests.put(..., verify=$V, ...)
+          - pattern: requests.delete(..., verify=$V, ...)
+          - pattern: requests.patch(..., verify=$V, ...)
+          - pattern: requests.head(..., verify=$V, ...)
+          - pattern: requests.options(..., verify=$V, ...)
+          - pattern: requests.request(..., verify=$V, ...)
+          - pattern: $SESSION.get(..., verify=$V, ...)
+          - pattern: $SESSION.post(..., verify=$V, ...)
+          - pattern: $SESSION.put(..., verify=$V, ...)
+          - pattern: $SESSION.delete(..., verify=$V, ...)
+          - pattern: $SESSION.patch(..., verify=$V, ...)
+          - pattern: $SESSION.head(..., verify=$V, ...)
+          - pattern: $SESSION.options(..., verify=$V, ...)
+          - pattern: $SESSION.request(..., verify=$V, ...)
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^False$
+      - focus-metavariable: $V
+    fix: "True"
   - id: auth.py.flow.secret-in-response
     languages:
       - python
@@ -1194,10 +1200,16 @@ rules:
       technology:
         - authlib
         - requests-oauthlib
-    pattern-either:
-      - pattern: $C.fetch_token(..., verify=False, ...)
-      - pattern: $C.refresh_token(..., verify=False, ...)
-      - pattern: $C.fetch_access_token(..., verify=False, ...)
+    patterns:
+      - pattern-either:
+          - pattern: $C.fetch_token(..., verify=$V, ...)
+          - pattern: $C.refresh_token(..., verify=$V, ...)
+          - pattern: $C.fetch_access_token(..., verify=$V, ...)
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^False$
+      - focus-metavariable: $V
+    fix: "True"
   - id: auth.py.secret.django-hardcoded-key
     languages:
       - python
