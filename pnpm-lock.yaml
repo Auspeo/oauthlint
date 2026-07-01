@@ -63,6 +63,25 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
 
+  benchmark:
+    dependencies:
+      oauthlint:
+        specifier: workspace:*
+        version: link:../cli
+      oauthlint-rules:
+        specifier: workspace:*
+        version: link:../rules
+    devDependencies:
+      '@types/node':
+        specifier: 22.10.5
+        version: 22.10.5
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+      vitest:
+        specifier: 2.1.9
+        version: 2.1.9(@types/node@22.10.5)
+
   cli:
     dependencies:
       commander:
