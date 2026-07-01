@@ -1,0 +1,29 @@
+{
+  "name": "oauthlint-benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internal, reproducible harness that measures which OAuth/OIDC/JWT/session/CORS anti-patterns AI models produce by prompting them to write auth code and scanning the output with the OAuthLint rule pack.",
+  "type": "module",
+  "bin": {
+    "oauthlint-benchmark": "./bin/oauthlint-benchmark.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "start": "node bin/oauthlint-benchmark.js"
+  },
+  "dependencies": {
+    "oauthlint": "workspace:*",
+    "oauthlint-rules": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "typescript": "5.7.3",
+    "vitest": "2.1.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -2,6 +2,7 @@ packages:
   - "rules"
   - "cli"
   - "mcp"
+  - "benchmark"
   - "action"
   - "vscode"
   - "site"
