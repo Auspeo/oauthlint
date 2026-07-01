@@ -1,0 +1,35 @@
+rules:
+  - id: auth.py.drf.default-permission-allowany
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      DRF makes every endpoint public because `DEFAULT_PERMISSION_CLASSES` is set
+      to `AllowAny`.
+
+      With `AllowAny` as the project-wide default, every view that does not
+      override `permission_classes` skips authorization entirely, so any
+      unauthenticated caller can reach it (CWE-862, OWASP A01:2021). This is easy
+      to ship by accident because it silently exposes future endpoints too.
+
+      Set the global default to a real permission such as
+      `rest_framework.permissions.IsAuthenticated` and opt specific views out to
+      public only when you mean to.
+    # Scoped to the `REST_FRAMEWORK` settings dict. Matches `AllowAny` both as the
+    # imported symbol and as the `'rest_framework.permissions.AllowAny'` string.
+    # `IsAuthenticated` (or any other class), or the key being absent, is not matched.
+    pattern-either:
+      - pattern: 'REST_FRAMEWORK = {..., "DEFAULT_PERMISSION_CLASSES": [..., AllowAny, ...], ...}'
+      - pattern: 'REST_FRAMEWORK = {..., "DEFAULT_PERMISSION_CLASSES": [..., "rest_framework.permissions.AllowAny", ...], ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-default-permission-allowany
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - djangorestframework
+      references:
+        - https://www.django-rest-framework.org/api-guide/permissions/#setting-the-permission-policy
+        - https://cwe.mitre.org/data/definitions/862.html
