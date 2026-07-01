@@ -4,12 +4,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `tls.Config` is created with `InsecureSkipVerify: true`, which disables
-      verification of the server's certificate chain and host name. Any
-      attacker who can intercept the connection can present any certificate
-      and read or tamper with the traffic — a classic man-in-the-middle hole.
-      For OAuth/OIDC this leaks authorization codes, access tokens, and client
-      secrets in transit.
+      A `tls.Config` sets `InsecureSkipVerify: true`, disabling TLS certificate verification.
+      This turns off verification of the server's certificate chain and host
+      name, so any attacker who can intercept the connection can present any
+      certificate and read or tamper with the traffic: a classic
+      man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
+      access tokens, and client secrets in transit.
 
       Never set `InsecureSkipVerify: true`. Leave verification on (the default).
       To trust a private CA in development, set `RootCAs` to a `*x509.CertPool`
