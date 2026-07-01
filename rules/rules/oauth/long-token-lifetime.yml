@@ -5,9 +5,9 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth `expires_in` (or comparable token-lifetime field) is being
-      set to a literal value greater than 86_400 seconds — i.e. longer
-      than 24 hours. Long-lived access tokens make every token theft
+      An OAuth token-lifetime field is set to a literal value longer than
+      24 hours. The value of `expires_in` (or a comparable field) exceeds
+      86_400 seconds. Long-lived access tokens make every token theft
       catastrophic because they remain valid for days or weeks; the
       industry standard is 15-60 minutes for access tokens, paired with
       a refresh-token rotation flow for longer sessions.

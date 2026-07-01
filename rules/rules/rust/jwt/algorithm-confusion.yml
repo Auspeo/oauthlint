@@ -4,13 +4,14 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A `jsonwebtoken` `Validation` accepts a list of algorithms that MIXES an
-      HMAC family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
-      (`Algorithm::RS*`/`ES*`/`PS*`). This is the "algorithm confusion" attack:
-      when both families are accepted, an attacker takes your RSA/EC PUBLIC key
-      (which is not secret) and signs a forged token with HS*, using the public
-      key bytes as the HMAC shared secret. `decode` then verifies that forged
-      token as valid, letting the attacker mint arbitrary identities and claims.
+      A `jsonwebtoken` `Validation` accepts both HMAC and asymmetric algorithms,
+      enabling algorithm confusion. The accepted-algorithm list MIXES an HMAC
+      family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
+      (`Algorithm::RS*`/`ES*`/`PS*`). When both families are accepted, an
+      attacker takes your RSA/EC PUBLIC key (which is not secret) and signs a
+      forged token with HS*, using the public key bytes as the HMAC shared
+      secret. `decode` then verifies that forged token as valid, letting the
+      attacker mint arbitrary identities and claims.
 
       Pin `validation.algorithms` to a SINGLE family you actually use, e.g.
       `validation.algorithms = vec![Algorithm::RS256];` when your issuer signs

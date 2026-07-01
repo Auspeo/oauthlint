@@ -5,10 +5,10 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      OAuth 2.0 authorization request looks like a public client (SPA,
-      mobile, or native app) but does not include a `code_challenge`
-      parameter. Without PKCE, the authorization code can be intercepted
-      and exchanged by an attacker.
+      OAuth authorization request from a public client omits the PKCE `code_challenge` parameter.
+      The request looks like a public client (SPA, mobile, or native app) yet
+      carries no `code_challenge`. Without PKCE, the authorization code can be
+      intercepted and exchanged by an attacker.
 
       RFC 8252 §6 mandates PKCE for native/SPA clients. RFC 9700 (OAuth 2.0
       Security BCP) recommends PKCE for ALL clients, including confidential

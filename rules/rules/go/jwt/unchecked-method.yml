@@ -4,12 +4,12 @@ rules:
       - go
     severity: ERROR
     message: |
-      A `Keyfunc` passed to `jwt.Parse`/`jwt.ParseWithClaims` returns the
-      verification key WITHOUT first checking `token.Method` (the signing
-      algorithm). This enables an algorithm-confusion attack: if the server
-      verifies RS256 tokens with an RSA public key, an attacker can forge a
-      token signed with HS256 using that public key as the HMAC secret, and the
-      library will accept it — a complete authentication bypass (CWE-347).
+      A JWT `Keyfunc` returns the verification key without checking `token.Method`, enabling algorithm confusion.
+      It is passed to `jwt.Parse`/`jwt.ParseWithClaims` and hands back the key
+      without first asserting the signing algorithm. If the server verifies
+      RS256 tokens with an RSA public key, an attacker can forge an HS256 token
+      using that public key as the HMAC secret, and the library will accept it:
+      a complete authentication bypass (CWE-347).
 
       Always assert the signing method inside the keyfunc before returning the
       key, e.g.:

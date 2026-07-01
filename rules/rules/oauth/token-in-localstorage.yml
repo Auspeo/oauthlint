@@ -5,17 +5,16 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      An OAuth/OIDC token is being written to `localStorage` /
-      `sessionStorage` under a token-named key (`access_token`,
-      `refresh_token`, `id_token`, …). Web storage is readable by any
-      script on the origin, so any XSS — including a compromised
-      third-party dependency — can exfiltrate the token via
-      `getItem(...)`. There is no browser-side mitigation, unlike
+      An OAuth/OIDC token is written to `localStorage` / `sessionStorage`, readable by any script on the origin.
+      The key is token-named (`access_token`, `refresh_token`, `id_token`, …),
+      and web storage is exposed to every script on the page, so any XSS,
+      including a compromised third-party dependency, can exfiltrate the token
+      via `getItem(...)`. There is no browser-side mitigation, unlike
       `HttpOnly` cookies.
 
       Keep access/refresh/id tokens in memory only, or have the server
       issue them in a `Secure; HttpOnly; SameSite=Strict` cookie.
-      `sessionStorage` is no safer than `localStorage` against XSS — it
+      `sessionStorage` is no safer than `localStorage` against XSS: it
       grants the same attacker capability.
 
       See CWE-922: Insecure Storage of Sensitive Information.
