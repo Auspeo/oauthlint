@@ -1,6 +1,6 @@
 {
   "name": "oauthlint-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Model Context Protocol server for OAuthLint. Lets AI coding tools scan their own generated OAuth/OIDC/JWT/session/CORS code for the anti-patterns OAuthLint catches, in-loop.",
   "type": "module",
   "main": "./dist/index.js",

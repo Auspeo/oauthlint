@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.8.0',
-  text: 'v0.8.0 is out: a new MCP server lets AI tools scan their own OAuth code, plus code frames in the CLI, wider SSRF coverage, and 140+ rules.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.8.0',
+  version: 'v0.9.0',
+  text: 'v0.9.0 is out: framework-aware rules for Spring Security, NextAuth, Django REST, FastAPI, Express, and more, plus two new autofixes.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.9.0',
 };
 
 /**

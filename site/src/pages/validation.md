@@ -7,7 +7,7 @@ active: "validation"
 
 # Real-world validation report
 
-OAuthLint's whole value rests on a low false-positive rate. A security linter that cries wolf gets turned off. This page records how the full rule pack (138 rules across JavaScript/TypeScript, Python, Go, Java, and Rust) behaves when it is run against real, widely-used code.
+OAuthLint's whole value rests on a low false-positive rate. A security linter that cries wolf gets turned off. This page records how the full rule pack (155 rules across JavaScript/TypeScript, Python, Go, Java, and Rust) behaves when it is run against real, widely-used code.
 
 > Reproduce it with `pnpm validate`. It scans the repositories listed in [`scripts/validation-targets.yml`](https://github.com/Auspeo/oauthlint/blob/main/scripts/validation-targets.yml) with the CLI and writes a per-rule report. The figures below come from a full-pack scan of that corpus on the current release.
 
