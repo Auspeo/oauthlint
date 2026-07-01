@@ -17,7 +17,7 @@ RUN apk add --no-cache nodejs npm bash ca-certificates
 # global install is isolated from the scanned project entirely. Pinned to an
 # exact version (bumped per action release) for reproducible builds, and
 # installed with --ignore-scripts so a dependency's install hook can't run.
-RUN npm install -g oauthlint@0.8.0 --ignore-scripts
+RUN npm install -g oauthlint@0.9.0 --ignore-scripts
 
 WORKDIR /action
 
