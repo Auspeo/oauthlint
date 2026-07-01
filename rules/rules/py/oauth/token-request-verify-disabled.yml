@@ -21,10 +21,20 @@ rules:
     # `verify="/path/ca.pem"` are not flagged. This is distinct from
     # auth.py.flow.requests-verify-disabled, which covers the `requests` HTTP
     # verbs (`get`/`post`/…); here the sink is the OAuth token-exchange call.
-    pattern-either:
-      - pattern: $C.fetch_token(..., verify=False, ...)
-      - pattern: $C.refresh_token(..., verify=False, ...)
-      - pattern: $C.fetch_access_token(..., verify=False, ...)
+    patterns:
+      - pattern-either:
+          - pattern: $C.fetch_token(..., verify=$V, ...)
+          - pattern: $C.refresh_token(..., verify=$V, ...)
+          - pattern: $C.fetch_access_token(..., verify=$V, ...)
+      # Fire only on the literal `False` (unchanged detection), and focus the
+      # match/fix on that value token so the autofix flips just it.
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^False$
+      - focus-metavariable: $V
+    # Safe, deterministic autofix: `True` is the default (verification on) and the
+    # exact value the rule treats as compliant, so it resolves the finding.
+    fix: "True"
     metadata:
       oauthlint-rule-id: AUTH-PY-OAUTH-005
       oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-token-request-verify-disabled
