@@ -98,6 +98,23 @@ const jsonLd = {
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
+
+    {/* Cloudflare Web Analytics: privacy-first (no cookies, no consent banner),
+        aggregate visit/pageview counts. Dormant until PUBLIC_CF_BEACON_TOKEN is
+        set as a build env var in the Cloudflare Pages project, so local dev and
+        tests never load it. Get the token from the Cloudflare dashboard: Web
+        Analytics > Add a site. (Alternatively, skip this and enable the one-click
+        Web Analytics toggle on the Pages project; do not do both.) */}
+    {
+      import.meta.env.PUBLIC_CF_BEACON_TOKEN && (
+        <script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={`{"token": "${import.meta.env.PUBLIC_CF_BEACON_TOKEN}"}`}
+          is:inline
+        />
+      )
+    }
   </head>
   <body>
     <!-- Release announcement bar: slim, dismissible, above the nav on every
