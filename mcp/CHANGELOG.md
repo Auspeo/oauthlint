@@ -1,5 +1,18 @@
 # oauthlint-mcp
 
+## 0.1.1
+
+### Patch Changes
+
+- Ship the 155-rule pack to MCP clients, so AI coding tools scan against the
+  current framework-aware coverage from oauthlint-rules 0.5.0.
+- Updated dependencies
+- Updated dependencies [6702555]
+- Updated dependencies [013c4dc]
+- Updated dependencies [0791d32]
+  - oauthlint@0.9.0
+  - oauthlint-rules@0.5.0
+
 ## 0.1.0
 
 ### Minor Changes
