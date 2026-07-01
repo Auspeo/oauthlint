@@ -1,0 +1,44 @@
+rules:
+  - id: auth.express.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An Express session cookie is explicitly configured as insecure. Setting
+      `secure: false` lets the browser send the session cookie over plain HTTP,
+      and `httpOnly: false` exposes it to `document.cookie` (any XSS reads it).
+
+      Either drop the flag (the framework default may still need hardening) or
+      set `secure: true` and `httpOnly: true` for production. If you need
+      insecure cookies in dev, gate the value on `NODE_ENV !== 'production'`
+      rather than hard-coding `false`.
+    # Targets the session-middleware config object only, never `res.cookie(...)`
+    # (that shape is covered by the auth.cookie.* rules). We match ONLY an
+    # explicit `secure: false` / `httpOnly: false`; a MISSING key is left alone
+    # because express-session already defaults `secure` to false and dev setups
+    # legitimately omit it, so a missing key is undecidable prod-vs-dev and would
+    # be false-positive prone.
+    pattern-either:
+      # express-session: the flags live on a nested `cookie:` object.
+      - pattern: 'session({..., cookie: {..., secure: false, ...}, ...})'
+      - pattern: 'session({..., cookie: {..., httpOnly: false, ...}, ...})'
+      - pattern: 'expressSession({..., cookie: {..., secure: false, ...}, ...})'
+      - pattern: 'expressSession({..., cookie: {..., httpOnly: false, ...}, ...})'
+      # cookie-session: the flags live directly on the options object.
+      - pattern: 'cookieSession({..., secure: false, ...})'
+      - pattern: 'cookieSession({..., httpOnly: false, ...})'
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - express-session
+        - cookie-session
+      references:
+        - https://github.com/expressjs/session#cookiesecure
+        - https://github.com/expressjs/cookie-session#options
+        - https://cwe.mitre.org/data/definitions/614.html
