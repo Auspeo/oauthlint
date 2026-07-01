@@ -1,5 +1,21 @@
 # oauthlint
 
+## 0.9.0
+
+### Minor Changes
+
+- Ship the 155-rule pack. The CLI now includes the framework-aware rules from
+  oauthlint-rules 0.5.0 (Spring Security, NextAuth/Auth.js, Passport, FastAPI,
+  Flask/Flask-Login, Django REST Framework, django-cors-headers, Express, passlib,
+  PyJWT) and two new safe autofixes for the `verify=False` TLS rules.
+
+### Patch Changes
+
+- Updated dependencies [6702555]
+- Updated dependencies [013c4dc]
+- Updated dependencies [0791d32]
+  - oauthlint-rules@0.5.0
+
 ## 0.8.0
 
 ### Minor Changes

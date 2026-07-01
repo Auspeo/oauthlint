@@ -1,5 +1,47 @@
 # oauthlint-rules
 
+## 0.5.0
+
+### Minor Changes
+
+- 6702555: More framework-aware rules (six), each a tight literal pattern validated against
+  real framework code for a low false-positive rate:
+
+  - Django REST Framework: `DEFAULT_PERMISSION_CLASSES = [AllowAny]` (authorization
+    off globally), `DEFAULT_AUTHENTICATION_CLASSES = []`, and a per-view
+    `authentication_classes = []`.
+  - Flask / Flask-Login: a session or remember-me cookie flag disabled via
+    `app.config[...] = False` / `app.config.update(...)` (the forms the bare-assignment
+    rule missed).
+  - django-cors-headers: `CORS_ALLOW_ALL_ORIGINS = True`.
+  - Express: an `express-session` / `cookie-session` cookie set to `secure: false`
+    or `httpOnly: false`.
+
+  The pack is now 155 rules.
+
+- 013c4dc: Framework-aware rules. Eight new pattern-mode rules targeting the auth frameworks
+  AI coding tools reach for most, each validated against real framework code for a
+  low false-positive rate:
+
+  - Spring Security: `NoOpPasswordEncoder` / `withDefaultPasswordEncoder` (plaintext
+    passwords), a catch-all `requestMatchers("/**").permitAll()`, and
+    `web.ignoring().requestMatchers("/**")` (whole filter chain bypassed).
+  - NextAuth / Auth.js: a hardcoded `secret` in the config.
+  - Passport: a `passport-jwt` strategy with `ignoreExpiration: true`.
+  - FastAPI: `CORSMiddleware` with a wildcard origin and `allow_credentials=True`.
+  - passlib: a `CryptContext` configured with a weak or plaintext scheme.
+  - PyJWT: `decode(..., options={"verify_aud": False})` / `verify_iss` / `verify_nbf`.
+
+  The pack is now 149 rules.
+
+### Patch Changes
+
+- 0791d32: Autofix for the two TLS-verification rules. `auth.py.flow.requests-verify-disabled`
+  and `auth.py.oauth.token-request-verify-disabled` now ship a safe `fix:` that
+  flips `verify=False` to `verify=True` (only the value token is rewritten; the
+  rest of the call is untouched), so `oauthlint scan --fix` remediates them and the
+  fix rides along in the `--json` / SARIF output.
+
 ## 0.4.0
 
 ### Minor Changes
