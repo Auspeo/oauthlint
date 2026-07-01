@@ -6,8 +6,8 @@ rules:
     severity: INFO
     message: |
       An auth-looking cookie is being set with a `maxAge` greater than
-      30 days (the threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
-      milliseconds). Long-lived session cookies expand the blast radius
+      30 days. The threshold is 30 × 24 × 60 × 60 × 1000 = 2_592_000_000
+      milliseconds. Long-lived session cookies expand the blast radius
       of any single token theft and bypass server-side revocation if
       the application doesn't validate freshness on every request.
 
