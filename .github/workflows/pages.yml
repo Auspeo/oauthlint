@@ -44,7 +44,7 @@ jobs:
           # zone is not on this Cloudflare account, so automatic edge injection
           # does not apply and the token must be inlined at build time. It is
           # public (it ships in the HTML), hence a repo variable, not a secret.
-          PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN }}
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN || secrets.PUBLIC_CF_BEACON_TOKEN }}
         run: pnpm --filter "oauthlint-site..." build
       - name: Deploy to Cloudflare Pages
         env:
