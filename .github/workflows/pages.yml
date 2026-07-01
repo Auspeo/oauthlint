@@ -38,6 +38,12 @@ jobs:
         # `...` builds oauthlint-site AND its workspace deps (oauthlint-rules) in
         # topological order, so the prebuild Semgrep-config generator can import
         # the built rules loader.
+        env:
+          # Cloudflare Web Analytics beacon token. The site is built HERE (not on
+          # Cloudflare), so the token must be present at build time for Astro to
+          # inline it. It is public (it ends up in the shipped HTML), so it lives
+          # as a repo variable, not a secret. Unset -> the beacon stays dormant.
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN }}
         run: pnpm --filter "oauthlint-site..." build
       - name: Deploy to Cloudflare Pages
         env:
