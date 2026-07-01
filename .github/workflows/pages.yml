@@ -38,6 +38,13 @@ jobs:
         # `...` builds oauthlint-site AND its workspace deps (oauthlint-rules) in
         # topological order, so the prebuild Semgrep-config generator can import
         # the built rules loader.
+        env:
+          # Cloudflare Web Analytics beacon token. The site is built HERE (not on
+          # Cloudflare) and uploaded to Pages via wrangler, and the domain's DNS
+          # zone is not on this Cloudflare account, so automatic edge injection
+          # does not apply and the token must be inlined at build time. It is
+          # public (it ships in the HTML), hence a repo variable, not a secret.
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.PUBLIC_CF_BEACON_TOKEN }}
         run: pnpm --filter "oauthlint-site..." build
       - name: Deploy to Cloudflare Pages
         env:
