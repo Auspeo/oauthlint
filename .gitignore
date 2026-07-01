@@ -59,6 +59,9 @@ validation-report.md
 # VS Code extension build artifact
 *.vsix
 
+# Benchmark generated reports (never committed)
+benchmark/results/
+
 # Local-only notes / scratch (never committed)
 *.local.md
 .claude/

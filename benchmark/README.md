@@ -1,80 +1,110 @@
-# AI-codegen auth benchmark
+# oauthlint-benchmark (internal)
 
-A reproducible harness that measures **the OAuth/JWT/auth bugs AI coding tools
-ship** — the empirical backing for OAuthLint's `llm-prevalence` metadata.
+A reproducible harness that measures **which OAuth / OIDC / JWT / session / CORS
+anti-patterns AI models produce** when asked to write authentication code.
 
-The premise of the project is that AI assistants regurgitate the same auth
-anti-patterns. This benchmark turns that claim into data you can re-run.
+It prompts each model with a fixed suite of realistic, neutrally worded
+auth-building tasks, scans every generated file with the shipped OAuthLint rule
+pack, and tallies which rules fired per model. The result is a per-model table
+of how often each anti-pattern shows up in default model output.
 
-## How it works
+> This package is **private and never published** (`"private": true`, no
+> `publishConfig`). It exists to produce evidence, not to ship.
 
-1. **`prompts/`** — a versioned suite of realistic auth-coding tasks (one
-   markdown file per task, with frontmatter: `id`, `language`, `ext`, `stack`,
-   `domains`). They are written as a developer would ask — *"build this feature"* —
-   with **no security framing**, so the generated code reflects what the tool
-   actually produces by default.
-2. **`gen/<tool>/`** — the code each AI tool produced for those prompts, one file
-   per prompt id (`gen/<tool>/<id>.<ext>`).
-3. **`run.ts`** — scans every `gen/<tool>/` with the OAuthLint pack and writes
-   [`RESULTS.md`](./RESULTS.md) + `results.json`: how many prompts each tool
-   shipped with findings, the totals, and the per-prompt breakdown.
+## What it measures
 
-## Run it
+- **Prompts** (`src/prompts.ts`): ~12 fixed tasks across TypeScript, JavaScript,
+  and Python (an Express login/session route, verifying a JWT in Node,
+  configuring CORS for a FastAPI app, storing an OAuth token in a React SPA,
+  hashing a password in Python, a Flask session config, an OAuth callback
+  handler, ...). Each is worded to ask for the *feature*, never hinting at a
+  vulnerability, so what gets measured is the model's default choice.
+- **Scan**: each generated file is written to a private temp file and scanned
+  with `SemgrepAdapter` against `RULES_ROOT` (the same engine and pack the CLI
+  and MCP server use).
+- **Aggregate** (`src/runner.ts`): per model, per rule, the count and percentage
+  of samples that contained at least one finding of that rule, plus the overall
+  percentage of samples with any finding.
 
-```bash
-pnpm build          # build the CLI the runner shells out to
-pnpm bench          # tsx benchmark/run.ts → RESULTS.md + results.json
+## Requirements
+
+- Node 20+ (uses the global `fetch`; no HTTP-client dependency).
+- [Semgrep](https://semgrep.dev) on `PATH` (same requirement as the CLI). The
+  mock adapter still scans real code, so scanning is always exercised.
+- An API key **only** for the real model adapters (see below). The mock adapter
+  is fully offline.
+
+## Run it (offline, no keys)
+
+```sh
+pnpm install
+pnpm --filter oauthlint-benchmark build
+node benchmark/bin/oauthlint-benchmark.js run --models mock --samples 5
 ```
 
-(Requires Semgrep on PATH, like the CLI.)
+This writes `report.md` and `report.json` to `benchmark/results/` (gitignored)
+and prints the summary.
 
-## Add a tool
+## Run it against real models
 
-Generate code for each prompt with the tool you want to test (Copilot, Cursor,
-Gemini, a raw model API, …) and save the files as `gen/<tool>/<prompt-id>.<ext>`,
-matching the prompt ids. Re-run `pnpm bench`. The runner picks the new tool up
-automatically and adds it to the scoreboard.
+```sh
+export ANTHROPIC_API_KEY=...   # for the anthropic adapter
+export OPENAI_API_KEY=...      # for the openai adapter
+pnpm --filter oauthlint-benchmark build
+node benchmark/bin/oauthlint-benchmark.js run --models anthropic,openai --samples 20
+```
 
-## Add a prompt
+Each adapter throws a clear error if its key is missing, so a keyless run fails
+fast rather than making an unauthenticated request.
 
-Drop a `prompts/<id>.md` with the same frontmatter shape, regenerate code for it
-across tools, and re-run.
+## CLI options
 
-## Findings are hand-verified
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--models <keys>` | `mock` | Comma-separated adapter keys: `mock`, `anthropic`, `openai`. |
+| `--samples <n>` | `5` | Samples generated per prompt per model. |
+| `--anonymize` / `--no-anonymize` | anonymize **on** | Label models as `Model A/B/...` (default) or use real ids. |
+| `--prompts <ids>` | all | Comma-separated prompt ids to run. |
+| `--out <dir>` | `benchmark/results` | Output directory for `report.md` + `report.json`. |
 
-Every finding in the `gen/claude/` baseline was manually reviewed against the
-generated code — a linter benchmark is only worth citing if its own findings
-hold up. That review found and fixed **two false positives** in the rule pack:
+### Why anonymize by default
 
-- `auth.oauth.no-state-validation` fired on a callback that *did* validate
-  `state` — it read `state` into a local and compared the local two lines later,
-  which the rule couldn't see. Fixed to recognize the captured-variable shape.
-- `auth.cors.reflect-origin` (HIGH) fired on an allowlist callback —
-  `if (allowed.includes(origin)) cb(null, true)` — i.e. the exact safe pattern
-  the rule's own message recommends. Fixed to only flag callbacks that ignore
-  their origin argument and allow unconditionally.
+Reports anonymize model ids by default (`Model A`, `Model B`, ... assigned in
+sorted-id order for determinism). The benchmark is about the *class of mistake*
+AI codegen makes, not a league table of named commercial products; anonymizing
+avoids comparative claims about specific vendors. Pass `--no-anonymize` when you
+explicitly want the real ids (e.g. an internal run you control).
 
-After those fixes the remaining findings are true positives. One is
-context-dependent and called out as such: `auth.java.web.csrf-disabled` on
-`09-spring-security` correctly detects that CSRF is disabled — defensible for a
-*stateless* bearer-token API, but flagged because it is a frequent and often
-wrong AI default. (Like the localStorage false-negative this harness surfaced
-earlier, the FPs are a feature of running the benchmark, not a strike against it.)
+## Methodology (for anyone citing a run)
 
-## Honest caveats (read before citing)
+- **Fixed, neutral prompts.** The suite is versioned and worded without security
+  framing, so it captures default behavior rather than behavior under a hint.
+- **N samples per prompt.** Model output varies run to run; multiple samples
+  give a prevalence rate rather than a single anecdote.
+- **Scored by the shipped rule pack.** Findings come from the exact rules
+  OAuthLint ships, so the numbers inherit whatever the pack does and does not
+  cover.
+- **Reproducible.** Same prompts + same pack + same sample count. A failed
+  generation is skipped and reported (`failedSamples`) rather than silently
+  changing the denominator.
 
-- The default `gen/claude/` baseline is **one vendor under one framing** — a
-  *lower bound*. Completion-style tools and older models likely produce more.
-  The benchmark only becomes citable once several tools are run side by side.
-- Small sample. It is **directional, not statistical** — designed to be extended.
-- "Findings" includes best-practice gaps (missing PKCE, JWT `algorithms`
-  pinning, rate limiting), not only critical bugs. Read `RESULTS.md`, don't just
-  quote the headline number.
-- Scored by OAuthLint's own rules — the baseline is hand-verified (above), but
-  cross-tool comparisons inherit whatever the pack does and doesn't cover.
+## Layout
 
-## Why this exists
-
-A generic Semgrep registry can copy our *rules*; it cannot produce *this* —
-evidence about which auth mistakes AI tools make, kept current as models ship.
-That is the angle, made measurable.
+```
+benchmark/
+  bin/oauthlint-benchmark.js   CLI entry (calls dist/cli.js)
+  src/
+    prompts.ts                 the fixed prompt suite
+    scanner.ts                 scanGenerated(code, language) -> Finding[]
+    runner.ts                  runBenchmark(...) -> BenchmarkResult
+    report.ts                  toMarkdown / toJson / anonymizeResult
+    cli.ts                     the `run` command
+    adapters/
+      types.ts                 ModelAdapter + extractCode
+      mock.ts                  offline, deterministic, anti-pattern-laden
+      anthropic.ts             Anthropic Messages API adapter
+      openai.ts                OpenAI Chat Completions adapter
+      index.ts                 adapter registry + resolveAdapters
+  tests/                       vitest (scan-dependent tests skip without Semgrep)
+  results/                     generated reports (gitignored)
+```
