@@ -19,23 +19,35 @@ rules:
     # Scoped to `requests.<method>(...)`, `requests.request(...)` and Session
     # objects (`$SESSION.<method>(...)`). Fires only on the literal
     # `verify=False`; `verify=True` and `verify="/path/ca.pem"` are not flagged.
-    pattern-either:
-      - pattern: requests.get(..., verify=False, ...)
-      - pattern: requests.post(..., verify=False, ...)
-      - pattern: requests.put(..., verify=False, ...)
-      - pattern: requests.delete(..., verify=False, ...)
-      - pattern: requests.patch(..., verify=False, ...)
-      - pattern: requests.head(..., verify=False, ...)
-      - pattern: requests.options(..., verify=False, ...)
-      - pattern: requests.request(..., verify=False, ...)
-      - pattern: $SESSION.get(..., verify=False, ...)
-      - pattern: $SESSION.post(..., verify=False, ...)
-      - pattern: $SESSION.put(..., verify=False, ...)
-      - pattern: $SESSION.delete(..., verify=False, ...)
-      - pattern: $SESSION.patch(..., verify=False, ...)
-      - pattern: $SESSION.head(..., verify=False, ...)
-      - pattern: $SESSION.options(..., verify=False, ...)
-      - pattern: $SESSION.request(..., verify=False, ...)
+    patterns:
+      - pattern-either:
+          - pattern: requests.get(..., verify=$V, ...)
+          - pattern: requests.post(..., verify=$V, ...)
+          - pattern: requests.put(..., verify=$V, ...)
+          - pattern: requests.delete(..., verify=$V, ...)
+          - pattern: requests.patch(..., verify=$V, ...)
+          - pattern: requests.head(..., verify=$V, ...)
+          - pattern: requests.options(..., verify=$V, ...)
+          - pattern: requests.request(..., verify=$V, ...)
+          - pattern: $SESSION.get(..., verify=$V, ...)
+          - pattern: $SESSION.post(..., verify=$V, ...)
+          - pattern: $SESSION.put(..., verify=$V, ...)
+          - pattern: $SESSION.delete(..., verify=$V, ...)
+          - pattern: $SESSION.patch(..., verify=$V, ...)
+          - pattern: $SESSION.head(..., verify=$V, ...)
+          - pattern: $SESSION.options(..., verify=$V, ...)
+          - pattern: $SESSION.request(..., verify=$V, ...)
+      # Fire only on the literal `False` (unchanged detection), and focus the
+      # match/fix on that value token so the autofix flips just it, leaving the
+      # rest of the call intact.
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^False$
+      - focus-metavariable: $V
+    # Safe, deterministic autofix: `True` is the library default (verification
+    # on) and the exact value the rule treats as compliant, so it fully resolves
+    # the finding. Only the value token is rewritten (`verify=False` -> `verify=True`).
+    fix: "True"
     metadata:
       oauthlint-rule-id: AUTH-PY-FLOW-002
       oauthlint-doc-url: https://oauthlint.dev/rules/py-flow-requests-verify-disabled
