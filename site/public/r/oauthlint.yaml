@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 149 rules across every supported language.
+# Full pack — 155 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -419,6 +419,41 @@ rules:
               - pattern: "cors({ ..., credentials: true, ..., origin: ($O, $CB) => $CB(null, true), ... })"
       - pattern-regex: Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"][\s\S]{0,200}Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"]
       - pattern-regex: Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"][\s\S]{0,200}Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"]
+  - id: auth.express.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      An Express session cookie is explicitly configured as insecure. Setting
+      `secure: false` lets the browser send the session cookie over plain HTTP,
+      and `httpOnly: false` exposes it to `document.cookie` (any XSS reads it).
+
+      Either drop the flag (the framework default may still need hardening) or
+      set `secure: true` and `httpOnly: true` for production. If you need
+      insecure cookies in dev, gate the value on `NODE_ENV !== 'production'`
+      rather than hard-coding `false`.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/expressjs/session#cookiesecure
+        - https://github.com/expressjs/cookie-session#options
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - express-session
+        - cookie-session
+    pattern-either:
+      - pattern: "session({..., cookie: {..., secure: false, ...}, ...})"
+      - pattern: "session({..., cookie: {..., httpOnly: false, ...}, ...})"
+      - pattern: "expressSession({..., cookie: {..., secure: false, ...}, ...})"
+      - pattern: "expressSession({..., cookie: {..., httpOnly: false, ...}, ...})"
+      - pattern: "cookieSession({..., secure: false, ...})"
+      - pattern: "cookieSession({..., httpOnly: false, ...})"
   - id: auth.flow.basic-auth-in-log
     languages:
       - javascript
@@ -4503,6 +4538,162 @@ rules:
       - metavariable-regex:
           metavariable: $SCHEME
           regex: ^(md5_crypt|des_crypt|plaintext|hex_md5|hex_sha1|hex_sha256|ldap_md5|ldap_plaintext)$
+  - id: auth.py.django.cors-allow-all
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      django-cors-headers is configured to allow every origin, disabling
+      cross-origin access control.
+
+      `CORS_ALLOW_ALL_ORIGINS = True` (or the legacy `CORS_ORIGIN_ALLOW_ALL =
+      True`) reflects any site's `Origin`, so ANY website can make cross-origin
+      requests to your API; combined with credentialed sessions this leaks
+      cookies, tokens and CSRF protections cross-origin (CWE-942, OWASP
+      A05:2021). Set it to `False` and list trusted origins explicitly, e.g.
+      `CORS_ALLOWED_ORIGINS = ["https://app.example.com"]`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DJANGO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-django-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/adamchainz/django-cors-headers#cors_allow_all_origins-bool
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - django-cors-headers
+    pattern-either:
+      - pattern: CORS_ALLOW_ALL_ORIGINS = True
+      - pattern: CORS_ORIGIN_ALLOW_ALL = True
+  - id: auth.py.drf.default-authentication-empty
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      DRF disables authentication globally with an empty
+      `DEFAULT_AUTHENTICATION_CLASSES` list.
+
+      An empty list means no authentication scheme runs, so `request.user` is
+      never populated from a credential and every view falls back to anonymous
+      access (CWE-306, OWASP A01:2021). Permission checks that rely on
+      `request.user` being authenticated then have nothing to enforce against.
+
+      Populate the list with the schemes you use, for example
+      `rest_framework.authentication.SessionAuthentication` and
+      `rest_framework.authentication.TokenAuthentication`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-default-authentication-empty
+      category: security
+      cwe: CWE-306
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.django-rest-framework.org/api-guide/authentication/#setting-the-authentication-scheme
+        - https://cwe.mitre.org/data/definitions/306.html
+      technology:
+        - djangorestframework
+    pattern: 'REST_FRAMEWORK = {..., "DEFAULT_AUTHENTICATION_CLASSES": [], ...}'
+  - id: auth.py.drf.default-permission-allowany
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      DRF makes every endpoint public because `DEFAULT_PERMISSION_CLASSES` is set
+      to `AllowAny`.
+
+      With `AllowAny` as the project-wide default, every view that does not
+      override `permission_classes` skips authorization entirely, so any
+      unauthenticated caller can reach it (CWE-862, OWASP A01:2021). This is easy
+      to ship by accident because it silently exposes future endpoints too.
+
+      Set the global default to a real permission such as
+      `rest_framework.permissions.IsAuthenticated` and opt specific views out to
+      public only when you mean to.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-default-permission-allowany
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://www.django-rest-framework.org/api-guide/permissions/#setting-the-permission-policy
+        - https://cwe.mitre.org/data/definitions/862.html
+      technology:
+        - djangorestframework
+    pattern-either:
+      - pattern: 'REST_FRAMEWORK = {..., "DEFAULT_PERMISSION_CLASSES": [..., AllowAny, ...], ...}'
+      - pattern: 'REST_FRAMEWORK = {..., "DEFAULT_PERMISSION_CLASSES": [..., "rest_framework.permissions.AllowAny", ...], ...}'
+  - id: auth.py.drf.view-authentication-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A DRF view disables authentication with an empty `authentication_classes`
+      list.
+
+      Setting `authentication_classes = []` on a view (or the
+      `@authentication_classes([])` decorator on a function view) turns off every
+      authentication scheme for that endpoint, so `request.user` is always
+      anonymous and any permission tied to an authenticated user cannot hold
+      (CWE-306, OWASP A01:2021).
+
+      List the schemes the view should accept, for example
+      `authentication_classes = [TokenAuthentication]`, instead of emptying it.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-view-authentication-disabled
+      category: security
+      cwe: CWE-306
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.django-rest-framework.org/api-guide/views/#api_view
+        - https://cwe.mitre.org/data/definitions/306.html
+      technology:
+        - djangorestframework
+    pattern-either:
+      - pattern: authentication_classes = []
+      - pattern: "@authentication_classes([])"
+  - id: auth.py.flask.session-cookie-insecure
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A Flask cookie security flag is disabled through `app.config`, weakening
+      session and remember-me cookie protection.
+
+      `SESSION_COOKIE_SECURE = False` lets the session cookie travel over plain
+      HTTP where it can be sniffed on the wire, and `SESSION_COOKIE_HTTPONLY =
+      False` exposes it to JavaScript so an XSS payload can read and exfiltrate
+      it; the `REMEMBER_COOKIE_*` flags do the same for Flask-Login's long-lived
+      remember-me token (CWE-614, OWASP A05:2021). Keep these `True` (or drive
+      them from an environment check), e.g. `app.config["SESSION_COOKIE_SECURE"]
+      = True` and `app.config["SESSION_COOKIE_HTTPONLY"] = True`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FLASK-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-flask-session-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://flask.palletsprojects.com/en/stable/config/#SESSION_COOKIE_SECURE
+        - https://flask-login.readthedocs.io/en/latest/#cookie-settings
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - flask
+        - flask-login
+    pattern-either:
+      - pattern: $APP.config['SESSION_COOKIE_SECURE'] = False
+      - pattern: $APP.config['SESSION_COOKIE_HTTPONLY'] = False
+      - pattern: $APP.config['REMEMBER_COOKIE_SECURE'] = False
+      - pattern: $APP.config['REMEMBER_COOKIE_HTTPONLY'] = False
+      - pattern: $APP.config.update(..., SESSION_COOKIE_SECURE=False, ...)
+      - pattern: $APP.config.update(..., REMEMBER_COOKIE_SECURE=False, ...)
   - id: auth.py.flow.csrf-exempt
     languages:
       - python
