@@ -39,7 +39,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
-- …and many more: 140+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java
+- …and many more: 150+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java, including framework-aware coverage (Spring Security, NextAuth, Passport, FastAPI, Django REST, Express, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
