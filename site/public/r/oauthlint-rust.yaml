@@ -156,11 +156,12 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A password is being hashed with a fast, general-purpose digest (MD5 via
-      the `md5` crate, or SHA-1/SHA-256/SHA-512 via the RustCrypto `sha1`/`sha2`
-      crates). These algorithms are designed to be fast, which makes offline
-      brute-force and rainbow-table attacks cheap — they are NOT suitable for
-      storing passwords (CWE-916).
+      A password is hashed with a fast, general-purpose digest unsuitable for
+      password storage. The digest is MD5 (via the `md5` crate) or
+      SHA-1/SHA-256/SHA-512 (via the RustCrypto `sha1`/`sha2` crates). These
+      algorithms are designed to be fast, which makes offline brute-force and
+      rainbow-table attacks cheap; they are NOT suitable for storing passwords
+      (CWE-916).
 
       Use a dedicated, slow password-hashing function with a per-password salt
       and a tunable work factor: Argon2 (`argon2` crate,
@@ -333,13 +334,14 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A `jsonwebtoken` `Validation` accepts a list of algorithms that MIXES an
-      HMAC family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
-      (`Algorithm::RS*`/`ES*`/`PS*`). This is the "algorithm confusion" attack:
-      when both families are accepted, an attacker takes your RSA/EC PUBLIC key
-      (which is not secret) and signs a forged token with HS*, using the public
-      key bytes as the HMAC shared secret. `decode` then verifies that forged
-      token as valid, letting the attacker mint arbitrary identities and claims.
+      A `jsonwebtoken` `Validation` accepts both HMAC and asymmetric algorithms,
+      enabling algorithm confusion. The accepted-algorithm list MIXES an HMAC
+      family (`Algorithm::HS256`/`HS384`/`HS512`) with an asymmetric family
+      (`Algorithm::RS*`/`ES*`/`PS*`). When both families are accepted, an
+      attacker takes your RSA/EC PUBLIC key (which is not secret) and signs a
+      forged token with HS*, using the public key bytes as the HMAC shared
+      secret. `decode` then verifies that forged token as valid, letting the
+      attacker mint arbitrary identities and claims.
 
       Pin `validation.algorithms` to a SINGLE family you actually use, e.g.
       `validation.algorithms = vec![Algorithm::RS256];` when your issuer signs
@@ -402,10 +404,11 @@ rules:
       - rust
     severity: ERROR
     message: |
-      A JWT HMAC signing/verification key is hardcoded as a literal in a call
-      to jsonwebtoken's `EncodingKey::from_secret` / `DecodingKey::from_secret`.
-      Anyone who can read the source or git history can forge or tamper with
-      tokens, which is a complete authentication bypass.
+      A JWT HMAC signing/verification key is hardcoded as a literal. It is
+      passed directly to jsonwebtoken's `EncodingKey::from_secret` /
+      `DecodingKey::from_secret`. Anyone who can read the source or git history
+      can forge or tamper with tokens, which is a complete authentication
+      bypass.
 
       Load the secret at runtime from the environment or a secret manager
       instead, e.g. `let key = std::env::var("JWT_SECRET")?;` followed by
@@ -491,13 +494,13 @@ rules:
       - rust
     severity: WARNING
     message: |
-      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the
-      expected issuer, so `decode` accepts a token minted by ANY issuer. The
-      `jsonwebtoken` crate does not validate the `iss` claim unless you opt in,
-      so a token signed by an attacker-controlled or otherwise untrusted issuer
-      passes validation as long as the signature checks out. For OAuth/OIDC this
-      lets a token from the wrong authorization server be replayed against this
-      API.
+      A JWT is decoded with a `jsonwebtoken` `Validation` that never sets the expected issuer.
+      Because the issuer is not pinned, `decode` accepts a token minted by ANY
+      issuer: the `jsonwebtoken` crate does not validate the `iss` claim unless
+      you opt in, so a token signed by an attacker-controlled or otherwise
+      untrusted issuer passes validation as long as the signature checks out.
+      For OAuth/OIDC this lets a token from the wrong authorization server be
+      replayed against this API.
 
       Pin the issuer before decoding, e.g.
       `validation.set_issuer(&["https://issuer.example.com"])` (or set
