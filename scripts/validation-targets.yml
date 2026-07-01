@@ -60,6 +60,16 @@ targets:
     expectedSignal: low
     notes: Flask core. Exercises the Flask SECRET_KEY rule against clean code.
 
+  - repo: encode/django-rest-framework
+    ref: main
+    expectedSignal: low
+    notes: DRF framework code. Exercises the DRF permission/authentication rules against clean code.
+
+  - repo: maxcountryman/flask-login
+    ref: main
+    expectedSignal: low
+    notes: Flask-Login. Exercises the Flask session / remember-cookie rules against clean code.
+
   # ─────────────────────────────────────────────────────────────
   # Mature Go auth libraries — exercise the Go rule pack.
   # (golang-jwt itself is intentionally NOT listed: it *implements* the

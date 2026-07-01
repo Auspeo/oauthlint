@@ -1,0 +1,34 @@
+rules:
+  - id: auth.py.django.cors-allow-all
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      django-cors-headers is configured to allow every origin, disabling
+      cross-origin access control.
+
+      `CORS_ALLOW_ALL_ORIGINS = True` (or the legacy `CORS_ORIGIN_ALLOW_ALL =
+      True`) reflects any site's `Origin`, so ANY website can make cross-origin
+      requests to your API; combined with credentialed sessions this leaks
+      cookies, tokens and CSRF protections cross-origin (CWE-942, OWASP
+      A05:2021). Set it to `False` and list trusted origins explicitly, e.g.
+      `CORS_ALLOWED_ORIGINS = ["https://app.example.com"]`.
+    # Matches ONLY the literal `True` on the django-cors-headers settings keys.
+    # `= False` and an explicit `CORS_ALLOWED_ORIGINS = [...]` allow-list are
+    # never flagged. Distinct from `auth.py.cors.allow-all`, which targets the
+    # Flask-CORS `CORS(...)` / `@cross_origin(...)` call forms.
+    pattern-either:
+      - pattern: CORS_ALLOW_ALL_ORIGINS = True
+      - pattern: CORS_ORIGIN_ALLOW_ALL = True
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DJANGO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-django-cors-allow-all
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - django-cors-headers
+      references:
+        - https://github.com/adamchainz/django-cors-headers#cors_allow_all_origins-bool
+        - https://cwe.mitre.org/data/definitions/942.html

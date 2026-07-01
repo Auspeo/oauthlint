@@ -1,0 +1,32 @@
+rules:
+  - id: auth.py.drf.default-authentication-empty
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      DRF disables authentication globally with an empty
+      `DEFAULT_AUTHENTICATION_CLASSES` list.
+
+      An empty list means no authentication scheme runs, so `request.user` is
+      never populated from a credential and every view falls back to anonymous
+      access (CWE-306, OWASP A01:2021). Permission checks that rely on
+      `request.user` being authenticated then have nothing to enforce against.
+
+      Populate the list with the schemes you use, for example
+      `rest_framework.authentication.SessionAuthentication` and
+      `rest_framework.authentication.TokenAuthentication`.
+    # Scoped to the `REST_FRAMEWORK` settings dict; matches ONLY the empty list.
+    # A populated list such as `[SessionAuthentication]` is not matched.
+    pattern: 'REST_FRAMEWORK = {..., "DEFAULT_AUTHENTICATION_CLASSES": [], ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-default-authentication-empty
+      category: security
+      cwe: CWE-306
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - djangorestframework
+      references:
+        - https://www.django-rest-framework.org/api-guide/authentication/#setting-the-authentication-scheme
+        - https://cwe.mitre.org/data/definitions/306.html

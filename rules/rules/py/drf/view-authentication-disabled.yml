@@ -1,0 +1,34 @@
+rules:
+  - id: auth.py.drf.view-authentication-disabled
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A DRF view disables authentication with an empty `authentication_classes`
+      list.
+
+      Setting `authentication_classes = []` on a view (or the
+      `@authentication_classes([])` decorator on a function view) turns off every
+      authentication scheme for that endpoint, so `request.user` is always
+      anonymous and any permission tied to an authenticated user cannot hold
+      (CWE-306, OWASP A01:2021).
+
+      List the schemes the view should accept, for example
+      `authentication_classes = [TokenAuthentication]`, instead of emptying it.
+    # Matches ONLY an explicitly emptied `authentication_classes`, as a class
+    # attribute or via the decorator. A populated list is not matched.
+    pattern-either:
+      - pattern: authentication_classes = []
+      - pattern: "@authentication_classes([])"
+    metadata:
+      oauthlint-rule-id: AUTH-PY-DRF-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-drf-view-authentication-disabled
+      category: security
+      cwe: CWE-306
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - djangorestframework
+      references:
+        - https://www.django-rest-framework.org/api-guide/views/#api_view
+        - https://cwe.mitre.org/data/definitions/306.html
