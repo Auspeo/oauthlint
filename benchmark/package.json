@@ -1,6 +1,6 @@
 {
   "name": "oauthlint-benchmark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Internal, reproducible harness that measures which OAuth/OIDC/JWT/session/CORS anti-patterns AI models produce by prompting them to write auth code and scanning the output with the OAuthLint rule pack.",
   "type": "module",
