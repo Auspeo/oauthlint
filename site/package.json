@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "3.7.3",
-    "astro": "5.14.1",
+    "astro": "7.0.6",
     "shiki": "4.3.0",
     "yaml": "2.9.0"
   },
