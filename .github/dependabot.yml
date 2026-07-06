@@ -10,6 +10,23 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    # Major upgrades that need a dedicated migration, deferred so they don't
+    # re-open every week. Minor/patch updates for these still flow normally.
+    #   - zod 4: rule schema + CLI config API changes
+    #   - astro 7: site build (two majors from 5)
+    #   - typescript 6 / vitest 4: toolchain migration
+    #   - @types/node: pinned to the Node LTS we target (22)
+    ignore:
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "astro"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
