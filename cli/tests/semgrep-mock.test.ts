@@ -133,6 +133,42 @@ describe('SemgrepAdapter.scan (mocked execa)', () => {
     expect(args).toContain('--autofix');
   });
 
+  it('includes --metrics=off by default (real semgrep)', async () => {
+    resolveWith({ stdout: '{}' });
+    const adapter = new SemgrepAdapter({ configPath: '/rules' });
+    await adapter.scan('/target');
+    const [, args] = state.calls[0] as [string, string[]];
+    expect(args).toContain('--metrics=off');
+  });
+
+  it('omits --metrics=off when metrics is false (Opengrep)', async () => {
+    resolveWith({ stdout: '{}' });
+    const adapter = new SemgrepAdapter({ configPath: '/rules', metrics: false });
+    await adapter.scan('/target');
+    const [, args] = state.calls[0] as [string, string[]];
+    expect(args).not.toContain('--metrics=off');
+    // Every other flag is unchanged, so the same adapter drives either engine.
+    expect(args.slice(0, 7)).toEqual([
+      'scan',
+      '--config',
+      '/rules',
+      '--json',
+      '--quiet',
+      '--no-git-ignore',
+      '--',
+    ]);
+  });
+
+  it('omits --metrics=off in planFixes when metrics is false', async () => {
+    resolveWith({ stdout: '{}' });
+    const adapter = new SemgrepAdapter({ configPath: '/rules', metrics: false });
+    await adapter.planFixes('/target');
+    const [, args] = state.calls[0] as [string, string[]];
+    expect(args).not.toContain('--metrics=off');
+    expect(args).toContain('--autofix');
+    expect(args).toContain('--dryrun');
+  });
+
   it('throws SemgrepOutputError when stdout is non-empty but unparseable', async () => {
     // Regression guard: this used to be swallowed as "0 findings, exit 0",
     // which made a truncated/interrupted scan look clean in CI.

@@ -3,7 +3,7 @@
   "private": true,
   "displayName": "oauthlint",
   "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce, right inside VS Code.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "icon": "icon.png",
   "publisher": "auspeo",
   "type": "commonjs",
@@ -55,6 +55,11 @@
           "type": "string",
           "default": "",
           "description": "Override the rules directory used for scanning. Empty = the rule pack bundled with the extension."
+        },
+        "oauthlint.enginePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to an existing opengrep or semgrep binary to use as the scan engine. Empty = download and manage Opengrep automatically (a one-time ~41 MB download on first scan)."
         }
       }
     },
@@ -72,6 +77,11 @@
       {
         "command": "oauthlint.openDoc",
         "title": "OAuthLint: Open rule documentation",
+        "category": "OAuthLint"
+      },
+      {
+        "command": "oauthlint.retryEngineSetup",
+        "title": "OAuthLint: Retry scan engine setup",
         "category": "OAuthLint"
       }
     ]
