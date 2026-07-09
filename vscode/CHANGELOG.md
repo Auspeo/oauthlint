@@ -4,6 +4,19 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-07-09
+
+### Changed
+
+- The extension now bundles the OAuthLint engine and rule pack, so
+  `npm i -g oauthlint` is no longer required; Semgrep is still needed and the
+  extension now offers a one-click install if it is missing.
+
+### Removed
+
+- The `oauthlint.cliPath` setting. Scans now run in-process, so there is no
+  external CLI to point at.
+
 ## [0.4.2] - 2026-06-29
 
 ### Changed

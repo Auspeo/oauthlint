@@ -35,22 +35,24 @@ Cursor, Windsurf, and other VS Code-compatible editors.
 - **Status bar item** showing the OAuthLint finding count for the active file
   (`$(shield) OAuthLint: 3`). It spins while a scan is running
   (`$(sync~spin) OAuthLint: scanning…`), turns into a `$(warning)` warning when
-  the CLI can't be run (with a tooltip pointing at `oauthlint.cliPath`), and
+  a scan can't run (with a tooltip pointing at the OAuthLint output channel), and
   re-scans the current file when clicked. It hides for non-JS/TS files.
 
-It runs the `oauthlint` CLI (which runs [Semgrep](https://semgrep.dev)) and renders
-its findings as native VS Code diagnostics.
+The OAuthLint engine and rule pack ship inside the extension, so scans run
+in-process and render as native VS Code diagnostics. There is no `oauthlint` CLI
+to install.
 
 ## Requirements
 
-This extension drives the oauthlint CLI, so you need it available:
+The extension bundles the engine and rules; the one piece it still needs is
+[Semgrep](https://semgrep.dev):
 
 ```bash
-npm install -g oauthlint        # or set "oauthlint.cliPath" to a local install
 pipx install semgrep            # or: brew install semgrep
 ```
 
-If the CLI is not found, the extension shows a one-time notice with setup steps.
+If Semgrep is not found, the extension shows a one-time notice with a one-click
+install and a link to the docs.
 
 ## Settings
 
@@ -58,8 +60,7 @@ If the CLI is not found, the extension shows a one-time notice with setup steps.
 |---------|---------|-------------|
 | `oauthlint.enabled` | `true` | Scan on save and on open |
 | `oauthlint.minSeverity` | `MEDIUM` | Only surface findings at this severity or above |
-| `oauthlint.cliPath` | _empty_ | Path to the oauthlint CLI (empty = use `oauthlint` on PATH) |
-| `oauthlint.rulesDir` | _empty_ | Override the rules directory (empty = the CLI's built-in rules) |
+| `oauthlint.rulesDir` | _empty_ | Override the rules directory (empty = the rule pack bundled with the extension) |
 
 ## Commands
 

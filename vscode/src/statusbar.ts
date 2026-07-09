@@ -52,8 +52,8 @@ export function computeStatusBar(state: StatusBarState): StatusBarPresentation {
     case 'error': {
       const detail = state.errorDetail?.trim();
       const tooltip = detail
-        ? `OAuthLint: ${detail}\nCheck the "oauthlint.cliPath" setting.`
-        : 'OAuthLint: the CLI could not be run. Check the "oauthlint.cliPath" setting.';
+        ? `OAuthLint: ${detail}\nSee the OAuthLint output channel for details.`
+        : 'OAuthLint: the scan could not run.\nSee the OAuthLint output channel for details.';
       return {
         text: `${STATUS_ICONS.error} OAuthLint`,
         tooltip,

@@ -2,10 +2,11 @@
 src/**
 tests/**
 coverage/**
-node_modules/.cache/**
+node_modules/**
 **/*.ts
 **/*.map
 tsconfig.json
 vitest.config.ts
+esbuild.mjs
 .gitignore
 icon.html

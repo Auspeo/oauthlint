@@ -5,10 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from '../src/runner.js';
 
 /**
- * The runner is wired around `spawn(...)`. We exercise it end-to-end by
- * pointing `cliPath` at a tiny shell script we generate per-test that
- * either prints a fake report or exits with a chosen code / takes too
- * long. No real Semgrep needed.
+ * The runner now drives the OAuthLint engine in-process; the only external
+ * dependency is the Semgrep binary the engine shells out to. We exercise it
+ * end-to-end by pointing `semgrepPath` at a tiny shell script we generate per
+ * test that impersonates Semgrep: it prints a `semgrep --json`-shaped payload,
+ * exits with a chosen code, sleeps, or floods stdout. No real Semgrep needed.
  */
 
 let tmp: string;
@@ -19,121 +20,127 @@ afterEach(async () => {
   await rm(tmp, { recursive: true, force: true });
 });
 
-async function fakeCli(body: string): Promise<string> {
-  const file = join(tmp, 'fake-cli.sh');
+async function fakeSemgrep(body: string): Promise<string> {
+  const file = join(tmp, 'fake-semgrep.sh');
   await writeFile(file, `#!/usr/bin/env bash\n${body}\n`, 'utf8');
   await chmod(file, 0o755);
   return file;
 }
 
-const finding = (overrides: Partial<OAuthLintFinding> = {}): OAuthLintFinding => ({
-  ruleId: 'auth.jwt.alg-none',
-  severity: 'HIGH',
-  filePath: 'src/jwt.ts',
-  startLine: 1,
-  endLine: 1,
-  message: 'JWT alg:none accepted.',
-  ...overrides,
-});
+/** A minimal `semgrep --json` result object with the fields the adapter reads. */
+function semgrepJson(results: unknown[], version = '1.157.0'): string {
+  return JSON.stringify({
+    version,
+    results,
+    errors: [],
+    paths: { scanned: ['a.ts', 'b.ts'] },
+  });
+}
 
 describe('runOAuthLint', () => {
-  it('parses a valid oauthlint JSON report', async () => {
-    const report = {
-      schemaVersion: 'oauthlint-v1',
-      scannedFiles: 5,
-      durationMs: 42,
-      semgrepVersion: '1.157.0',
-      errors: [],
-      findings: [finding()],
-    };
-    const cli = await fakeCli(`echo '${JSON.stringify(report)}'; exit 0`);
-    const result = await runOAuthLint({ target: tmp, cliPath: cli });
-    expect(result.exitCode).toBe(0);
-    expect(result.report?.scannedFiles).toBe(5);
+  it('maps a Semgrep report into the OAuthLint report shape', async () => {
+    const payload = semgrepJson([
+      {
+        check_id: 'auth.jwt.alg-none',
+        path: 'src/jwt.ts',
+        start: { line: 3, col: 1, offset: 40 },
+        end: { line: 3, col: 20, offset: 59 },
+        extra: {
+          severity: 'ERROR',
+          message: 'JWT alg:none accepted.',
+          fix: 'verify(token, secret)',
+          metadata: {
+            'oauthlint-rule-id': 'AUTH-JWT-001',
+            'oauthlint-doc-url': 'https://oauthlint.dev/rules/jwt/alg-none',
+            cwe: 'CWE-347',
+            'llm-prevalence': 'HIGH',
+          },
+        },
+      },
+    ]);
+    const semgrep = await fakeSemgrep(`echo '${payload}'; exit 1`);
+    const result = await runOAuthLint({ target: tmp, semgrepPath: semgrep, rulesDir: tmp });
+
+    expect(result.semgrepMissing).toBe(false);
+    expect(result.report?.schemaVersion).toBe('oauthlint-v1');
+    expect(result.report?.scannedFiles).toBe(2);
+    expect(result.report?.semgrepVersion).toBe('1.157.0');
     expect(result.report?.findings).toHaveLength(1);
+
+    const finding = result.report?.findings[0] as OAuthLintFinding;
+    expect(finding.ruleId).toBe('auth.jwt.alg-none');
+    expect(finding.severity).toBe('HIGH');
+    expect(finding.oauthlintRuleId).toBe('AUTH-JWT-001');
+    expect(finding.docUrl).toBe('https://oauthlint.dev/rules/jwt/alg-none');
+    expect(finding.cwe).toBe('CWE-347');
+    expect(finding.fix?.replacement).toBe('verify(token, secret)');
+    expect(finding.fix?.range.startLine).toBe(3);
+    expect(finding.fix?.range.endOffset).toBe(59);
   });
 
-  it('returns a null report when stdout is empty', async () => {
-    const cli = await fakeCli('exit 0');
-    const result = await runOAuthLint({ target: tmp, cliPath: cli });
-    expect(result.report).toBeNull();
+  it('returns an empty report when Semgrep finds nothing', async () => {
+    const semgrep = await fakeSemgrep(`echo '${semgrepJson([])}'; exit 0`);
+    const result = await runOAuthLint({ target: tmp, semgrepPath: semgrep, rulesDir: tmp });
+    expect(result.report?.findings).toHaveLength(0);
     expect(result.exitCode).toBe(0);
+    expect(result.semgrepMissing).toBe(false);
   });
 
-  it('returns null report when the schemaVersion does not match', async () => {
-    const cli = await fakeCli(`echo '{"schemaVersion": "v-other", "findings": []}'`);
-    const result = await runOAuthLint({ target: tmp, cliPath: cli });
-    expect(result.report).toBeNull();
-  });
-
-  it('captures stderr and resolves even when the CLI fails', async () => {
-    const cli = await fakeCli(`echo "boom" 1>&2; exit 7`);
-    const result = await runOAuthLint({ target: tmp, cliPath: cli });
-    expect(result.exitCode).toBe(7);
-    expect(result.stderr).toContain('boom');
-    expect(result.report).toBeNull();
-  });
-
-  it('handles a missing binary gracefully (no throw)', async () => {
+  it('flags semgrepMissing when the binary cannot be found', async () => {
     const result = await runOAuthLint({
       target: tmp,
-      cliPath: '/definitely/not/a/real/binary/oauthlint-xyz',
+      semgrepPath: '/definitely/not/a/real/binary/semgrep-xyz',
+      rulesDir: tmp,
     });
+    expect(result.semgrepMissing).toBe(true);
     expect(result.report).toBeNull();
     expect(result.exitCode).toBeNull();
   });
 
   it('aborts after the timeout and reports `timedOut: true`', async () => {
-    const cli = await fakeCli('sleep 5; echo "{}"');
+    const semgrep = await fakeSemgrep('sleep 5; echo "{}"');
     const result = await runOAuthLint({
       target: tmp,
-      cliPath: cli,
+      semgrepPath: semgrep,
+      rulesDir: tmp,
       timeoutMs: 200,
     });
     expect(result.timedOut).toBe(true);
+    expect(result.report).toBeNull();
+    expect(result.semgrepMissing).toBe(false);
   }, 10_000);
 
-  it('aborts and flags `outputCapped` when the CLI floods stdout', async () => {
-    // Emit far more than the 20 MB cap so the guard trips and kills the child.
-    // `exec` so the spawned process *is* `yes` — killing it closes the pipe and
-    // lets `close` fire (a plain child would orphan `yes`, holding the pipe open).
-    const cli = await fakeCli('exec yes AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    const result = await runOAuthLint({ target: tmp, cliPath: cli });
-    expect(result.outputCapped).toBe(true);
+  it('surfaces engine errors without throwing', async () => {
+    // Non-JSON stdout makes the adapter raise a parse error; the runner must
+    // still resolve with a failed result rather than throw.
+    const semgrep = await fakeSemgrep('echo "not json at all"; exit 0');
+    const result = await runOAuthLint({ target: tmp, semgrepPath: semgrep, rulesDir: tmp });
     expect(result.report).toBeNull();
-    expect(result.stderr).toContain('exceeded');
-  }, 20_000);
-
-  it('passes the target after a `--` separator so it is never read as a flag', async () => {
-    // The fake CLI echoes its own argv; a leading-dash target must survive as
-    // an operand rather than being parsed as an option.
-    const cli = await fakeCli('printf "%s\\n" "$@" 1>&2; echo "{}"');
-    const result = await runOAuthLint({ target: '--weird-path', cliPath: cli });
-    const args = result.stderr.split('\n');
-    const sep = args.indexOf('--');
-    expect(sep).toBeGreaterThanOrEqual(0);
-    // The target is the last argument and sits after the separator.
-    expect(args[sep + 1]).toBe('--weird-path');
+    expect(result.exitCode).toBe(1);
+    expect(result.semgrepMissing).toBe(false);
   });
 });
 
 describe('filterBySeverity', () => {
+  const finding = (severity: OAuthLintFinding['severity']): OAuthLintFinding => ({
+    ruleId: 'auth.jwt.alg-none',
+    severity,
+    filePath: 'src/jwt.ts',
+    startLine: 1,
+    endLine: 1,
+    message: 'JWT alg:none accepted.',
+  });
+
   it('keeps only findings at or above the minimum', () => {
     const out = filterBySeverity(
-      [
-        finding({ severity: 'INFO' }),
-        finding({ severity: 'LOW' }),
-        finding({ severity: 'MEDIUM' }),
-        finding({ severity: 'HIGH' }),
-        finding({ severity: 'CRITICAL' }),
-      ],
+      [finding('INFO'), finding('LOW'), finding('MEDIUM'), finding('HIGH'), finding('CRITICAL')],
       'HIGH',
     );
     expect(out.map((f) => f.severity)).toEqual(['HIGH', 'CRITICAL']);
   });
 
   it('returns the input unchanged when the floor is INFO', () => {
-    const all = [finding({ severity: 'INFO' }), finding({ severity: 'HIGH' })];
+    const all = [finding('INFO'), finding('HIGH')];
     expect(filterBySeverity(all, 'INFO')).toHaveLength(2);
   });
 });
