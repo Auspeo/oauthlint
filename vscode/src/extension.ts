@@ -18,8 +18,40 @@ const SUPPORTED_LANGUAGES = new Set([
   'typescriptreact',
 ]);
 
-// Warn once per session if the CLI can't be spawned, instead of silently doing nothing.
-let warnedMissingCli = false;
+// Prompt once per session when Semgrep is missing, instead of silently doing nothing.
+let warnedMissingSemgrep = false;
+
+/** Where the "Docs" action on the Semgrep prompt points. */
+const VSCODE_DOCS_URL = 'https://oauthlint.dev/docs/vscode';
+
+/**
+ * Surface a one-time, actionable notice when Semgrep is not installed. The
+ * engine and rule pack ship inside the extension, so Semgrep is the only piece
+ * a user still has to provide; we offer to install it rather than fail quietly.
+ */
+function promptInstallSemgrep(): void {
+  if (warnedMissingSemgrep) return;
+  warnedMissingSemgrep = true;
+  void vscode.window
+    .showErrorMessage(
+      'OAuthLint needs Semgrep to scan, but it was not found on your PATH.',
+      'Install Semgrep',
+      'Docs',
+    )
+    .then((choice) => {
+      if (choice === 'Install Semgrep') {
+        // Pre-fill the platform-appropriate install in a terminal (without
+        // auto-running it) so the user can review and run it with one keypress.
+        const command =
+          process.platform === 'darwin' ? 'brew install semgrep' : 'pipx install semgrep';
+        const terminal = vscode.window.createTerminal('Install Semgrep');
+        terminal.show();
+        terminal.sendText(command, false);
+      } else if (choice === 'Docs') {
+        vscode.env.openExternal(vscode.Uri.parse(VSCODE_DOCS_URL));
+      }
+    });
+}
 
 const SEVERITY_TO_VSCODE: Record<OAuthLintFinding['severity'], vscode.DiagnosticSeverity> = {
   INFO: vscode.DiagnosticSeverity.Information,
@@ -216,7 +248,6 @@ async function scanUri(
 ): Promise<void> {
   if (uri.scheme !== 'file') return;
   const cfg = vscode.workspace.getConfiguration('oauthlint');
-  const cliPath = cfg.get<string>('cliPath', '') || undefined;
   const rulesDir = cfg.get<string>('rulesDir', '') || undefined;
   const minSeverity = cfg.get<OAuthLintFinding['severity']>('minSeverity', 'MEDIUM');
 
@@ -227,7 +258,6 @@ async function scanUri(
   statusBar.markScanning();
   const result = await runOAuthLint({
     target,
-    cliPath,
     rulesDir,
     cwd,
     timeoutMs: 30_000,
@@ -235,6 +265,12 @@ async function scanUri(
 
   if (result.stderr.trim()) {
     output.appendLine(`[oauthlint] stderr: ${result.stderr.trim()}`);
+  }
+  if (result.semgrepMissing) {
+    output.appendLine('[oauthlint] Semgrep is not installed — cannot scan');
+    statusBar.markError('Semgrep not found');
+    promptInstallSemgrep();
+    return;
   }
   if (result.timedOut) {
     output.appendLine('[oauthlint] scan timed out after 30s');
@@ -247,26 +283,8 @@ async function scanUri(
     return;
   }
   if (!result.report) {
-    // exitCode === null with no timeout means the CLI process could not be spawned.
-    if (result.exitCode === null) {
-      statusBar.markError('CLI not found');
-      if (!warnedMissingCli) {
-        warnedMissingCli = true;
-        void vscode.window
-          .showWarningMessage(
-            'oauthlint CLI not found. Install it (npm i -g oauthlint) or set "oauthlint.cliPath".',
-            'Setup guide',
-          )
-          .then((choice) => {
-            if (choice) {
-              vscode.env.openExternal(vscode.Uri.parse('https://oauthlint.dev/getting-started'));
-            }
-          });
-      }
-    } else {
-      statusBar.markError(`CLI exited with code ${result.exitCode}`);
-    }
-    output.appendLine(`[oauthlint] no report — CLI exited with code ${result.exitCode}`);
+    statusBar.markError('scan failed');
+    output.appendLine(`[oauthlint] no report — scan failed (${result.stderr.trim()})`);
     return;
   }
 
