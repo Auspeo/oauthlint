@@ -3,7 +3,7 @@
   "private": true,
   "displayName": "oauthlint",
   "description": "Catch the OAuth/OIDC/JWT anti-patterns AI coding tools produce, right inside VS Code.",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "icon": "icon.png",
   "publisher": "auspeo",
   "type": "commonjs",
@@ -51,15 +51,10 @@
           "default": "MEDIUM",
           "description": "Only surface findings at this severity or above."
         },
-        "oauthlint.cliPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to the oauthlint CLI. Empty = use `oauthlint` from your PATH."
-        },
         "oauthlint.rulesDir": {
           "type": "string",
           "default": "",
-          "description": "Override the rules directory passed to the CLI. Empty = the CLI's built-in rules."
+          "description": "Override the rules directory used for scanning. Empty = the rule pack bundled with the extension."
         }
       }
     },
@@ -82,14 +77,19 @@
     ]
   },
   "scripts": {
-    "build": "tsc",
+    "build": "pnpm --filter oauthlint-rules --filter oauthlint run build && node esbuild.mjs",
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "oauthlint": "workspace:*",
+    "oauthlint-rules": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "22.10.5",
     "@types/vscode": "1.95.0",
+    "esbuild": "0.25.12",
     "typescript": "5.7.3",
     "vitest": "2.1.9"
   },

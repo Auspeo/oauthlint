@@ -195,6 +195,13 @@ importers:
         version: 2.1.9(@types/node@24.13.2)
 
   vscode:
+    dependencies:
+      oauthlint:
+        specifier: workspace:*
+        version: link:../cli
+      oauthlint-rules:
+        specifier: workspace:*
+        version: link:../rules
     devDependencies:
       '@types/node':
         specifier: 22.10.5
@@ -202,6 +209,9 @@ importers:
       '@types/vscode':
         specifier: 1.95.0
         version: 1.95.0
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       typescript:
         specifier: 5.7.3
         version: 5.7.3

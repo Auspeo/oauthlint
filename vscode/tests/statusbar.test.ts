@@ -48,24 +48,24 @@ describe('computeStatusBar — error', () => {
     expect(view.warning).toBe(true);
   });
 
-  it('points the tooltip at the cliPath setting', () => {
+  it('points the tooltip at the output channel', () => {
     const view = computeStatusBar({ phase: 'error', count: 0 });
-    expect(view.tooltip).toContain('oauthlint.cliPath');
+    expect(view.tooltip).toContain('output channel');
   });
 
   it('weaves an error detail into the tooltip when provided', () => {
     const view = computeStatusBar({
       phase: 'error',
       count: 0,
-      errorDetail: 'CLI not found',
+      errorDetail: 'Semgrep not found',
     });
-    expect(view.tooltip).toContain('CLI not found');
-    expect(view.tooltip).toContain('oauthlint.cliPath');
+    expect(view.tooltip).toContain('Semgrep not found');
+    expect(view.tooltip).toContain('output channel');
   });
 
   it('falls back to a generic message when the detail is blank', () => {
     const view = computeStatusBar({ phase: 'error', count: 0, errorDetail: '   ' });
-    expect(view.tooltip).toContain('could not be run');
-    expect(view.tooltip).toContain('oauthlint.cliPath');
+    expect(view.tooltip).toContain('could not run');
+    expect(view.tooltip).toContain('output channel');
   });
 });
