@@ -7,14 +7,16 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
+    # One consolidated PR for all npm minor/patch updates, so weekly bumps do not
+    # fan out into many separate PRs that conflict on the lockfile.
     groups:
-      dev-dependencies:
-        dependency-type: development
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
     # Major upgrades that need a dedicated migration, deferred so they don't
-    # re-open every week. Minor/patch updates for these still flow normally.
-    #   - zod 4: rule schema + CLI config API changes
-    #   - astro 7: site build (two majors from 5)
-    #   - typescript 6 / vitest 4: toolchain migration
+    # re-open every week. Minor/patch for these still flow (in the group above).
+    #   - zod 4 / astro 7: rule schema + site build migrations
+    #   - typescript 6 / vitest 4 / @vitest/coverage-v8 / biome 2: toolchain
     #   - @types/node: pinned to the Node LTS we target (22)
     ignore:
       - dependency-name: "zod"
@@ -25,6 +27,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "vitest"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@biomejs/biome"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
@@ -33,3 +39,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    # Group all GitHub Actions bumps into one PR so paired actions (e.g. CodeQL
+    # init + analyze, which must match versions) always move together.
+    groups:
+      github-actions:
+        patterns: ["*"]
