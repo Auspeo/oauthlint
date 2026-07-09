@@ -19,8 +19,8 @@
     "oauthlint-rules": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "22.10.5",
-    "typescript": "5.7.3",
+    "@types/node": "22.20.1",
+    "typescript": "5.9.3",
     "vitest": "2.1.9"
   },
   "engines": {
