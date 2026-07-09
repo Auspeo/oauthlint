@@ -18,7 +18,7 @@
   "dependencies": {
     "@astrojs/sitemap": "3.7.3",
     "astro": "5.14.1",
-    "shiki": "4.3.0",
+    "shiki": "4.3.1",
     "yaml": "2.9.0"
   },
   "devDependencies": {
