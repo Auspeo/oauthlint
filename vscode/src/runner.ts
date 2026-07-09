@@ -60,10 +60,16 @@ export interface RunOptions {
   /** Override the bundled rules directory. Empty = the packaged rule pack. */
   rulesDir?: string;
   /**
-   * Override the Semgrep binary. Empty = `semgrep` from PATH. A clean seam for a
-   * future setting that points at a specific Semgrep install (Phase 2).
+   * Path to the scan engine binary. Empty = `semgrep` from PATH. The extension
+   * passes the managed Opengrep binary here (see `engine.ts`).
    */
   semgrepPath?: string;
+  /**
+   * Whether the engine understands `--metrics=off`. `true` (default) for real
+   * Semgrep; set `false` for Opengrep, which has no `--metrics` option and
+   * errors on the flag. Threaded straight through to the adapter.
+   */
+  metrics?: boolean;
   /** Working directory the scan runs from. */
   cwd?: string;
   /** Abort the run after this many ms; resolves with a timed-out result. */
@@ -83,7 +89,11 @@ export interface RunResult {
   timedOut: boolean;
   /** Whether the run was aborted because its output exceeded the size cap. */
   outputCapped: boolean;
-  /** Semgrep is not installed — the extension prompts the user to install it. */
+  /**
+   * The engine binary could not be spawned (ENOENT). With the managed engine
+   * this means the resolved binary vanished; the extension resets the engine
+   * manager and re-attempts the download.
+   */
   semgrepMissing: boolean;
 }
 
@@ -118,6 +128,7 @@ export async function runOAuthLint(opts: RunOptions): Promise<RunResult> {
   const adapter = new SemgrepAdapter({
     configPath,
     ...(opts.semgrepPath?.trim() ? { binary: opts.semgrepPath } : {}),
+    ...(opts.metrics === undefined ? {} : { metrics: opts.metrics }),
     ...(opts.cwd ? { cwd: opts.cwd } : {}),
     ...(opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
     maxOutputBytes: MAX_OUTPUT_BYTES,

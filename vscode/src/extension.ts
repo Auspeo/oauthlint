@@ -1,6 +1,7 @@
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { type ScanScope, applyScanDiagnostics } from './diagnostics.js';
+import { EngineManager, EngineUnavailableError } from './engine.js';
 import { buildApplyFixEdit } from './fix.js';
 import { type FindingHoverData, buildFindingHoverMarkdown } from './hover.js';
 import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
@@ -18,35 +19,28 @@ const SUPPORTED_LANGUAGES = new Set([
   'typescriptreact',
 ]);
 
-// Prompt once per session when Semgrep is missing, instead of silently doing nothing.
-let warnedMissingSemgrep = false;
+// Prompt once per session when the scan engine can't be obtained, instead of
+// silently doing nothing. Reset when the user asks to retry.
+let warnedEngineUnavailable = false;
 
-/** Where the "Docs" action on the Semgrep prompt points. */
+/** Where the "Docs" action on the engine-unavailable prompt points. */
 const VSCODE_DOCS_URL = 'https://oauthlint.dev/docs/vscode';
 
 /**
- * Surface a one-time, actionable notice when Semgrep is not installed. The
- * engine and rule pack ship inside the extension, so Semgrep is the only piece
- * a user still has to provide; we offer to install it rather than fail quietly.
+ * Surface a one-time, actionable notice when the managed scan engine cannot be
+ * obtained (for example an offline first run, before the one-time engine
+ * download has succeeded). Offers Retry, which re-attempts the download and
+ * re-scans, and Docs. The engine and rule pack are otherwise fully managed —
+ * there is nothing for the user to install.
  */
-function promptInstallSemgrep(): void {
-  if (warnedMissingSemgrep) return;
-  warnedMissingSemgrep = true;
+function promptEngineUnavailable(detail: string): void {
+  if (warnedEngineUnavailable) return;
+  warnedEngineUnavailable = true;
   void vscode.window
-    .showErrorMessage(
-      'OAuthLint needs Semgrep to scan, but it was not found on your PATH.',
-      'Install Semgrep',
-      'Docs',
-    )
+    .showErrorMessage(`OAuthLint could not start its scan engine. ${detail}`, 'Retry', 'Docs')
     .then((choice) => {
-      if (choice === 'Install Semgrep') {
-        // Pre-fill the platform-appropriate install in a terminal (without
-        // auto-running it) so the user can review and run it with one keypress.
-        const command =
-          process.platform === 'darwin' ? 'brew install semgrep' : 'pipx install semgrep';
-        const terminal = vscode.window.createTerminal('Install Semgrep');
-        terminal.show();
-        terminal.sendText(command, false);
+      if (choice === 'Retry') {
+        void vscode.commands.executeCommand('oauthlint.retryEngineSetup');
       } else if (choice === 'Docs') {
         vscode.env.openExternal(vscode.Uri.parse(VSCODE_DOCS_URL));
       }
@@ -67,6 +61,20 @@ export function activate(context: vscode.ExtensionContext): void {
   const statusBar = new StatusBarController(diagnostics);
   context.subscriptions.push(diagnostics, output, statusBar);
 
+  // Owns the managed scan engine (Opengrep): resolves a cached binary, an
+  // opengrep on PATH, or downloads the pinned build on first use. A single
+  // instance memoises the resolved path across scans.
+  const engine = new EngineManager({
+    globalStorageDir: context.globalStorageUri.fsPath,
+    getEnginePath: () =>
+      vscode.workspace.getConfiguration('oauthlint').get<string>('enginePath', '') || undefined,
+    withDownloadUI: (run) =>
+      vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'OAuthLint', cancellable: false },
+        (progress) => run((message) => progress.report({ message })),
+      ),
+  });
+
   // Associate each diagnostic we publish with the full finding behind it, so the
   // hover can surface richer context (full message, CWE, oauthlintRuleId) than
   // the squiggle's first-line summary. Keyed by the live Diagnostic object the
@@ -84,7 +92,7 @@ export function activate(context: vscode.ExtensionContext): void {
       uri.toString(),
       setTimeout(() => {
         debounceTimers.delete(uri.toString());
-        void scanUri(uri, diagnostics, output, statusBar, findingByDiagnostic);
+        void scanUri(uri, engine, diagnostics, output, statusBar, findingByDiagnostic);
       }, SCAN_DEBOUNCE_MS),
     );
   };
@@ -115,15 +123,47 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('oauthlint.scanFile', async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;
-      await scanUri(editor.document.uri, diagnostics, output, statusBar, findingByDiagnostic);
+      await scanUri(
+        editor.document.uri,
+        engine,
+        diagnostics,
+        output,
+        statusBar,
+        findingByDiagnostic,
+      );
     }),
     vscode.commands.registerCommand('oauthlint.scanWorkspace', async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];
       if (!folder) return;
-      await scanUri(folder.uri, diagnostics, output, statusBar, findingByDiagnostic, 'workspace');
+      await scanUri(
+        folder.uri,
+        engine,
+        diagnostics,
+        output,
+        statusBar,
+        findingByDiagnostic,
+        'workspace',
+      );
     }),
     vscode.commands.registerCommand('oauthlint.openDoc', (url: string) => {
       if (typeof url === 'string') vscode.env.openExternal(vscode.Uri.parse(url));
+    }),
+    // Retry engine setup: clear the memoised failure, reset the one-time notice,
+    // and re-scan the active file so the download is re-attempted immediately.
+    vscode.commands.registerCommand('oauthlint.retryEngineSetup', async () => {
+      engine.reset();
+      warnedEngineUnavailable = false;
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        await scanUri(
+          editor.document.uri,
+          engine,
+          diagnostics,
+          output,
+          statusBar,
+          findingByDiagnostic,
+        );
+      }
     }),
   );
 
@@ -240,6 +280,7 @@ class StatusBarController implements vscode.Disposable {
 
 async function scanUri(
   uri: vscode.Uri,
+  engine: EngineManager,
   diagnostics: vscode.DiagnosticCollection,
   output: vscode.OutputChannel,
   statusBar: StatusBarController,
@@ -256,9 +297,26 @@ async function scanUri(
 
   output.appendLine(`[oauthlint] scanning ${target}`);
   statusBar.markScanning();
+
+  // Resolve (and, on first use, download) the managed scan engine. A failure
+  // here must never crash the extension — surface an actionable notice instead.
+  let enginePath: string;
+  try {
+    enginePath = await engine.resolve();
+  } catch (err) {
+    const detail = err instanceof EngineUnavailableError ? err.message : String(err);
+    output.appendLine(`[oauthlint] scan engine unavailable: ${detail}`);
+    statusBar.markError('scan engine unavailable');
+    promptEngineUnavailable(detail);
+    return;
+  }
+
   const result = await runOAuthLint({
     target,
     rulesDir,
+    // Drive the managed Opengrep binary, which has no `--metrics` option.
+    semgrepPath: enginePath,
+    metrics: false,
     cwd,
     timeoutMs: 30_000,
   });
@@ -267,9 +325,12 @@ async function scanUri(
     output.appendLine(`[oauthlint] stderr: ${result.stderr.trim()}`);
   }
   if (result.semgrepMissing) {
-    output.appendLine('[oauthlint] Semgrep is not installed — cannot scan');
-    statusBar.markError('Semgrep not found');
-    promptInstallSemgrep();
+    // The managed engine resolved but then could not be spawned (e.g. the
+    // binary was removed mid-session). Reset so the next attempt re-downloads.
+    output.appendLine('[oauthlint] scan engine could not be run — cannot scan');
+    statusBar.markError('scan engine unavailable');
+    engine.reset();
+    promptEngineUnavailable('The scan engine could not be run. Retry to re-download it.');
     return;
   }
   if (result.timedOut) {

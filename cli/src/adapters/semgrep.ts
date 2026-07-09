@@ -119,6 +119,14 @@ export interface SemgrepAdapterOptions {
    * default applies); long-lived hosts set this to bound memory use.
    */
   maxOutputBytes?: number;
+  /**
+   * Whether to pass `--metrics=off` (default `true`). Real Semgrep supports the
+   * flag and we always disable telemetry there. Semgrep-compatible engines that
+   * collect no telemetry (e.g. Opengrep) have no `--metrics` option and error on
+   * it, so a caller driving such a binary sets this to `false` to omit the flag.
+   * Every other adapter flag is shared, so the same adapter drives either engine.
+   */
+  metrics?: boolean;
 }
 
 export class SemgrepAdapter {
@@ -127,6 +135,7 @@ export class SemgrepAdapter {
   private readonly cwd?: string;
   private readonly timeoutMs?: number;
   private readonly maxOutputBytes?: number;
+  private readonly metrics: boolean;
 
   constructor(opts: SemgrepAdapterOptions) {
     this.binary = opts.binary ?? 'semgrep';
@@ -134,6 +143,18 @@ export class SemgrepAdapter {
     this.cwd = opts.cwd;
     this.timeoutMs = opts.timeoutMs;
     this.maxOutputBytes = opts.maxOutputBytes;
+    this.metrics = opts.metrics ?? true;
+  }
+
+  /**
+   * The scan flags shared by `scan` and `planFixes`. `--metrics=off` is included
+   * only when telemetry control is wanted (real Semgrep); it is omitted for
+   * engines that have no `--metrics` option and would error on it (Opengrep).
+   */
+  private baseScanArgs(): string[] {
+    const args = ['scan', '--config', this.configPath, '--json', '--quiet', '--no-git-ignore'];
+    if (this.metrics) args.push('--metrics=off');
+    return args;
   }
 
   /** Per-call execa options shared by `scan` and `planFixes`. */
@@ -178,15 +199,7 @@ export class SemgrepAdapter {
   ): Promise<ScanResult> {
     const start = Date.now();
     const targets = Array.isArray(target) ? target : [target];
-    const args = [
-      'scan',
-      '--config',
-      this.configPath,
-      '--json',
-      '--quiet',
-      '--no-git-ignore',
-      '--metrics=off',
-    ];
+    const args = this.baseScanArgs();
     if (options.applyFixes) args.push('--autofix');
     // `--` terminates option parsing so a path that starts with `-` is never
     // mistaken for a flag. Targets are passed as discrete argv entries (never a
@@ -250,19 +263,7 @@ export class SemgrepAdapter {
    */
   async planFixes(target: string | string[]): Promise<FixPlan> {
     const targets = Array.isArray(target) ? target : [target];
-    const args = [
-      'scan',
-      '--config',
-      this.configPath,
-      '--json',
-      '--quiet',
-      '--no-git-ignore',
-      '--metrics=off',
-      '--autofix',
-      '--dryrun',
-      '--',
-      ...targets,
-    ];
+    const args = [...this.baseScanArgs(), '--autofix', '--dryrun', '--', ...targets];
 
     let result: Awaited<ReturnType<typeof execa>>;
     try {
