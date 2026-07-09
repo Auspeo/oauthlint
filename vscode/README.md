@@ -44,15 +44,11 @@ to install.
 
 ## Requirements
 
-The extension bundles the engine and rules; the one piece it still needs is
-[Semgrep](https://semgrep.dev):
-
-```bash
-pipx install semgrep            # or: brew install semgrep
-```
-
-If Semgrep is not found, the extension shows a one-time notice with a one-click
-install and a link to the docs.
+Nothing to install. The rule pack ships inside the extension, and the scan
+engine (Opengrep, a Python-free single binary) is downloaded automatically the
+first time you scan. That is a one-time download of about 41 MB, then cached and
+reused. No Python, no Semgrep, no CLI. If you already have `opengrep` or `semgrep`
+installed, point `oauthlint.enginePath` at it to skip the download.
 
 ## Settings
 
@@ -61,12 +57,14 @@ install and a link to the docs.
 | `oauthlint.enabled` | `true` | Scan on save and on open |
 | `oauthlint.minSeverity` | `MEDIUM` | Only surface findings at this severity or above |
 | `oauthlint.rulesDir` | _empty_ | Override the rules directory (empty = the rule pack bundled with the extension) |
+| `oauthlint.enginePath` | _empty_ | Path to an existing opengrep/semgrep binary (empty = download and manage Opengrep automatically) |
 
 ## Commands
 
 - **oauthlint: Scan current file**
 - **oauthlint: Scan workspace**
 - **oauthlint: Open rule documentation**
+- **oauthlint: Retry scan engine setup**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
 pack covers **140+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java**,

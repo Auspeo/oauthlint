@@ -4,6 +4,28 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-07-09
+
+### Changed
+
+- Fully self-contained: the scan engine (Opengrep) is downloaded automatically
+  on first use; no Python, no Semgrep, no CLI to install. The one-time ~41 MB
+  engine binary is cached in the extension's global storage and reused. If you
+  already have `opengrep` or `semgrep` installed, set `oauthlint.enginePath` to
+  its location to skip the download.
+
+### Added
+
+- `oauthlint.enginePath` setting to point at an existing opengrep/semgrep binary.
+- An "OAuthLint: Retry scan engine setup" command (also offered as a Retry action
+  on the failure notice) for re-attempting the engine download after an offline
+  first run.
+
+### Removed
+
+- The "install Semgrep" notice. The scan engine is now managed by the extension,
+  so there is nothing to install.
+
 ## [0.5.0] - 2026-07-09
 
 ### Changed
