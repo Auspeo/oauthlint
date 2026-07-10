@@ -1,0 +1,43 @@
+name: JetBrains plugin
+
+# Build and verify the JetBrains plugin. Path-filtered so it only runs when the
+# plugin or the rule pack it bundles changes, and never slows unrelated PRs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'jetbrains/**'
+      - 'rules/rules/**'
+      - '.github/workflows/jetbrains-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jetbrains/**'
+      - 'rules/rules/**'
+      - '.github/workflows/jetbrains-ci.yml'
+
+concurrency:
+  group: jetbrains-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build + verify plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Build and verify the plugin
+        working-directory: jetbrains
+        run: ./gradlew buildPlugin verifyPlugin --no-daemon --stacktrace
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oauthlint-jetbrains
+          path: jetbrains/build/distributions/*.zip
+          if-no-files-found: error
