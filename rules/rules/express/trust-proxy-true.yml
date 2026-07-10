@@ -22,6 +22,18 @@ rules:
     pattern-either:
       - pattern: $APP.set("trust proxy", true)
       - pattern: $APP.enable("trust proxy")
+    # Framework example/dev apps set `trust proxy: true` deliberately as working
+    # demos; scanning user code should not fire on those trees.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
     metadata:
       oauthlint-rule-id: AUTH-EXPRESS-002
       oauthlint-doc-url: https://oauthlint.dev/rules/express-trust-proxy-true
