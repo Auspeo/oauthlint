@@ -18,7 +18,7 @@ Findings come back as structured data the model can act on (rule id, severity, l
 ## Requirements
 
 - Node.js 20 or newer.
-- [Semgrep](https://semgrep.dev) on your `PATH`. This is the same requirement as the OAuthLint CLI, because the server runs Semgrep under the hood. Install it with `pipx install semgrep` or `brew install semgrep`. If Semgrep is missing, the scan tools return a clear error telling you how to install it, rather than failing silently.
+- No Python or Semgrep to install. The server rides on the OAuthLint CLI, so it is self-contained the same way: on first scan it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached). It uses an installed `opengrep` or `semgrep` if one is on your `PATH`; override the engine with `OAUTHLINT_ENGINE`. If the engine cannot be obtained (offline on first run with nothing installed), the scan tools return a clear, actionable error rather than failing silently.
 
 ## Install and run
 

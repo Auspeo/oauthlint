@@ -10,6 +10,7 @@ import { runInit } from './commands/init.js';
 import { runList } from './commands/list.js';
 import { type ScanFormat, runScan } from './commands/scan.js';
 import { maybeNotifyUpdate } from './core/update-notifier.js';
+import { setEngineOverride } from './engine/index.js';
 import { SEVERITIES, type SeverityName } from './types.js';
 
 interface PkgJson {
@@ -91,11 +92,21 @@ export async function buildProgram(): Promise<Command> {
       'OAuthLint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.',
     )
     .version(version, '-v, --version')
-    .option('--no-update-check', 'Do not check npm for a newer oauthlint version');
+    .option('--no-update-check', 'Do not check npm for a newer oauthlint version')
+    .option(
+      '--engine <path>',
+      'Path to an opengrep/semgrep binary to use, skipping the automatic download (also OAUTHLINT_ENGINE)',
+    );
 
   // Resolve the global update-check opt-out once, lazily, from the root program.
   // Commander sets `updateCheck: false` when `--no-update-check` is given.
   const updateCheckEnabled = (): boolean => program.opts().updateCheck !== false;
+
+  // Apply the global `--engine <path>` override before any command runs, so
+  // every scan path resolves that binary instead of downloading Opengrep.
+  program.hook('preAction', () => {
+    setEngineOverride(program.opts().engine as string | undefined);
+  });
 
   program
     .command('scan')
@@ -212,7 +223,7 @@ export async function buildProgram(): Promise<Command> {
 
   program
     .command('doctor')
-    .description('Diagnose your OAuthLint install (Node, Semgrep, rule pack)')
+    .description('Diagnose your OAuthLint install (Node, scan engine, rule pack)')
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
       const code = await runDoctor({ json: opts.json });

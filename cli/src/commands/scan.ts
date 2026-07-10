@@ -21,6 +21,7 @@ import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
 import { exitCodeFor, highestSeverity, meetsThreshold } from '../core/severity.js';
 import { applySuppressions } from '../core/suppress.js';
+import { EngineUnavailableError, resolveEngine } from '../engine/index.js';
 import { renderHtmlReport } from '../formatters/html.js';
 import type { Finding, SeverityName } from '../types.js';
 
@@ -175,7 +176,26 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   const reporter = new Reporter({ json: format === 'json', stream, codeFrame, cwd });
   if (format === 'pretty') reporter.reportStart(label, await countRuleFiles(rulesDir));
 
-  const adapter = opts.adapter ?? new SemgrepAdapter({ configPath: rulesDir });
+  // Resolve the scan engine (installed opengrep/semgrep, or a pinned Opengrep the
+  // CLI downloads and checksum-verifies on first run). `metrics` is on only for
+  // real Semgrep, which alone accepts `--metrics=off`.
+  let adapter = opts.adapter;
+  if (!adapter) {
+    try {
+      const engine = await resolveEngine();
+      adapter = new SemgrepAdapter({
+        configPath: rulesDir,
+        binary: engine.path,
+        metrics: engine.engine === 'semgrep',
+      });
+    } catch (err) {
+      if (err instanceof EngineUnavailableError) {
+        errStream.write(`${err.message}\n`);
+        return 127;
+      }
+      throw err;
+    }
+  }
   // `--fix-dry-run` previews changes and never writes; it wins over `--fix`.
   const dryRun = opts.fixDryRun === true;
   const applyFixes = opts.fix === true && !dryRun;

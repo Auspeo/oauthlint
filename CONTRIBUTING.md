@@ -32,8 +32,11 @@ scripts/     rule validation
 
 ## Local setup
 
-You need **Node ≥ 20**, **pnpm 10** (via `corepack enable`), and **Semgrep**
-(`pipx install semgrep` or `brew install semgrep`).
+You need **Node ≥ 20** and **pnpm 10** (via `corepack enable`). A scan engine is
+optional for development: the CLI downloads a pinned Opengrep on first run, but
+the rule pack tests will use an installed **Semgrep** or **Opengrep** if one is
+on your `PATH` (`pipx install semgrep` or `brew install semgrep`), which avoids a
+network round-trip.
 
 ```bash
 pnpm install

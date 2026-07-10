@@ -1,6 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { SemgrepNotInstalledError, SemgrepOutputError, SemgrepResourceError } from 'oauthlint';
+import {
+  EngineUnavailableError,
+  SemgrepNotInstalledError,
+  SemgrepOutputError,
+  SemgrepResourceError,
+} from 'oauthlint';
 import { ToolError } from './errors.js';
 import { summariseScan } from './findings.js';
 import { explainRule, listRules } from './rules.js';
@@ -11,12 +16,14 @@ const PKG_VERSION = '0.1.0';
 
 /**
  * Turn any thrown value into a clean MCP tool error. Known failures get their
- * own clear message; an absent Semgrep is the most common one, so it is called
- * out explicitly with the same install hint the CLI gives.
+ * own clear message; a scan engine that cannot be resolved (offline on first
+ * run with nothing installed) carries an actionable hint the calling agent can
+ * relay.
  */
 function errorResult(err: unknown): CallToolResult {
   let text: string;
   if (
+    err instanceof EngineUnavailableError ||
     err instanceof SemgrepNotInstalledError ||
     err instanceof SemgrepResourceError ||
     err instanceof SemgrepOutputError ||
@@ -53,7 +60,7 @@ export function createServer(): McpServer {
         'Scan an in-memory code snippet for OAuth/OIDC/JWT/session/CORS anti-patterns. ' +
         'Write the code an AI tool just generated here to check it before showing it to ' +
         'the user. The snippet is scanned in a private temp file and never written to the ' +
-        "user's project. Requires Semgrep on PATH.",
+        "user's project. Self-contained: the scan engine is downloaded and cached on first use.",
       inputSchema: scanCodeShape,
     },
     async (args) => {
@@ -72,7 +79,7 @@ export function createServer(): McpServer {
       title: 'Scan files on disk for auth anti-patterns',
       description:
         'Scan a file or directory on disk for OAuth/OIDC/JWT/session/CORS anti-patterns. ' +
-        'Requires Semgrep on PATH.',
+        'Self-contained: the scan engine is downloaded and cached on first use.',
       inputSchema: scanPathShape,
     },
     async (args) => {

@@ -26,13 +26,9 @@ Findings come back as structured data the model can act on (rule id, severity, l
 
 ## Requirements
 
-The server runs [Semgrep](/docs/semgrep) under the hood, exactly like the CLI, so Semgrep must be on your `PATH`:
+The server rides on the OAuthLint CLI, so it is self-contained the same way: on first scan it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached). It uses an installed `opengrep` or `semgrep` if one is on your `PATH`; override the engine with `OAUTHLINT_ENGINE`. If the engine cannot be obtained (offline on first run with nothing installed), the scan tools return a clear, actionable error rather than failing silently.
 
-```bash
-pipx install semgrep   # or: brew install semgrep
-```
-
-You also need Node.js 20 or newer. There is no install step for the server itself; MCP clients launch it with `npx oauthlint-mcp`.
+You need Node.js 20 or newer. There is no install step for the server itself; MCP clients launch it with `npx oauthlint-mcp`.
 
 ## Wiring it into your tool
 

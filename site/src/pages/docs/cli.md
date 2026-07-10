@@ -7,7 +7,7 @@ section: "cli"
 
 # CLI reference
 
-The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS anti-patterns, lists the shipped rules, scaffolds a config, and diagnoses your install. Run it with `npx oauthlint <command>`, no install required. Every scan invokes [Semgrep](/docs/github-action) under the hood, so it must be on `PATH`.
+The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS anti-patterns, lists the shipped rules, scaffolds a config, and diagnoses your install. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
 
 ## `scan`
 
@@ -130,7 +130,7 @@ See [Configuration](/docs/configuration) for the full file format.
 
 ## `doctor`
 
-Diagnose your OAuthLint install. It checks the Node.js runtime (≥ v20), that the Semgrep CLI is on `PATH`, and that the rule pack loads.
+Diagnose your OAuthLint install. It checks the Node.js runtime (≥ v20), resolves the scan engine (reporting whether it was found on `PATH`, downloaded, or set via `OAUTHLINT_ENGINE`/`--engine`), and confirms the rule pack loads.
 
 ```bash
 # pretty environment check
@@ -149,7 +149,7 @@ npx oauthlint doctor --json
 | `0` | No finding at or above the `--fail-on` threshold (or `--fail-on off`). |
 | `1` | A finding meets the threshold and the worst severity present is `HIGH`. |
 | `2` | A finding meets the threshold and the worst severity present is `CRITICAL`, **or** the scan output could not be parsed (it never silently exits clean). |
-| `127` | Semgrep is not installed. |
+| `127` | No scan engine is available and one could not be downloaded (e.g. offline on first run with no `opengrep`/`semgrep` installed). |
 
 `list`, `init`, and `doctor` exit `0` on success. `init` exits `1` if the config already exists and `--force` was not passed; `doctor` exits `1` if any check fails.
 
@@ -163,7 +163,8 @@ Fail the build on HIGH-and-above findings:
 #!/usr/bin/env bash
 set -euo pipefail
 
-pipx install semgrep            # the engine OAuthLint runs
+# No engine to install: the CLI downloads and checksum-verifies a pinned
+# Opengrep on first run (cache it between builds to skip the one-time download).
 npx oauthlint scan ./src --fail-on HIGH
 ```
 
@@ -173,7 +174,6 @@ Upload SARIF to GitHub Code Scanning so findings annotate the PR:
 #!/usr/bin/env bash
 set -euo pipefail
 
-pipx install semgrep
 # --fail-on off so the SARIF upload step still runs even when findings exist
 npx oauthlint scan ./src --format sarif --fail-on off > oauthlint.sarif
 ```

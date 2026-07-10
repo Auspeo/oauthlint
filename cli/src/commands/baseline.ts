@@ -10,6 +10,7 @@ import {
 import { DEFAULT_BASELINE_FILE, buildBaseline, serialiseBaseline } from '../core/baseline.js';
 import { loadConfig } from '../core/config.js';
 import { applySuppressions } from '../core/suppress.js';
+import { EngineUnavailableError, resolveEngine } from '../engine/index.js';
 import type { Finding } from '../types.js';
 
 export interface BaselineCommandOptions {
@@ -41,7 +42,23 @@ export async function runBaseline(opts: BaselineCommandOptions): Promise<number>
   const requested = opts.paths?.length ? opts.paths : ['.'];
   const targets = requested.map((p) => resolve(cwd, p));
 
-  const adapter = opts.adapter ?? new SemgrepAdapter({ configPath: rulesDir });
+  let adapter = opts.adapter;
+  if (!adapter) {
+    try {
+      const engine = await resolveEngine();
+      adapter = new SemgrepAdapter({
+        configPath: rulesDir,
+        binary: engine.path,
+        metrics: engine.engine === 'semgrep',
+      });
+    } catch (err) {
+      if (err instanceof EngineUnavailableError) {
+        errStream.write(`${err.message}\n`);
+        return 127;
+      }
+      throw err;
+    }
+  }
   let result: Awaited<ReturnType<SemgrepAdapter['scan']>>;
   try {
     result = await adapter.scan(targets);

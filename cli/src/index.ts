@@ -36,6 +36,18 @@ export {
   SemgrepOutputError,
   SemgrepResourceError,
 } from './adapters/semgrep.js';
+export {
+  EngineManager,
+  EngineUnavailableError,
+  type EngineKind,
+  type EngineManagerOptions,
+  type EngineSource,
+  type ResolvedEngine,
+  OPENGREP_VERSION,
+  getEngineManager,
+  resolveEngine,
+  setEngineOverride,
+} from './engine/index.js';
 export { Reporter, type ReporterOptions } from './core/reporter.js';
 export { loadConfig, DEFAULT_CONFIG } from './core/config.js';
 export {

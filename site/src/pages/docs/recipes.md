@@ -133,11 +133,10 @@ npx oauthlint scan ./src --format html > oauthlint-report.html
 No `package.json` change needed. Run the published CLI on demand with `npx`:
 
 ```bash
-pipx install semgrep                              # the engine OAuthLint drives
 npx oauthlint@latest scan ./src --fail-on HIGH
 ```
 
-> Semgrep must be on `PATH` (`pipx install semgrep` or `brew install semgrep`); without it the scan exits `127`. For a turnkey, Docker-based job with SARIF upload, prefer the [GitHub Action](/docs/github-action).
+> No engine to install: the CLI downloads and checksum-verifies a pinned Opengrep on first run (cache it between builds to skip the one-time download), and uses an installed `opengrep`/`semgrep` if one is on `PATH`. For a turnkey, Docker-based job with SARIF upload, prefer the [GitHub Action](/docs/github-action).
 
 ## AI coding editors (Cursor, Windsurf, and others)
 

@@ -20,7 +20,7 @@ A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (
 npx oauthlint scan ./src
 ```
 
-> Requires [Semgrep](https://semgrep.dev) on the machine running the scan (`pipx install semgrep` or `brew install semgrep`).
+> Self-contained: no Python, no Semgrep to install. The CLI bundles the rule pack and, on first run, downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached). It uses an installed `opengrep` or `semgrep` if one is on your `PATH`, and you can point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine`.
 
 📖 **Full documentation & rule catalogue: [oauthlint.dev](https://oauthlint.dev)** · 🔬 **the empirical case for it: [oauthlint.dev/research](https://oauthlint.dev/research)**
 

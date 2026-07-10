@@ -18,7 +18,7 @@ The repo publishes two npm packages plus two marketplace artifacts:
 - [ ] npm account/org that owns `oauthlint` + `oauthlint-rules`; `npm login` locally (or set `NPM_TOKEN` in CI).
 - [ ] `oauthlint.dev` (+ `.com`) registered; DNS ready (Cloudflare).
 - [ ] VS Code Marketplace publisher `auspeo` (+ a PAT) and an OpenVSX account.
-- [ ] `semgrep` available where the CLI runs (`pipx install semgrep` / `brew install semgrep`).
+- [ ] A scan engine is optional: the CLI downloads and checksum-verifies a pinned Opengrep on first run. To skip that (e.g. offline verification), have `opengrep`/`semgrep` on `PATH` or set `OAUTHLINT_ENGINE`.
 
 ## Release order (matters)
 
