@@ -1,0 +1,70 @@
+rules:
+  - id: auth.nextauth.session-token-leak
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      The NextAuth/Auth.js `session` callback copies an OAuth token onto the
+      `session` object.
+
+      Whatever the `session` callback returns is serialized and sent to the
+      browser (and readable by client-side JavaScript), so assigning
+      `session.accessToken = token.accessToken` exposes a bearer token to every
+      script on the page, including any XSS. Keep access and refresh tokens in
+      the encrypted JWT (the `token` argument) or a server-side store, and put
+      only non-sensitive fields such as `session.user.id` or `session.user.role`
+      on the session.
+    # Anchored to the `session` callback inside the `callbacks: {...}` of a real
+    # NextAuth/Auth.js config, so the same assignment elsewhere is ignored. We
+    # fire only when the assigned property name is a known token field (regex
+    # allow-list), so copying `session.user.id` or `session.user.role` stays
+    # clean.
+    patterns:
+      - pattern-inside: 'callbacks: {...}'
+      - pattern-either:
+          - pattern-inside: 'NextAuth({...})'
+          - pattern-inside: 'NextAuth($A, {...})'
+          - pattern-inside: 'NextAuth($A, $B, {...})'
+          - pattern-inside: 'Auth($A, {...})'
+          - pattern-inside: 'authOptions = {...}'
+          - pattern-inside: 'authConfig = {...}'
+          - pattern-inside: '$X: NextAuthOptions = {...}'
+          - pattern-inside: '$X: NextAuthConfig = {...}'
+          - pattern-inside: '$X: AuthOptions = {...}'
+      - pattern-either:
+          - pattern-inside: 'session($P) {...}'
+          - pattern-inside: 'async session($P) {...}'
+          - pattern-inside: 'session: ($P) => {...}'
+          - pattern-inside: 'session: async ($P) => {...}'
+      - pattern-either:
+          - pattern: 'session.$FIELD = $VAL'
+          - pattern: 'session.user.$FIELD = $VAL'
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: '^(accessToken|access_token|refreshToken|refresh_token|idToken|id_token)$'
+    # Keep the rule off test, example, and dev-playground trees, where demo
+    # configs intentionally use these shapes; it still fires on its own fixtures
+    # under rules/tests/fixtures/ (whose path has no such segment).
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-session-token-leak
+      category: security
+      cwe: CWE-522
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - next-auth
+      references:
+        - https://authjs.dev/guides/extending-the-session
+        - https://cwe.mitre.org/data/definitions/522.html
