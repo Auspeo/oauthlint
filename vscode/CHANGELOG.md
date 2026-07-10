@@ -4,6 +4,16 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.1] - 2026-07-10
+
+### Security
+
+- The auto-downloaded scan engine is now verified against a pinned SHA-256
+  checksum before it is made executable, so a tampered or swapped release asset
+  is rejected rather than run. The engine was already fetched over HTTPS from a
+  pinned release and checked for the expected version; this adds byte-level
+  integrity on top.
+
 ## [0.6.0] - 2026-07-09
 
 ### Changed

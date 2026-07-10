@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
-import { createWriteStream } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { access, chmod, mkdir, rename, rm } from 'node:fs/promises';
 import { get } from 'node:https';
 import { delimiter, join } from 'node:path';
@@ -37,6 +38,23 @@ const ASSETS: Record<string, AssetChoice> = {
 };
 
 /**
+ * SHA-256 of each pinned release asset, verified against the actual v1.25.0
+ * binaries. A downloaded file whose hash is not in this table, or does not
+ * match, is rejected before it is ever made executable, so a tampered or
+ * swapped release asset cannot be run. Regenerate these when bumping
+ * OPENGREP_VERSION (download each asset and `shasum -a 256`).
+ */
+export const CHECKSUMS: Record<string, string> = {
+  opengrep_osx_arm64: '3543fcabae9db2ae5bc974a3b75426353f0a3e369181b2157ef27f46867996c8',
+  opengrep_osx_x86: 'fa2487b75527be1cc9ae4f9b0cb09a340454e7973c76785568285cbbcd977cb4',
+  opengrep_manylinux_aarch64: 'fd40124272d006082a5594b19aecee07b01dd50933d8add7a4fd5c557d2be5f6',
+  opengrep_manylinux_x86: '9ac4aebb47ba3f7b0d8fc641ac8749cb6c2f253f616131a67d9631e00d4bea33',
+  opengrep_musllinux_aarch64: '32836a4e86857522c5400c095b1451d6713aff946dd680da7971f0edc21d443a',
+  opengrep_musllinux_x86: '83ac4d22cfb1a828ae0e48b88dbc3a78d97d53b5f7fafd37f83d0ed7e3b7d97c',
+  'opengrep_windows_x86.exe': 'b010709bb790086083442eabe9a0b6bf48064ed87cdf808591baecdb60ccdf73',
+};
+
+/**
  * Thrown when the scan engine cannot be resolved: an unsupported platform, a
  * failed download, or a binary that will not run. The message is user-facing and
  * actionable; the VS Code layer surfaces it with Retry and Docs actions and
@@ -65,6 +83,8 @@ export interface EngineDeps {
   makeExecutable(path: string): Promise<void>;
   /** Run `<binary> --version` and return its first trimmed line, or null on failure. */
   runVersion(binary: string): Promise<string | null>;
+  /** Return the lowercase hex SHA-256 of the file at `path`. */
+  hashFile(path: string): Promise<string>;
   /** Locate an `opengrep` executable on PATH, or null. */
   whichOpengrep(): Promise<string | null>;
   /** Download `url` to `dest` (atomically), reporting byte progress. */
@@ -208,8 +228,18 @@ export class EngineManager {
     });
   }
 
-  /** Download one asset into the cache, make it executable, and verify it runs the pinned version. */
+  /**
+   * Download one asset into the cache, verify its SHA-256 against the pinned
+   * value, make it executable, and confirm it runs the pinned version. The
+   * checksum is checked before the file is made executable, so a tampered or
+   * swapped binary is never run.
+   */
   private async fetchAndVerify(asset: string, report: (message: string) => void): Promise<void> {
+    const expected = CHECKSUMS[asset];
+    if (!expected) {
+      // Fail closed: we only run binaries whose hash we pinned and verified.
+      throw new Error(`no pinned checksum for ${asset}`);
+    }
     const url = `${RELEASE_BASE}/${asset}`;
     report(`Downloading the OAuthLint scan engine (~41 MB, one time)… (${asset})`);
     await this.deps.download(url, this.binaryPath, (received, total) => {
@@ -218,6 +248,10 @@ export class EngineManager {
         report(`Downloading the OAuthLint scan engine… ${pct}%`);
       }
     });
+    const actual = (await this.deps.hashFile(this.binaryPath)).toLowerCase();
+    if (actual !== expected) {
+      throw new Error(`checksum mismatch for ${asset}: expected ${expected}, got ${actual}`);
+    }
     await this.deps.makeExecutable(this.binaryPath);
     if (!(await this.isPinnedVersion(this.binaryPath))) {
       throw new Error(`downloaded engine did not report version ${OPENGREP_VERSION}`);
@@ -252,6 +286,15 @@ function defaultDeps(): EngineDeps {
       } catch {
         return null;
       }
+    },
+    hashFile(path: string): Promise<string> {
+      return new Promise<string>((resolvePromise, rejectPromise) => {
+        const hash = createHash('sha256');
+        const stream = createReadStream(path);
+        stream.on('error', rejectPromise);
+        stream.on('data', (chunk) => hash.update(chunk));
+        stream.on('end', () => resolvePromise(hash.digest('hex')));
+      });
     },
     async whichOpengrep(): Promise<string | null> {
       const names = process.platform === 'win32' ? ['opengrep.exe', 'opengrep'] : ['opengrep'];
