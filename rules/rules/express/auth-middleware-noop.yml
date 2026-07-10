@@ -1,0 +1,47 @@
+rules:
+  - id: auth.express.auth-middleware-noop
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An authentication/authorization middleware does nothing but call `next()`.
+      A guard whose entire body is `next()` (or `return next()`) authorises every
+      request, so any route it protects is effectively public. This is the classic
+      "stubbed out for now" middleware that ships to production and silently
+      removes access control.
+
+      Implement the check: verify the session/token, and either call `next()` on
+      success or short-circuit with `res.status(401).end()` /
+      `res.status(403).end()` (or `next(err)`) when it fails. If a route is meant
+      to be public, remove the guard entirely rather than leaving a no-op that
+      reads as protected.
+    # Fires only when the middleware body is EXACTLY a single `next()` call (no
+    # other statements) AND the function name looks like an auth guard. A real
+    # guard has more than one statement (it inspects the request before calling
+    # next), so it never matches; a non-auth pass-through (logger, tracing) is
+    # excluded by the name regex.
+    patterns:
+      - pattern-either:
+          - pattern: "function $F($REQ, $RES, $NEXT) { $NEXT(); }"
+          - pattern: "function $F($REQ, $RES, $NEXT) { return $NEXT(); }"
+          - pattern: "const $F = ($REQ, $RES, $NEXT) => $NEXT();"
+          - pattern: "const $F = ($REQ, $RES, $NEXT) => { $NEXT(); }"
+          - pattern: "const $F = ($REQ, $RES, $NEXT) => { return $NEXT(); }"
+          - pattern: "const $F = function ($REQ, $RES, $NEXT) { $NEXT(); }"
+          - pattern: "const $F = function ($REQ, $RES, $NEXT) { return $NEXT(); }"
+      - metavariable-regex:
+          metavariable: $F
+          regex: (?i).*(auth|login|logged|protect|guard|permission|verifytoken|verifyjwt|isadmin|requireadmin|restrict)
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-auth-middleware-noop
+      category: security
+      cwe: CWE-287
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/287.html

@@ -1,0 +1,41 @@
+rules:
+  - id: auth.express.helmet-disabled-protection
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A Helmet security header is explicitly turned off. Passing
+      `contentSecurityPolicy: false`, `hsts: false`, `frameguard: false`, or
+      `noSniff: false` to `helmet()` disables a protection Helmet enables by
+      default: CSP (XSS/data-injection defense), HSTS (forces HTTPS),
+      X-Frame-Options (clickjacking defense), or X-Content-Type-Options (MIME
+      sniffing defense) respectively.
+
+      Remove the `false` override so the default protection stays on, or replace
+      it with a real configuration object (for example
+      `contentSecurityPolicy: { directives: { ... } }` or
+      `hsts: { maxAge: 31536000 }`). If a header genuinely must be managed
+      elsewhere, set it there rather than shipping the response with the
+      protection silently missing.
+    # Only an explicit `: false` disables a default protection. A configuration
+    # object (`{ directives: ... }`, `{ maxAge: ... }`) or omitting the key keeps
+    # the default on, so correctly-configured Helmet setups never fire.
+    pattern-either:
+      - pattern: "helmet({..., contentSecurityPolicy: false, ...})"
+      - pattern: "helmet({..., hsts: false, ...})"
+      - pattern: "helmet({..., frameguard: false, ...})"
+      - pattern: "helmet({..., noSniff: false, ...})"
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-helmet-disabled-protection
+      category: security
+      cwe: CWE-693
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - express
+        - helmet
+      references:
+        - https://helmetjs.github.io/
+        - https://cwe.mitre.org/data/definitions/693.html
