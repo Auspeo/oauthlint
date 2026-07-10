@@ -1,0 +1,9 @@
+<idea-plugin>
+    <!-- Active only when Java support is present (IntelliJ IDEA and IDEs with the
+         Java plugin). The Java language id is "JAVA". -->
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+                language="JAVA"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+    </extensions>
+</idea-plugin>

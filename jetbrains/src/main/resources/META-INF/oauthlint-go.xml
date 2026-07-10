@@ -1,0 +1,9 @@
+<idea-plugin>
+    <!-- Active only when the Go plugin is present (GoLand and IDEs with the Go
+         plugin). The Go language id is "go". -->
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+                language="go"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+    </extensions>
+</idea-plugin>
