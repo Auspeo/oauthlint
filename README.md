@@ -39,7 +39,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
-- …and many more: 150+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java, including framework-aware coverage (Spring Security, NextAuth, Passport, FastAPI, Django REST, Express, and more)
+- …and many more: 160+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java, including framework-aware coverage (Spring Security, NextAuth, Passport, FastAPI, Django REST, Express, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -150,7 +150,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**140+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. The catalogue grows with every release.
+**160+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, and Java. Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -207,7 +207,7 @@ especially welcome.
 
 ### Shipped
 
-- 155 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
+- 165 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors

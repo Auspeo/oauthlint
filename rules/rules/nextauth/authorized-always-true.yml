@@ -1,0 +1,64 @@
+rules:
+  - id: auth.nextauth.authorized-always-true
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The NextAuth/Auth.js `authorized` callback returns `true`
+      unconditionally.
+
+      This callback is the gate the middleware uses to protect routes, so
+      returning a constant `true` authorizes every request and disables the
+      protection entirely. Check the session instead, for example
+      `authorized: ({ auth }) => !!auth?.user`, and return `false` (or a
+      `Response.redirect` to your login page) when there is no signed-in user.
+    # Anchored to the `callbacks: {...}` object of a real NextAuth/Auth.js config
+    # so an unrelated `authorized` property never fires. We match ONLY a body
+    # that is exactly `return true` (or an arrow returning the literal `true`);
+    # any real check (`return !!auth`, `return auth?.user != null`) has a
+    # different body and is left alone.
+    patterns:
+      - pattern-inside: 'callbacks: {...}'
+      - pattern-either:
+          - pattern-inside: 'NextAuth({...})'
+          - pattern-inside: 'NextAuth($A, {...})'
+          - pattern-inside: 'NextAuth($A, $B, {...})'
+          - pattern-inside: 'Auth($A, {...})'
+          - pattern-inside: 'authOptions = {...}'
+          - pattern-inside: 'authConfig = {...}'
+          - pattern-inside: '$X: NextAuthOptions = {...}'
+          - pattern-inside: '$X: NextAuthConfig = {...}'
+          - pattern-inside: '$X: AuthOptions = {...}'
+      - pattern-either:
+          - pattern: 'authorized($P) { return true; }'
+          - pattern: 'async authorized($P) { return true; }'
+          - pattern: 'authorized: ($P) => true'
+          - pattern: 'authorized: async ($P) => true'
+          - pattern: 'authorized: ($P) => { return true; }'
+          - pattern: 'authorized: async ($P) => { return true; }'
+    # Keep the rule off test, example, and dev-playground trees, where demo
+    # configs intentionally use these shapes; it still fires on its own fixtures
+    # under rules/tests/fixtures/ (whose path has no such segment).
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-authorized-always-true
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - next-auth
+      references:
+        - https://authjs.dev/reference/nextjs#authorized
+        - https://cwe.mitre.org/data/definitions/862.html

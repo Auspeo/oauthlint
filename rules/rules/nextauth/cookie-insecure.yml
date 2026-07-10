@@ -1,0 +1,62 @@
+rules:
+  - id: auth.nextauth.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A NextAuth/Auth.js custom cookie is configured as insecure. Setting
+      `secure: false` lets the browser send the session-token cookie over plain
+      HTTP, and `httpOnly: false` exposes it to `document.cookie` so any XSS can
+      read it.
+
+      Set `secure: true` and `httpOnly: true` on the cookie options (Auth.js
+      already applies these defaults, so the safest fix is to delete the
+      overrides). If you need insecure cookies for local HTTP development, gate
+      the value on `process.env.NODE_ENV !== 'production'` rather than
+      hard-coding `false`.
+    # Anchored twice: the flag must sit inside a NextAuth `cookies: {...}` block
+    # AND inside a `NextAuth(...)` / `authOptions` / typed-config object, so a
+    # `secure: false` on any other object cannot fire. We match ONLY an explicit
+    # `false`; a missing flag is left alone (Auth.js supplies a secure default,
+    # and dev setups legitimately omit it).
+    patterns:
+      - pattern-either:
+          - pattern: 'secure: false'
+          - pattern: 'httpOnly: false'
+      - pattern-inside: 'cookies: {...}'
+      - pattern-either:
+          - pattern-inside: 'NextAuth({...})'
+          - pattern-inside: 'NextAuth($A, {...})'
+          - pattern-inside: 'NextAuth($A, $B, {...})'
+          - pattern-inside: 'Auth($A, {...})'
+          - pattern-inside: 'authOptions = {...}'
+          - pattern-inside: 'authConfig = {...}'
+          - pattern-inside: '$X: NextAuthOptions = {...}'
+          - pattern-inside: '$X: NextAuthConfig = {...}'
+          - pattern-inside: '$X: AuthOptions = {...}'
+    # Keep the rule off test, example, and dev-playground trees, where demo
+    # configs intentionally use these shapes; it still fires on its own fixtures
+    # under rules/tests/fixtures/ (whose path has no such segment).
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - next-auth
+      references:
+        - https://authjs.dev/reference/core#cookies
+        - https://cwe.mitre.org/data/definitions/614.html

@@ -56,7 +56,7 @@ Each finding ends with a hint, `↳ run \`oauthlint explain <rule-id>\` for deta
 
 AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and others) ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-- **140+ rules** across **JavaScript/TypeScript, Python, Go, Rust, and Java**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit).
+- **160+ rules** across **JavaScript/TypeScript, Python, Go, Rust, and Java**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit).
 - **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks: an OAuth credential reaching a log sink, request input reaching a JWT verification key, **open-redirect** and **SSRF** (now across JS/TS, Python, Go, Java and Rust, plus a rule that flags `Authorization: Basic` credentials written to logs).
 - **Autofix.** `--fix` applies safe rewrites (cookie flags and similar) in place; `--fix-dry-run` previews them as a unified diff first. Per-finding fix data also rides along in `--json` and SARIF under `fixes`.
 - **HTML report.** `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.

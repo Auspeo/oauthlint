@@ -1,0 +1,35 @@
+rules:
+  - id: auth.express.static-dotfiles-allow
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A static file handler is configured with `dotfiles: 'allow'`, which serves
+      dotfiles from the mounted directory. If that directory (or anything under
+      it) contains `.env`, `.git/`, `.npmrc`, `.aws/`, or similar, an attacker
+      can fetch them directly (for example `GET /.env`) and harvest OAuth client
+      secrets, API keys, and database credentials.
+
+      Remove the option to keep the safe default (`dotfiles: 'ignore'`), or set
+      `dotfiles: 'deny'` to return 403. Never serve dotfiles from a public web
+      root; keep secrets out of any statically served directory.
+    # Only the explicit `dotfiles: 'allow'` opt-in is dangerous. The default
+    # ('ignore') and 'deny' are safe and are not matched, so idiomatic
+    # `express.static('public')` never fires.
+    pattern-either:
+      - pattern: "express.static($DIR, {..., dotfiles: \"allow\", ...})"
+      - pattern: "serveStatic($DIR, {..., dotfiles: \"allow\", ...})"
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-static-dotfiles-allow
+      category: security
+      cwe: CWE-538
+      owasp: A05:2021
+      llm-prevalence: LOW
+      technology:
+        - express
+        - serve-static
+      references:
+        - https://expressjs.com/en/4x/api.html#express.static
+        - https://cwe.mitre.org/data/definitions/538.html
