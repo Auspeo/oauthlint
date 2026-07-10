@@ -1,0 +1,52 @@
+<idea-plugin>
+    <id>dev.oauthlint</id>
+    <name>OAuthLint</name>
+    <vendor url="https://oauthlint.dev" email="support@oauthlint.dev">Auspeo</vendor>
+
+    <description><![CDATA[
+        <p>OAuthLint catches OAuth, OIDC, JWT, session, cookie, and CORS anti-patterns
+        that AI coding tools frequently produce, and surfaces them as native inline
+        annotations while you edit.</p>
+
+        <p>It scans the current file on open and on save and highlights each finding
+        with a gutter marker and a tooltip that carries the rule id, the explanation,
+        and a link to the rule documentation. Severity is mapped to the IDE's own
+        error, warning, and weak-warning levels.</p>
+
+        <p>OAuthLint is fully self-contained. The rule pack ships inside the plugin and
+        the Opengrep scan engine is downloaded once and verified against a pinned
+        SHA-256 checksum. There is nothing else to install.</p>
+
+        <p>Supported languages: JavaScript, TypeScript, Python, Go, Rust, and Java,
+        activated automatically wherever the matching language support is present.</p>
+    ]]></description>
+
+    <!-- Loads in every JetBrains IDE. -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Per-language annotator registrations. Each is optional and only loads when
+         the corresponding language plugin/module is present, so the plugin installs
+         cleanly in any IDE and lights up only for the languages that IDE supports. -->
+    <depends optional="true" config-file="oauthlint-javascript.xml">JavaScript</depends>
+    <depends optional="true" config-file="oauthlint-python.xml">com.intellij.modules.python</depends>
+    <depends optional="true" config-file="oauthlint-go.xml">org.jetbrains.plugins.go</depends>
+    <depends optional="true" config-file="oauthlint-rust.xml">com.jetbrains.rust</depends>
+    <depends optional="true" config-file="oauthlint-java.xml">com.intellij.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Application services: engine resolver, bundled-rules extractor, settings. -->
+        <applicationService serviceImplementation="dev.oauthlint.engine.EngineManager"/>
+        <applicationService serviceImplementation="dev.oauthlint.rules.RuleBundle"/>
+        <applicationService serviceImplementation="dev.oauthlint.settings.OAuthLintSettings"/>
+
+        <!-- Settings page under Settings | Tools | OAuthLint. -->
+        <applicationConfigurable
+                parentId="tools"
+                id="dev.oauthlint.settings.OAuthLintConfigurable"
+                instance="dev.oauthlint.settings.OAuthLintConfigurable"
+                displayName="OAuthLint"/>
+
+        <!-- Notifications (offline first run, engine retry). -->
+        <notificationGroup id="OAuthLint" displayType="BALLOON"/>
+    </extensions>
+</idea-plugin>
