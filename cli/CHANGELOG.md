@@ -1,5 +1,12 @@
 # oauthlint
 
+## 0.9.2
+
+### Patch Changes
+
+- Updated dependencies [4780eb2]
+  - oauthlint-rules@0.6.0
+
 ## 0.9.1
 
 ### Patch Changes
