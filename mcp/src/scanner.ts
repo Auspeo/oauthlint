@@ -1,7 +1,13 @@
 import { access, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
-import { type Finding, SemgrepAdapter, type SeverityName, meetsThreshold } from 'oauthlint';
+import {
+  type Finding,
+  SemgrepAdapter,
+  type SeverityName,
+  meetsThreshold,
+  resolveEngine,
+} from 'oauthlint';
 import { RULES_ROOT } from 'oauthlint-rules';
 import { ToolError } from './errors.js';
 import { type ScanToolResult, buildScanResult } from './findings.js';
@@ -21,13 +27,19 @@ export const MAX_CODE_CHARS = 200_000;
 
 /**
  * One adapter factory for every scan, pre-bound to the bundled rule pack and
- * the resource limits above. The adapter passes targets after `--` and as
- * discrete argv entries, so no input is ever interpreted as a flag or reaches
- * a shell.
+ * the resource limits above. It resolves the scan engine the same way the CLI
+ * does — an installed opengrep/semgrep, or a pinned Opengrep the CLI downloads
+ * and checksum-verifies on first use — so the MCP server is self-contained too.
+ * `metrics` (i.e. `--metrics=off`) is on only for real Semgrep, which alone
+ * accepts the flag. The adapter passes targets after `--` and as discrete argv
+ * entries, so no input is ever interpreted as a flag or reaches a shell.
  */
-function adapter(): SemgrepAdapter {
+async function adapter(): Promise<SemgrepAdapter> {
+  const engine = await resolveEngine();
   return new SemgrepAdapter({
     configPath: RULES_ROOT,
+    binary: engine.path,
+    metrics: engine.engine === 'semgrep',
     timeoutMs: SCAN_TIMEOUT_MS,
     maxOutputBytes: MAX_OUTPUT_BYTES,
   });
@@ -62,7 +74,8 @@ export async function scanCode(args: ScanCodeArgs): Promise<ScanToolResult> {
   try {
     const file = join(dir, `snippet.${extensionFor(args.language)}`);
     await writeFile(file, args.code, { encoding: 'utf8', mode: 0o600 });
-    const { findings } = await adapter().scan([file]);
+    const engine = await adapter();
+    const { findings } = await engine.scan([file]);
     return buildScanResult(applyMinSeverity(findings, args.minSeverity), false);
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -93,6 +106,7 @@ export async function scanPath(args: ScanPathArgs): Promise<ScanToolResult> {
     throw new ToolError(`Path does not exist or is not readable: ${resolved}`);
   }
 
-  const { findings } = await adapter().scan([resolved]);
+  const engine = await adapter();
+  const { findings } = await engine.scan([resolved]);
   return buildScanResult(applyMinSeverity(findings, args.minSeverity), true);
 }

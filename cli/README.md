@@ -19,7 +19,7 @@ A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · 
 npx oauthlint scan ./src
 ```
 
-> Requires [Semgrep](https://semgrep.dev/docs/getting-started/) on the machine running the scan (`pipx install semgrep` or `brew install semgrep`). The CLI invokes it under the hood and normalises the output for humans and CI.
+> Self-contained: no Python, no Semgrep to install. The CLI bundles the rule pack and, on first run, downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), then normalises the output for humans and CI. It uses an installed `opengrep` or `semgrep` if one is on your `PATH`; override the engine with `OAUTHLINT_ENGINE` or `--engine`.
 
 📖 **Full docs & rule catalogue → [oauthlint.dev/docs](https://oauthlint.dev/docs)** · 🔬 **the research behind it → [oauthlint.dev/research](https://oauthlint.dev/research)**
 
