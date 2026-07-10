@@ -19,6 +19,8 @@ repositories {
     // the IntelliJ Platform Gradle Plugin needs to resolve the IDE and plugins.
     intellijPlatform {
         defaultRepositories()
+        // Needed to resolve the code-instrumentation compiler (instrumentCode).
+        intellijDependencies()
     }
 }
 
@@ -36,6 +38,8 @@ dependencies {
 
         pluginVerifier()
         zipSigner()
+        // Provides the Java compiler used by the instrumentCode task.
+        instrumentationTools()
     }
 
     // JSON parsing of the Opengrep (Semgrep-compatible) --json output.
@@ -49,6 +53,11 @@ intellijPlatform {
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = providers.gradleProperty("pluginUntilBuild")
+        }
+    }
+    pluginVerification {
+        ides {
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.2")
         }
     }
 }
@@ -85,6 +94,9 @@ val indexRules = tasks.register("indexRules") {
     description = "Write index.txt + VERSION next to the staged rule pack."
     dependsOn(bundleRules)
     val stagedDir = rulesStagingRoot.map { it.dir("oauthlint-rules") }
+    // Declare the version as an input so a bump regenerates VERSION (which keys
+    // the runtime extraction cache), instead of staying UP-TO-DATE.
+    inputs.property("rulesVersion", rulesVersion)
     outputs.dir(stagedDir)
     doLast {
         val dir = stagedDir.get().asFile
