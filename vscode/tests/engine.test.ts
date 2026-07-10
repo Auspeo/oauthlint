@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  CHECKSUMS,
   type EngineDeps,
   EngineManager,
   EngineUnavailableError,
@@ -38,6 +39,14 @@ function makeDeps(state: FakeState, overrides: Partial<EngineDeps> = {}): Engine
       state.downloads.push(url);
       onProgress?.(41, 41);
       await state.downloadImpl(url, dest);
+    },
+    // Default: report the genuine pinned checksum for whichever asset was just
+    // fetched, so the happy-path tests download successfully. Tests that probe
+    // integrity handling override this.
+    hashFile: async () => {
+      const url = state.downloads[state.downloads.length - 1] ?? '';
+      const asset = url.split('/').pop() ?? '';
+      return CHECKSUMS[asset] ?? 'unpinned';
     },
     ...overrides,
   };
@@ -172,6 +181,51 @@ describe('EngineManager.resolve', () => {
       deps: makeDeps(state, { platform: 'sunos', arch: 'x64' }),
     });
     await expect(engine.resolve()).rejects.toBeInstanceOf(EngineUnavailableError);
+  });
+
+  it('rejects a downloaded binary whose checksum does not match the pinned value', async () => {
+    const state = baseState();
+    state.downloadImpl = async (_url, dest) => {
+      state.existing.add(dest);
+      state.versions.set(dest, OPENGREP_VERSION);
+    };
+    let madeExecutable = false;
+    const engine = new EngineManager({
+      globalStorageDir: STORAGE,
+      deps: makeDeps(state, {
+        // A tampered/swapped asset: hashes to something other than the pin.
+        hashFile: async () => 'deadbeef',
+        makeExecutable: async () => {
+          madeExecutable = true;
+        },
+      }),
+    });
+    await expect(engine.resolve()).rejects.toBeInstanceOf(EngineUnavailableError);
+    // The bad binary is rejected before it is ever made executable.
+    expect(madeExecutable).toBe(false);
+  });
+
+  it('falls back to the musl asset when the glibc download fails its checksum', async () => {
+    const state = baseState();
+    let attempt = 0;
+    const deps = makeDeps(state, {
+      platform: 'linux',
+      arch: 'x64',
+      download: async (url, dest) => {
+        state.downloads.push(url);
+        state.existing.add(dest);
+        state.versions.set(dest, OPENGREP_VERSION);
+      },
+      hashFile: async () => {
+        attempt += 1;
+        // First (manylinux) fails its checksum; second (musl) matches its pin.
+        return attempt === 1 ? 'deadbeef' : CHECKSUMS.opengrep_musllinux_x86;
+      },
+    });
+    const engine = new EngineManager({ globalStorageDir: STORAGE, deps });
+    expect(await engine.resolve()).toBe(cachedBinary);
+    expect(state.downloads).toHaveLength(2);
+    expect(state.downloads[1]).toContain('musllinux');
   });
 
   it('throws EngineUnavailableError when the download fails', async () => {
