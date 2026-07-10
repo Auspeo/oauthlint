@@ -1,0 +1,12 @@
+<idea-plugin>
+    <!-- Active only when Rust support is present (RustRover and IDEs with the Rust
+         plugin). The main plugin.xml declares the optional dependency on the plugin
+         id "com.jetbrains.rust" (the current JetBrains Rust plugin). If a build fails
+         to resolve that id, the legacy community plugin id was "org.rust.lang" (swap
+         the depends entry in plugin.xml accordingly). The Rust language id is "Rust". -->
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+                language="Rust"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+    </extensions>
+</idea-plugin>

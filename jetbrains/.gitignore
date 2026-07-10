@@ -1,0 +1,5 @@
+.gradle/
+build/
+
+# IntelliJ Platform Gradle Plugin work dir
+.intellijPlatform/

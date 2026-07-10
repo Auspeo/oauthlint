@@ -1,0 +1,12 @@
+<idea-plugin>
+    <!-- Active only when the JavaScript plugin is present (WebStorm and IDEs with
+         JS support). Covers both JavaScript and TypeScript files. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+                language="JavaScript"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+        <externalAnnotator
+                language="TypeScript"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+    </extensions>
+</idea-plugin>

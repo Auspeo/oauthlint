@@ -1,0 +1,9 @@
+<idea-plugin>
+    <!-- Active only when Python support is present (PyCharm and IDEs with the
+         Python plugin). -->
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+                language="Python"
+                implementationClass="dev.oauthlint.annotator.OAuthLintExternalAnnotator"/>
+    </extensions>
+</idea-plugin>
