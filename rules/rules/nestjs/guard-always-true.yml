@@ -1,0 +1,59 @@
+rules:
+  - id: auth.nestjs.guard-always-true
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A NestJS guard's `canActivate` returns a constant `true`. A guard that
+      unconditionally authorises every request removes access control from every
+      route, controller, or handler it protects, so the endpoint is effectively
+      public. This is the classic "stubbed out for now" guard that ships to
+      production.
+
+      Implement the check: read the request from
+      `context.switchToHttp().getRequest()`, verify the session/token/role, and
+      return `true` only when it passes (return `false` or throw
+      `UnauthorizedException` / `ForbiddenException` otherwise). If a route is
+      meant to be public, apply a `@Public()` decorator and remove the guard
+      rather than leaving one that reads as protected but is not.
+    # Fires only when the ENTIRE `canActivate` body is a constant-true return
+    # (`return true`, `return Promise.resolve(true)`, or the async equivalent)
+    # AND the class implements NestJS's `CanActivate` interface. A real guard has
+    # more than that single statement (it inspects the request first), so it
+    # never matches; anchoring to `implements CanActivate` stops the rule firing
+    # on an unrelated method that happens to be named `canActivate`.
+    patterns:
+      - pattern-inside: |
+          class $C implements CanActivate {
+            ...
+          }
+      - pattern-either:
+          - pattern: 'canActivate($CTX) { return true; }'
+          - pattern: 'canActivate($CTX) { return Promise.resolve(true); }'
+          - pattern: 'async canActivate($CTX) { return true; }'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+    metadata:
+      oauthlint-rule-id: AUTH-NESTJS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/nestjs-guard-always-true
+      category: security
+      cwe: CWE-287
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - nestjs
+      references:
+        - https://docs.nestjs.com/guards
+        - https://cwe.mitre.org/data/definitions/287.html
