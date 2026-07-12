@@ -13,7 +13,7 @@
  * test will fail until they match).
  */
 
-/** The Opengrep release this project pins. Opengrep is a Python-free, single-file, Semgrep-compatible engine. */
+/** The Opengrep release this project pins. Opengrep is a self-contained, single-file, Semgrep-compatible engine (nothing to install separately). */
 export const OPENGREP_VERSION = '1.25.0';
 
 /** Base URL of the pinned release's download assets. */

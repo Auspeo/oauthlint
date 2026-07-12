@@ -4,6 +4,27 @@ import { ExecaError, execa } from 'execa';
 import { type Finding, type FindingFix, SEMGREP_SEVERITY_MAP, type ScanResult } from '../types.js';
 
 /**
+ * Environment for the engine subprocess. Opengrep bundles Python, which reads
+ * the (UTF-8) rule files using the process locale. A minimal environment with no
+ * UTF-8 locale (a CI container, a `env -i` shell) makes Python fall back to ASCII
+ * and die on any non-ASCII byte in a rule, so the scan silently reports zero
+ * files instead of erroring. Force a UTF-8 locale and Python's UTF-8 mode for the
+ * subprocess only, without touching the parent process, and without overriding an
+ * already-UTF-8 locale (respecting LC_ALL > LC_CTYPE > LANG precedence).
+ *
+ * Exported for testing.
+ */
+export function engineEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const effective = base.LC_ALL || base.LC_CTYPE || base.LANG;
+  const alreadyUtf8 = !!effective && /utf-?8/i.test(effective);
+  // PYTHONUTF8=1 forces the bundled Python into UTF-8 mode regardless of locale;
+  // the C.UTF-8 locale covers the engine's native (OCaml) side too.
+  return alreadyUtf8
+    ? { ...base, PYTHONUTF8: '1' }
+    : { ...base, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8', PYTHONUTF8: '1' };
+}
+
+/**
  * Shape of `semgrep --json` output. We only declare the fields we read.
  */
 interface SemgrepJson {
@@ -164,6 +185,7 @@ export class SemgrepAdapter {
       reject: false as const,
       stdout: 'pipe' as const,
       stderr: 'pipe' as const,
+      env: engineEnv(),
       ...(this.timeoutMs ? { timeout: this.timeoutMs } : {}),
       ...(this.maxOutputBytes ? { maxBuffer: this.maxOutputBytes } : {}),
     };
