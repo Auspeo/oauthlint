@@ -23,7 +23,7 @@ Using an AI coding editor that pulls from **[Open VSX](https://open-vsx.org/exte
 
 ### Nothing else to install
 
-The extension is self-contained. The full rule pack ships inside it, and the scan engine (**Opengrep**, a Python-free single binary that runs the same rules as Semgrep) is downloaded automatically the first time you scan. That is a one-time download of about 41 MB, verified against a pinned checksum, then cached in the extension's storage and reused. There is no CLI, no Semgrep, and no Python to install.
+The extension is self-contained. The full rule pack ships inside it, and the scan engine (**Opengrep**, a self-contained single binary that runs the same rules as Semgrep) is downloaded automatically the first time you scan. That is a one-time download of about 41 MB, verified against a pinned checksum, then cached in the extension's storage and reused. There is no separate CLI, Semgrep, or Python to install.
 
 If you already run `opengrep` or `semgrep` on your machine, point `oauthlint.enginePath` at it to skip the download. If the one-time download fails (for example on an offline first run), the extension shows a notice with a **Retry** action rather than failing silently.
 

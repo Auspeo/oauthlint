@@ -45,10 +45,11 @@ to install.
 ## Requirements
 
 Nothing to install. The rule pack ships inside the extension, and the scan
-engine (Opengrep, a Python-free single binary) is downloaded automatically the
+engine (Opengrep, a self-contained single binary) is downloaded automatically the
 first time you scan. That is a one-time download of about 41 MB, then cached and
-reused. No Python, no Semgrep, no CLI. If you already have `opengrep` or `semgrep`
-installed, point `oauthlint.enginePath` at it to skip the download.
+reused. No separate Python, Semgrep, or CLI to install. If you already have
+`opengrep` or `semgrep` installed, point `oauthlint.enginePath` at it to skip the
+download.
 
 ## Settings
 

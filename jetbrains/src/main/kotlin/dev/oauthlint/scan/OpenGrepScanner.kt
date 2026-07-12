@@ -87,6 +87,13 @@ class OpenGrepScanner(
             "--",
             targetFile,
         )
+        // Opengrep bundles Python, which reads the (UTF-8) rule files using the
+        // process locale. An IDE launched without a UTF-8 locale would make Python
+        // fall back to ASCII and die on a non-ASCII byte in a rule, scanning zero
+        // files. Force UTF-8 for the subprocess so scans work regardless.
+        cmd.withEnvironment(
+            mapOf("LANG" to "C.UTF-8", "LC_ALL" to "C.UTF-8", "PYTHONUTF8" to "1"),
+        )
 
         val output = try {
             CapturingProcessHandler(cmd).runProcess(timeoutMs)
