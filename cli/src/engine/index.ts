@@ -3,14 +3,23 @@ import { EngineManager, type ResolvedEngine } from './manager.js';
 export {
   EngineManager,
   EngineUnavailableError,
-  OPENGREP_VERSION,
-  CHECKSUMS,
   type EngineDeps,
   type EngineKind,
   type EngineManagerOptions,
   type EngineSource,
   type ResolvedEngine,
 } from './manager.js';
+
+// The engine pins are the single source of truth shared with the VS Code
+// extension (which imports them from the published `oauthlint` package).
+export {
+  OPENGREP_VERSION,
+  RELEASE_BASE,
+  assetUrl,
+  ASSETS,
+  CHECKSUMS,
+  type AssetChoice,
+} from './pins.js';
 
 /**
  * A `--engine <path>` override set once from the CLI entrypoint. It takes

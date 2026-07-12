@@ -81,7 +81,10 @@ const hasSemgrep = await semgrepAvailable();
 // Semgrep-dependent scenarios skip cleanly when Semgrep is absent.
 const e2e = hasSemgrep ? describe : describe.skip;
 
-const SCAN_TIMEOUT = 60_000;
+// Real Semgrep scans are slow to start (Python), and the fix test runs three in
+// a row. 120s gives margin on loaded CI runners so a slow engine start is not a
+// spurious timeout.
+const SCAN_TIMEOUT = 120_000;
 
 interface JsonReport {
   schemaVersion: string;

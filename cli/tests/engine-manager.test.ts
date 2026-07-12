@@ -1,12 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  CHECKSUMS,
-  type EngineDeps,
-  EngineManager,
-  EngineUnavailableError,
-  OPENGREP_VERSION,
-} from '../src/engine/manager.js';
+import { type EngineDeps, EngineManager, EngineUnavailableError } from '../src/engine/manager.js';
+import { CHECKSUMS, OPENGREP_VERSION } from '../src/engine/pins.js';
 
 /**
  * The engine manager is exercised entirely through injected fakes: no real
