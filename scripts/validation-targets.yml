@@ -112,6 +112,32 @@ targets:
     notes: Rust OAuth2 client library. Should fire zero on its source.
 
   # ─────────────────────────────────────────────────────────────
+  # Mature NestJS / Fastify framework code. Exercises the nestjs and
+  # fastify rule packs. Their own test / benchmark / integration / type-test
+  # trees exercise the dangerous shapes by design (excluded via paths); the
+  # library source proper should fire zero.
+  # ─────────────────────────────────────────────────────────────
+  - repo: nestjs/nest
+    ref: master
+    expectedSignal: low
+    notes: NestJS core. nestjs rules should fire zero on its library source.
+
+  - repo: fastify/fastify-jwt
+    ref: master
+    expectedSignal: low
+    notes: "@fastify/jwt plugin. fastify-jwt rule should fire zero on its source."
+
+  - repo: fastify/session
+    ref: master
+    expectedSignal: low
+    notes: "@fastify/session plugin. fastify cookie/session rule should fire zero on its source."
+
+  - repo: fastify/fastify-cors
+    ref: master
+    expectedSignal: low
+    notes: "@fastify/cors plugin. fastify cors rule should fire zero on its source."
+
+  # ─────────────────────────────────────────────────────────────
   # Auth-heavy apps — expect a richer signal.
   # ─────────────────────────────────────────────────────────────
   - repo: directus/directus
