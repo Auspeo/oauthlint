@@ -1,0 +1,53 @@
+rules:
+  - id: auth.fastify.trust-proxy-true
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      Fastify is created with `trustProxy: true`, which trusts EVERY proxy. With
+      unbounded trust Fastify believes the `X-Forwarded-For` and
+      `X-Forwarded-Proto` headers on any incoming request, so a client can spoof
+      its source IP (defeating IP allowlists, rate limiters, and audit logs) and
+      spoof `https`, which can trick `secure` session cookies into being sent
+      over plain HTTP.
+
+      Set `trustProxy` to the number of proxies actually in front of the app
+      (`Fastify({ trustProxy: 1 })`), or to a specific address / subnet / preset
+      (`'loopback'`, a CIDR, or an allowlist array), so only your real
+      infrastructure is trusted. Never trust all proxies.
+    # Matches only the unbounded literal-true form. A numeric hop count, a preset
+    # string, a CIDR, an allowlist array, a custom function, or `false` all
+    # express a BOUNDED trust and are left alone, so idiomatic reverse-proxy
+    # setups never fire.
+    pattern-either:
+      - pattern: 'Fastify({ ..., trustProxy: true, ... })'
+      - pattern: 'fastify({ ..., trustProxy: true, ... })'
+    # Framework example/dev apps set `trustProxy: true` deliberately as working
+    # demos; scanning user code should not fire on those trees.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+    metadata:
+      oauthlint-rule-id: AUTH-FASTIFY-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/fastify-trust-proxy-true
+      category: security
+      cwe: CWE-348
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - fastify
+      references:
+        - https://fastify.dev/docs/latest/Reference/Server/#trustproxy
+        - https://cwe.mitre.org/data/definitions/348.html
