@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.9.0',
-  text: 'v0.9.0 is out: framework-aware rules for Spring Security, NextAuth, Django REST, FastAPI, Express, and more, plus two new autofixes.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.9.0',
+  version: 'v0.10',
+  text: 'v0.10 is out: the scanner is now self-contained (no engine to install), with new NestJS and Fastify rule packs.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.10.2',
 };
 
 /**
