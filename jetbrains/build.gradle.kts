@@ -60,6 +60,12 @@ intellijPlatform {
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.2")
         }
     }
+    // Publishing to the JetBrains Marketplace. The token (GitHub secret
+    // JETBRAINS_MARKETPLACE_TOKEN) is read only by the publishPlugin task;
+    // buildPlugin never needs it. Signing can be added later once a cert exists.
+    publishing {
+        token = providers.environmentVariable("JETBRAINS_MARKETPLACE_TOKEN")
+    }
 }
 
 kotlin {
