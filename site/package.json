@@ -24,7 +24,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "oauthlint-rules": "workspace:*",
-    "tsx": "4.23.0",
+    "tsx": "4.23.1",
     "typescript": "5.9.3",
     "vitest": "2.1.9"
   }
