@@ -1,0 +1,43 @@
+# Publish the JetBrains plugin to the JetBrains Marketplace.
+#
+# Dormant until the secret exists: the publish step no-ops (with a warning) so the
+# workflow stays green. Add the repo secret JETBRAINS_MARKETPLACE_TOKEN (a permanent
+# token from plugins.jetbrains.com -> your profile -> My Tokens) to go live.
+#
+# NOTE: the FIRST version of a new plugin must be uploaded manually via the
+# Marketplace web UI (it goes through moderation). This workflow handles every
+# version AFTER the plugin exists on the Marketplace.
+#
+# Trigger: push a tag like `jetbrains-v0.1.0` (or run manually).
+name: Publish JetBrains plugin
+
+on:
+  push:
+    tags:
+      - 'jetbrains-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build + publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Publish to JetBrains Marketplace
+        working-directory: jetbrains
+        env:
+          JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+        run: |
+          if [ -z "$JETBRAINS_MARKETPLACE_TOKEN" ]; then
+            echo "::warning::JETBRAINS_MARKETPLACE_TOKEN not set — skipping JetBrains Marketplace publish."
+            exit 0
+          fi
+          ./gradlew publishPlugin --no-daemon --stacktrace
