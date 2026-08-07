@@ -1,0 +1,46 @@
+rules:
+  - id: auth.csharp.jwt.validate-lifetime-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables lifetime validation
+      (`ValidateLifetime = false`) on `TokenValidationParameters`. With the
+      lifetime unchecked, expired tokens are accepted forever, so a leaked or
+      revoked token never stops working and cannot be timed out (CWE-613). This
+      is a common AI-generated shortcut: expiry checks are turned off to stop a
+      short-lived test token from failing and then left disabled.
+
+      Leave `ValidateLifetime` at its secure default (`true`) so the `exp` (and
+      `nbf`) claims are enforced. If clock drift is the real problem, set a small
+      `ClockSkew` instead of disabling the check.
+    # Matches the explicit `ValidateLifetime = false` assignment (object
+    # initializer or property set). The secure default is `true`, so only an
+    # explicit disable fires; no bare property read can trip it.
+    patterns:
+      - pattern: ValidateLifetime = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-lifetime-disabled
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/613.html

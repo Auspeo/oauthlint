@@ -1,0 +1,44 @@
+rules:
+  - id: auth.csharp.jwt.validate-signing-key-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables signature validation
+      (`ValidateIssuerSigningKey = false`) on `TokenValidationParameters`. With
+      the signing key unchecked, a token carrying any signature (or none) is
+      accepted, so an attacker can forge a token for any user or role (CWE-347).
+      This is a frequent AI-generated shortcut: validation is turned off to get
+      past a local key-setup error and never turned back on.
+
+      Leave `ValidateIssuerSigningKey` at its secure default (`true`) and supply
+      the real key via `IssuerSigningKey` / `IssuerSigningKeys`, loaded from the
+      OIDC metadata or configuration rather than hard-coded.
+    # Matches the explicit `ValidateIssuerSigningKey = false` assignment (object
+    # initializer or property set). The secure default is `true`, so only an
+    # explicit disable fires; no bare property read can trip it.
+    pattern: ValidateIssuerSigningKey = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-signing-key-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/347.html

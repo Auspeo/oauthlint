@@ -1,0 +1,57 @@
+rules:
+  - id: auth.csharp.jwt.hardcoded-symmetric-key
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT signing key is built from a hard-coded string literal
+      (`new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))`). This key signs
+      and verifies every token: committed to source control it is one search away
+      from compromise, letting an attacker forge tokens for any user or role
+      (CWE-798). This is a common AI-generated mistake: a literal secret is
+      inlined to make the sample "just work" and never externalized.
+
+      Load the key from configuration or a secret store instead — e.g.
+      `Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])` or a value read
+      from Azure Key Vault / environment — and rotate the leaked secret out of
+      source control.
+    # Only a literal string inside GetBytes(...) fires. A regex allow-list drops
+    # obvious placeholders/doc stubs and `${ENV}` templates; `config[...]` and
+    # `Environment.GetEnvironmentVariable(...)` reads are structurally excluded
+    # because they are not string literals.
+    patterns:
+      - pattern-either:
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.ASCII.GetBytes("..."))
+      - pattern-not-regex: |-
+          (?i)GetBytes\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: |-
+          (?i)GetBytes\(\s*["']<[^"']*>["']
+      - pattern-not-regex: |-
+          (?i)GetBytes\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-hardcoded-symmetric-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/app-secrets
+        - https://cwe.mitre.org/data/definitions/798.html

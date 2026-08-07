@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.10',
-  text: 'v0.10 is out: the scanner is now self-contained (no engine to install), with new NestJS and Fastify rule packs.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.10.2',
+  version: 'v0.11',
+  text: 'v0.11 is out: a new C#/.NET (ASP.NET Core) rule pack, low-false-positive checks for the auth mistakes AI tools ship in .NET.',
+  href: 'https://github.com/Auspeo/oauthlint/releases',
 };
 
 /**

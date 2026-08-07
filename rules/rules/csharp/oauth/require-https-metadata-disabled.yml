@@ -1,0 +1,47 @@
+rules:
+  - id: auth.csharp.oauth.require-https-metadata-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OIDC/JWT bearer handler disables HTTPS for its metadata and token
+      exchange (`RequireHttpsMetadata = false`). The discovery document, JWKS,
+      and token traffic can then travel over plain HTTP, where an on-path
+      attacker can swap signing keys or tokens and defeat the whole trust chain
+      (CWE-319). This is a common AI-generated leftover from local development
+      that ships to production.
+
+      Leave `RequireHttpsMetadata` at its secure default (`true`). If you truly
+      need cleartext for local development only, guard it behind an environment
+      check such as `env.IsDevelopment()` so production stays on HTTPS.
+    # Matches the explicit `RequireHttpsMetadata = false` disable, whether set as
+    # an object initializer or as an `options.RequireHttpsMetadata = false`
+    # member assignment. The secure default is `true`, so only an explicit
+    # disable fires.
+    pattern-either:
+      - pattern: RequireHttpsMetadata = false
+      - pattern: $X.RequireHttpsMetadata = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-require-https-metadata-disabled
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - openid-connect
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/319.html
