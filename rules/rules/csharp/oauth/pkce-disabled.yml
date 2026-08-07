@@ -1,0 +1,46 @@
+rules:
+  - id: auth.csharp.oauth.pkce-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OpenID Connect handler turns PKCE off (`UsePkce = false`). Without
+      Proof Key for Code Exchange, an authorization code intercepted on the
+      redirect (a malicious app, a leaked URL, a network hop) can be redeemed by
+      the attacker, defeating the code-flow protection that PKCE provides
+      (CWE-287). This is a common AI-generated change made to work around a
+      provider quirk and never reverted.
+
+      Leave PKCE enabled — it is the modern default (`UsePkce = true`) and is
+      required for public clients. Fix the underlying provider configuration
+      rather than disabling the proof key.
+    # Matches the explicit `UsePkce = false` disable, whether set as an object
+    # initializer or as an `options.UsePkce = false` member assignment. The
+    # modern default is `true`, so only an explicit disable fires.
+    pattern-either:
+      - pattern: UsePkce = false
+      - pattern: $X.UsePkce = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-pkce-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - openid-connect
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/287.html

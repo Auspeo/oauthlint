@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · CLI + GitHub Action + VS Code · free & MIT
+A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)

@@ -1,0 +1,48 @@
+rules:
+  - id: auth.csharp.jwt.validate-audience-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables audience validation
+      (`ValidateAudience = false`) on `TokenValidationParameters`. With the
+      audience unchecked, a token that was minted for a different API or client
+      is accepted here, turning this service into a confused deputy and enabling
+      cross-service token replay (CWE-287). This is a common AI-generated
+      shortcut: validation is switched off to silence an `aud` mismatch during
+      wiring and never restored.
+
+      Leave `ValidateAudience` at its secure default (`true`) and pin the
+      expected audience with `ValidAudience` (or `ValidAudiences`) so only tokens
+      issued for this API are honored.
+    # Anchored INSIDE an `AddJwtBearer(...)` registration so it fires only where
+    # an app configures JWT bearer authentication (the real footgun), not on
+    # OIDC frameworks (OpenIddict, IdentityServer) that deliberately disable
+    # these built-in checks and validate the audience in their own pipeline.
+    patterns:
+      - pattern: ValidateAudience = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-audience-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/287.html

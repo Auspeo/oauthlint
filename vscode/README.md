@@ -68,7 +68,7 @@ download.
 - **oauthlint: Retry scan engine setup**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
-pack covers **160+ rules across JavaScript/TypeScript, Python, Go, Rust, and Java**,
+pack covers **180+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET**,
 including dataflow (taint) rules for open-redirect and SSRF, and
 runs from the [CLI](https://www.npmjs.com/package/oauthlint) and
 [GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action).

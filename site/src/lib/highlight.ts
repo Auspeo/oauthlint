@@ -24,6 +24,7 @@ const SHIKI_LANG: Record<FixtureLang, BundledLanguage> = {
   go: 'go',
   java: 'java',
   rust: 'rust',
+  csharp: 'csharp',
 };
 
 /**

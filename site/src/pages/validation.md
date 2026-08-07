@@ -7,13 +7,13 @@ active: "validation"
 
 # Real-world validation report
 
-OAuthLint's whole value rests on a low false-positive rate. A security linter that cries wolf gets turned off. This page records how the full rule pack (172 rules across JavaScript/TypeScript, Python, Go, Java, and Rust) behaves when it is run against real, widely-used code.
+OAuthLint's whole value rests on a low false-positive rate. A security linter that cries wolf gets turned off. This page records how the full rule pack (184 rules across JavaScript/TypeScript, Python, Go, Java, Rust, and C#/.NET) behaves when it is run against real, widely-used code.
 
 > Reproduce it with `pnpm validate`. It scans the repositories listed in [`scripts/validation-targets.yml`](https://github.com/Auspeo/oauthlint/blob/main/scripts/validation-targets.yml) with the CLI and writes a per-rule report. The figures below come from a full-pack scan of that corpus on the current release.
 
 ## Method
 
-- **Corpus:** widely-used auth and OAuth projects (more than 4,000 source files) across all five supported languages, plus a few large, auth-heavy applications.
+- **Corpus:** widely-used auth and OAuth projects (more than 4,000 source files) across all six supported languages, plus a few large, auth-heavy applications.
 - **Signal classification** (from `validation-targets.yml`):
   - **low:** mature auth code that should come back clean. Any finding here is a candidate false positive and is triaged one by one.
   - **high:** auth-heavy or AI-generated apps where real findings are expected.
@@ -23,7 +23,7 @@ OAuthLint's whole value rests on a low false-positive rate. A security linter th
 
 > On the clean, auth-consuming libraries, the pack fires zero. The only findings on low-signal code are two real, low-severity patterns in next-auth's own source, plus one correct detection in each of the two OAuth client libraries that implement the deprecated password grant.
 
-These eight auth libraries came back with zero findings, across JS/TS, Python, Go, Rust, and Java:
+These nine auth libraries came back with zero findings, across JS/TS, Python, Go, Rust, Java, and C#:
 
 | Library | Lang | Findings |
 |---|---|:--:|
@@ -35,6 +35,7 @@ These eight auth libraries came back with zero findings, across JS/TS, Python, G
 | `gorilla/sessions` | Go | 0 |
 | `seanmonstar/reqwest` | Rust | 0 |
 | `spring-projects/spring-petclinic` | Java | 0 |
+| `openiddict/openiddict-core` | C# | 0 |
 
 ## Triage of the remaining low-signal findings
 
