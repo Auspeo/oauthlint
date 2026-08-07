@@ -29,7 +29,7 @@ export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export const SEVERITIES: readonly Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
 
 /** Fixture language id -> a short label + the code-block fence language. */
-export type FixtureLang = 'ts' | 'js' | 'python' | 'go' | 'java' | 'rust';
+export type FixtureLang = 'ts' | 'js' | 'python' | 'go' | 'java' | 'rust' | 'csharp';
 
 export interface Fixture {
   /** Raw fixture source code. */
@@ -79,6 +79,7 @@ const EXT_LANG: Record<string, FixtureLang> = {
   go: 'go',
   java: 'java',
   rs: 'rust',
+  cs: 'csharp',
 };
 const FIXTURE_EXTS = Object.keys(EXT_LANG);
 
@@ -90,6 +91,7 @@ const LANG_LABEL: Record<string, string> = {
   go: 'go',
   java: 'java',
   rust: 'rust',
+  csharp: 'C#',
 };
 
 /** Map a Semgrep / OAuthLint severity onto the design severity scale. */

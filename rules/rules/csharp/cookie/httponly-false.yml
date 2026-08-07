@@ -1,0 +1,43 @@
+rules:
+  - id: auth.csharp.cookie.httponly-false
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie is created with `HttpOnly = false`, making it readable from
+      client-side JavaScript. If the site has any XSS, an injected script can
+      read the auth/session cookie via `document.cookie` and exfiltrate the
+      session (CWE-1004). This is a common AI-generated change made so JS can
+      "see" the cookie, which needlessly removes a key defense.
+
+      Set `HttpOnly = true` on authentication and session cookies so they are not
+      exposed to scripts. If the browser must read a value, keep it in a separate
+      non-sensitive cookie rather than weakening the session cookie.
+    # Matches the explicit `HttpOnly = false` assignment (CookieOptions or
+    # CookieBuilder). The secure choice is `true`, so only an explicit disable
+    # fires.
+    pattern: HttpOnly = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-httponly-false
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - cookies
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/1004.html

@@ -1,0 +1,46 @@
+rules:
+  - id: auth.csharp.cookie.secure-policy-none
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie policy is set to `SecurePolicy = CookieSecurePolicy.None`, which
+      lets authentication and session cookies be sent over plain HTTP. On any
+      non-HTTPS hop an on-path attacker can read the cookie and hijack the
+      session (CWE-614). This is a common AI-generated shortcut to get cookies
+      working over `http://localhost` that then ships to production.
+
+      Use `CookieSecurePolicy.Always` so the `Secure` attribute is set and the
+      cookie is only transmitted over HTTPS. Prefer `Always` over `SameAsRequest`
+      for auth cookies.
+    # Matches the explicit `SecurePolicy = CookieSecurePolicy.None` downgrade,
+    # whether set as an object initializer or as a
+    # `options.Cookie.SecurePolicy = ...` member assignment. The framework
+    # default is `SameAsRequest`, so only an explicit downgrade to `None` fires.
+    pattern-either:
+      - pattern: SecurePolicy = CookieSecurePolicy.None
+      - pattern: $X.SecurePolicy = CookieSecurePolicy.None
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-secure-policy-none
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - cookies
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/614.html

@@ -163,3 +163,19 @@ targets:
     ref: main
     expectedSignal: high
     notes: Vercel AI chatbot starter, heavily copied by indie devs.
+
+  # ─────────────────────────────────────────────────────────────
+  # C# / .NET auth libraries — mature, should produce very few
+  # findings. Validated at 0 findings when the pack shipped.
+  # ─────────────────────────────────────────────────────────────
+  - repo: jwt-dotnet/jwt
+    expectedSignal: low
+  - repo: openiddict/openiddict-core
+    expectedSignal: low
+  - repo: IdentityModel/IdentityModel
+    expectedSignal: low
+  # ─────────────────────────────────────────────────────────────
+  # C# / .NET app — auth-heavy, findings are the expected case.
+  # ─────────────────────────────────────────────────────────────
+  - repo: dotnet-architecture/eShopOnWeb
+    expectedSignal: high

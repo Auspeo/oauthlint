@@ -1,0 +1,60 @@
+rules:
+  - id: auth.csharp.tls.disable-cert-validation
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      TLS server-certificate validation is turned off: the handler accepts any
+      certificate via `DangerousAcceptAnyServerCertificateValidator` or a
+      callback that always returns `true`. With validation bypassed, an on-path
+      attacker presenting a forged or self-signed certificate is trusted, and the
+      entire TLS protection (including any OAuth token in transit) is defeated
+      (CWE-295). This is a common AI-generated shortcut to silence a certificate
+      error during development.
+
+      Remove the override and let the system trust store validate the
+      certificate. If a private CA is involved, install/trust that CA rather than
+      accepting all certificates; scope any relaxed check to a single pinned host
+      in development only.
+    # Anchored to the certificate-validation callback being set to a blanket
+    # accept: the framework's Dangerous* validator or an always-true lambda in
+    # either `(...) => true` or single-parameter form.
+    pattern-either:
+      - pattern: $R.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: $R.ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateCustomValidationCallback = $X => true
+      - pattern: ServerCertificateCustomValidationCallback = $X => true
+      - pattern: $R.RemoteCertificateValidationCallback = (...) => true
+      - pattern: RemoteCertificateValidationCallback = (...) => true
+      - pattern: $R.RemoteCertificateValidationCallback = $X => true
+      - pattern: RemoteCertificateValidationCallback = $X => true
+      - pattern: $R.ServerCertificateValidationCallback = (...) => true
+      - pattern: ServerCertificateValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateValidationCallback = $X => true
+      - pattern: ServerCertificateValidationCallback = $X => true
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-tls-disable-cert-validation
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - aspnetcore
+        - httpclient
+      references:
+        - https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient
+        - https://cwe.mitre.org/data/definitions/295.html
