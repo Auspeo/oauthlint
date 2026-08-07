@@ -19,7 +19,7 @@ export interface Announcement {
 export const announcement: Announcement | null = {
   version: 'v0.11',
   text: 'v0.11 is out: a new C#/.NET (ASP.NET Core) rule pack, low-false-positive checks for the auth mistakes AI tools ship in .NET.',
-  href: 'https://github.com/Auspeo/oauthlint/releases',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.11.0',
 };
 
 /**

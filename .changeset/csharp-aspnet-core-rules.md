@@ -1,6 +1,6 @@
 ---
 "oauthlint-rules": minor
-"oauthlint": patch
+"oauthlint": minor
 "oauthlint-mcp": patch
 ---
 
