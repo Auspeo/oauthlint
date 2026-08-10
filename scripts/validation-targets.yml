@@ -46,12 +46,12 @@ targets:
   # Findings here are candidate FPs for triage (verified 0 at add time).
   # ─────────────────────────────────────────────────────────────
   - repo: jpadilla/pyjwt
-    ref: master
+    ref: main
     expectedSignal: low
     notes: Reference PyJWT library. Python rules should fire zero on its source.
 
   - repo: lepture/authlib
-    ref: master
+    ref: main
     expectedSignal: low
     notes: Authlib — OAuth/OIDC for Python. Should fire zero on its source.
 
@@ -77,7 +77,7 @@ targets:
   #  rules by design — it is not a representative "app" target.)
   # ─────────────────────────────────────────────────────────────
   - repo: golang/oauth2
-    ref: master
+    ref: main
     expectedSignal: low
     notes: Go OAuth2 client library. Go rules should fire zero on its source.
 
@@ -102,7 +102,7 @@ targets:
   #  insecure_disable_signature_validation & hardcoded keys by design.)
   # ─────────────────────────────────────────────────────────────
   - repo: seanmonstar/reqwest
-    ref: master
+    ref: main
     expectedSignal: low
     notes: Rust HTTP client. Rust rules should fire zero on its source.
 
@@ -118,22 +118,22 @@ targets:
   # library source proper should fire zero.
   # ─────────────────────────────────────────────────────────────
   - repo: nestjs/nest
-    ref: master
+    ref: main
     expectedSignal: low
     notes: NestJS core. nestjs rules should fire zero on its library source.
 
   - repo: fastify/fastify-jwt
-    ref: master
+    ref: main
     expectedSignal: low
     notes: "@fastify/jwt plugin. fastify-jwt rule should fire zero on its source."
 
   - repo: fastify/session
-    ref: master
+    ref: main
     expectedSignal: low
     notes: "@fastify/session plugin. fastify cookie/session rule should fire zero on its source."
 
   - repo: fastify/fastify-cors
-    ref: master
+    ref: main
     expectedSignal: low
     notes: "@fastify/cors plugin. fastify cors rule should fire zero on its source."
 
@@ -146,7 +146,7 @@ targets:
     notes: Headless CMS with JWT + OAuth. Reasonable proxy for "real app".
 
   - repo: supabase/auth
-    ref: master
+    ref: main
     expectedSignal: high
     notes: Supabase Auth server (Go primarily — only TS fixtures will fire).
 

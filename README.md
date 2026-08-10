@@ -207,10 +207,11 @@ especially welcome.
 
 ### Shipped
 
-- 172 rules across JavaScript/TypeScript, Python, Go, Java, and Rust
+- 180+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
+- JetBrains IDE plugin (IntelliJ, WebStorm, PyCharm, GoLand, and more), in review on the JetBrains Marketplace
 - MCP server, so AI coding tools scan the auth code they generate, in-loop
 - Shareable HTML reports
 - A guide for writing your own low-false-positive rules ([docs](https://oauthlint.dev/docs/writing-rules))
@@ -219,13 +220,13 @@ especially welcome.
 
 - More framework-aware rules: Django REST, Express/Helmet, Laravel, and more,
   tuned for high signal and low false positives
-- Closing rule-parity gaps across the five supported languages
+- Closing rule-parity gaps across the six supported languages
 
 ### Next
 
 - A reproducible "auth and AI" benchmark: which OAuth/JWT anti-patterns each AI
   coding tool actually produces
-- More integrations: JetBrains IDEs, Azure and Bitbucket pipelines
+- More integrations: Azure and Bitbucket pipelines
 - Wider autofix coverage, so more findings ship a safe one-click rewrite
 
 ### Exploring
