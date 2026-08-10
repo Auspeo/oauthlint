@@ -17,6 +17,12 @@ rules:
         - "**/example/**"
         - "**/examples/**"
         - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"
@@ -53,6 +59,25 @@ rules:
           - metavariable-regex:
               metavariable: $A
               regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          # The name-based regex above also matches operands that merely END in a
+          # secret-looking word but are provably NOT secrets: a class-name lookup
+          # (`Foo.name`) or an enum/error-code member (`TokenError.codes.invalidSignature`,
+          # which ends in "signature"). Exclude those shapes on the secret side so
+          # the rule keeps firing on real token/HMAC/CSRF compares only.
+          - metavariable-pattern:
+              metavariable: $A
+              patterns:
+                - pattern-not: '$X.name'
+                - pattern-not: '$X.codes.$Y'
+          # The OTHER operand ($B) being a class name (`token === Config.name`), a
+          # bare `name` identifier (a DI token vs a provider NAME, not a secret), or
+          # an enum member means there is no secret on that side to leak byte-by-byte.
+          - metavariable-pattern:
+              metavariable: $B
+              patterns:
+                - pattern-not: 'name'
+                - pattern-not: '$X.name'
+                - pattern-not: '$X.codes.$Y'
           - pattern-not: 'typeof $X === $Y'
           - pattern-not: 'typeof $X !== $Y'
           - pattern-not: 'typeof $X == $Y'
@@ -109,6 +134,20 @@ rules:
           - metavariable-regex:
               metavariable: $B
               regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          # Same carve-out as the $A arm, mirrored: exclude a class-name lookup or
+          # enum/error-code member on the secret side, and a class name / bare
+          # `name` / enum member on the other side.
+          - metavariable-pattern:
+              metavariable: $B
+              patterns:
+                - pattern-not: '$X.name'
+                - pattern-not: '$X.codes.$Y'
+          - metavariable-pattern:
+              metavariable: $A
+              patterns:
+                - pattern-not: 'name'
+                - pattern-not: '$X.name'
+                - pattern-not: '$X.codes.$Y'
           - pattern-not: 'typeof $X === $Y'
           - pattern-not: 'typeof $X !== $Y'
           - pattern-not: 'typeof $X == $Y'
