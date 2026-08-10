@@ -7,17 +7,31 @@ interface Props {
   title: string;
   description?: string;
   ogImage?: string;
+  ogImageAlt?: string;
+  ogType?: string;
+  /** Extra JSON-LD node(s) to append to the site-wide graph (e.g. a per-page Article). */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
   title,
   description = 'A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns AI coding tools generate by default. Hand-curated rules, zero false positives on clean auth libraries. Open source, MIT.',
   ogImage = '/og.png',
+  ogImageAlt = 'OAuthLint — a static-analysis linter for the auth bugs AI coding tools ship by default.',
+  ogType = 'website',
+  jsonLd: extraJsonLdProp,
 } = Astro.props;
 
 const site = Astro.site?.href ?? 'https://oauthlint.dev/';
 const canonical = new URL(Astro.url.pathname, site).href;
 const ogUrl = new URL(ogImage, site).href;
+
+// Per-page structured data, appended after the site-wide graph.
+const extraJsonLd = extraJsonLdProp
+  ? Array.isArray(extraJsonLdProp)
+    ? extraJsonLdProp
+    : [extraJsonLdProp]
+  : [];
 
 // Site-wide structured data (Organization + WebSite + the tool as SoftwareApplication).
 const jsonLd = {
@@ -49,6 +63,8 @@ const jsonLd = {
         'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java and Rust.',
       license: 'https://opensource.org/licenses/MIT',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      keywords:
+        'AI auth bugs, JWT lint, OAuth security linter, AI code security, OAuth OIDC static analysis, JWT security, session security, CORS misconfiguration, Semgrep auth rules',
       publisher: { '@id': `${site}#org` },
     },
   ],
@@ -62,10 +78,18 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="robots" content="index,follow" />
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#0E1113" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+    {
+      extraJsonLd.map((node) => (
+        <script type="application/ld+json" set:html={JSON.stringify(node)} is:inline />
+      ))
+    }
 
     <!-- Set the colour theme BEFORE first paint to avoid a flash. Dark is the
          brand default when there's no stored choice or OS-preference signal. -->
@@ -85,12 +109,20 @@ const jsonLd = {
       }
     </script>
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="OAuthLint" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
