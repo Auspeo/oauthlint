@@ -4,6 +4,30 @@ rules:
       - javascript
       - typescript
     severity: WARNING
+    # Non-production code (example apps, demos, sample projects, benchmarks,
+    # integration harnesses, docs, vendored copies, tests) is not the library
+    # surface users ship, so findings there are noise for a low-FP linter.
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
     message: |
       The user is marked as logged in without first regenerating the session id.
       The identity is written onto the session (`req.session.user = ...`,
