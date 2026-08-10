@@ -13,6 +13,40 @@ Available on the **[VS Code Marketplace](https://marketplace.visualstudio.com/it
 and on **[Open VSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode)** for
 Cursor, Windsurf, and other VS Code-compatible editors.
 
+## In the editor
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/screenshots/vscode/oauthlint-vscode-1-hero.png" alt="OAuthLint flagging a JWT that accepts the none algorithm, inline in VS Code" width="840" />
+</p>
+
+**Every finding explains itself.** Hover any finding for a plain-English reason it
+is dangerous, its rule id, and the mapped CWE, with a jump to the problem or a fix.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/screenshots/vscode/oauthlint-vscode-2-explains.png" alt="Hover on a finding showing the rule id, the why, the CWE, and the fix" width="840" />
+</p>
+
+**Severity, right where you work.** Findings surface as native diagnostics, squiggles
+in the editor and rows in the Problems panel, with severity mapped to errors and warnings.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/screenshots/vscode/oauthlint-vscode-3-severity.png" alt="OAuthLint findings as squiggles and Problems panel rows, colour-coded by severity" width="840" />
+</p>
+
+**Fix it without leaving the line.** When a finding ships a safe rewrite, the lightbulb
+applies it in place, suppresses the line with an auditable comment, or opens the rule's docs.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/screenshots/vscode/oauthlint-vscode-4-quickfix.png" alt="Quick Fix menu offering apply fix, suppress line, and open documentation" width="840" />
+</p>
+
+**Zero setup, runs offline.** The rule pack ships inside the extension and the engine
+is fetched once and verified. No CLI, no Python. Tune severity and you are done.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Auspeo/oauthlint/main/docs/screenshots/vscode/oauthlint-vscode-5-settings.png" alt="OAuthLint settings in VS Code, showing the four zero-config options" width="840" />
+</p>
+
 ## What it does
 
 - **Inline diagnostics** on save and on open, for JavaScript and TypeScript.
