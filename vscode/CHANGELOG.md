@@ -4,6 +4,12 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.1] - 2026-08-10
+
+### Changed
+
+- Add editor screenshots to the Marketplace and Open VSX listing.
+
 ## [0.6.1] - 2026-07-10
 
 ### Security
