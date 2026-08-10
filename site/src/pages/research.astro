@@ -43,10 +43,33 @@ const headlineStats = [
   { value: `${r.pctHigh}%`, label: 'had a HIGH+ finding' },
   { value: String(r.totalFindings), label: 'total findings' },
 ];
+
+// Per-page structured data: this is a security-research report, so a TechArticle
+// node describes it for search engines (appended to the site-wide graph in Base).
+const researchUrl = 'https://oauthlint.dev/research';
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: 'The auth bugs AI coding tools ship by default',
+  description:
+    'An aggregate, reproducible measurement of the authentication anti-patterns common in AI-generated code, scanned with OAuthLint across public repositories self-identifying as AI-generated apps.',
+  url: researchUrl,
+  mainEntityOfPage: researchUrl,
+  image: 'https://oauthlint.dev/og.png',
+  dateModified: r.updatedISO,
+  datePublished: r.updatedISO,
+  author: { '@type': 'Organization', name: 'Auspeo', url: 'https://oauthlint.dev/' },
+  publisher: { '@id': 'https://oauthlint.dev/#org' },
+  about: 'Authentication and OAuth security anti-patterns in AI-generated code',
+  keywords:
+    'AI auth bugs, AI code security, OAuth security, OIDC, JWT, static analysis, vibe-coded apps',
+};
 ---
 <Base
   title="What AI coding tools get wrong about auth — OAuthLint research"
   description="An aggregate, reproducible measurement of the authentication anti-patterns common in AI-generated code, across public repositories self-identifying as AI-generated apps. Scanned with OAuthLint; 100% aggregate, no repositories named."
+  ogType="article"
+  jsonLd={articleJsonLd}
 >
   <SiteChrome>
     <main style="max-width:1120px; margin:0 auto; padding:var(--ol-space-12) var(--ol-space-6) var(--ol-space-20);">

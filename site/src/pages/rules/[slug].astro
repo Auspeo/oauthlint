@@ -143,10 +143,40 @@ const safeHtml = rule.safe ? await highlightCode(rule.safe.code, rule.safe.langu
 // title badges and the metadata rail).
 const cweHref = rule.cwe ? cweUrl(rule.cwe) : undefined;
 const owaspHref = rule.owasp ? owaspUrl(rule.owasp) : undefined;
+
+// Per-page structured data: each rule is a focused how-to on an auth
+// anti-pattern, so a TechArticle node describes it (appended to the site-wide
+// graph in Base). Keeps the rule's CWE/OWASP mapping machine-readable.
+const ruleUrl = `https://oauthlint.dev/rules/${rule.slug}`;
+const ruleTitleText = stripInline(rule.title);
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: `${rule.id}: ${ruleTitleText}`,
+  description: `${rule.id} (${rule.cwe ?? 'auth'}): ${ruleTitleText} Vulnerable and safe examples, how to suppress, and references.`,
+  url: ruleUrl,
+  mainEntityOfPage: ruleUrl,
+  image: 'https://oauthlint.dev/og.png',
+  author: { '@type': 'Organization', name: 'Auspeo', url: 'https://oauthlint.dev/' },
+  publisher: { '@id': 'https://oauthlint.dev/#org' },
+  keywords: [
+    rule.id,
+    rule.cwe,
+    rule.owasp ? `OWASP ${rule.owasp}` : undefined,
+    rule.category,
+    ...rule.languages,
+    'OAuth security linter',
+    'AI auth bugs',
+  ]
+    .filter(Boolean)
+    .join(', '),
+};
 ---
 <Base
   title={`${rule.id} — OAuthLint`}
   description={`${rule.id} (${rule.cwe ?? 'auth'}): ${stripInline(rule.title)} Vulnerable and safe examples, how to suppress, and references.`}
+  ogType="article"
+  jsonLd={articleJsonLd}
 >
   <SiteChrome active="rules">
     <div class="rule-detail-grid" style="max-width:1120px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:var(--ol-space-10); padding:var(--ol-space-10) var(--ol-space-6) var(--ol-space-20);">
