@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 155 rules across every supported language.
+# Full pack — 184 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -419,6 +419,573 @@ rules:
               - pattern: "cors({ ..., credentials: true, ..., origin: ($O, $CB) => $CB(null, true), ... })"
       - pattern-regex: Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"][\s\S]{0,200}Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"]
       - pattern-regex: Access-Control-Allow-Credentials['"]\s*,\s*['"]true['"][\s\S]{0,200}Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"]
+  - id: auth.csharp.cookie.httponly-false
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie is created with `HttpOnly = false`, making it readable from
+      client-side JavaScript. If the site has any XSS, an injected script can
+      read the auth/session cookie via `document.cookie` and exfiltrate the
+      session (CWE-1004). This is a common AI-generated change made so JS can
+      "see" the cookie, which needlessly removes a key defense.
+
+      Set `HttpOnly = true` on authentication and session cookies so they are not
+      exposed to scripts. If the browser must read a value, keep it in a separate
+      non-sensitive cookie rather than weakening the session cookie.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-httponly-false
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/1004.html
+      technology:
+        - aspnetcore
+        - cookies
+    pattern: HttpOnly = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.cookie.secure-policy-none
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie policy is set to `SecurePolicy = CookieSecurePolicy.None`, which
+      lets authentication and session cookies be sent over plain HTTP. On any
+      non-HTTPS hop an on-path attacker can read the cookie and hijack the
+      session (CWE-614). This is a common AI-generated shortcut to get cookies
+      working over `http://localhost` that then ships to production.
+
+      Use `CookieSecurePolicy.Always` so the `Secure` attribute is set and the
+      cookie is only transmitted over HTTPS. Prefer `Always` over `SameAsRequest`
+      for auth cookies.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-secure-policy-none
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - aspnetcore
+        - cookies
+    pattern-either:
+      - pattern: SecurePolicy = CookieSecurePolicy.None
+      - pattern: $X.SecurePolicy = CookieSecurePolicy.None
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.cors.reflect-any-origin-credentials
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A CORS policy combines credentialed requests with a wildcard or reflected
+      origin (`AllowCredentials()` together with `AllowAnyOrigin()` or
+      `SetIsOriginAllowed(...)` that returns true for everything). This lets any
+      website make cross-origin requests carrying the user's cookies and read the
+      response, which is a cross-site data-theft and CSRF primitive (CWE-942).
+      This is a common AI-generated mistake made to "just make CORS work".
+
+      Never pair `AllowCredentials()` with a wildcard/reflected origin. Pin an
+      explicit allow-list with `WithOrigins("https://app.example.com")` and only
+      then call `AllowCredentials()`.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cors-reflect-any-origin-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/cors
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - aspnetcore
+        - cors
+    patterns:
+      - pattern-either:
+          - pattern: $B.SetIsOriginAllowed(...).AllowCredentials()
+          - pattern: $B.AllowCredentials().SetIsOriginAllowed(...)
+          - pattern: $B.AllowAnyOrigin().AllowCredentials()
+          - pattern: $B.AllowCredentials().AllowAnyOrigin()
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.hardcoded-symmetric-key
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT signing key is built from a hard-coded string literal
+      (`new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))`). This key signs
+      and verifies every token: committed to source control it is one search away
+      from compromise, letting an attacker forge tokens for any user or role
+      (CWE-798). This is a common AI-generated mistake: a literal secret is
+      inlined to make the sample "just work" and never externalized.
+
+      Load the key from configuration or a secret store instead — e.g.
+      `Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])` or a value read
+      from Azure Key Vault / environment — and rotate the leaked secret out of
+      source control.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-hardcoded-symmetric-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/app-secrets
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern-either:
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.ASCII.GetBytes("..."))
+      - pattern-not-regex: (?i)GetBytes\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)GetBytes\(\s*["']<[^"']*>["']
+      - pattern-not-regex: (?i)GetBytes\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-audience-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables audience validation
+      (`ValidateAudience = false`) on `TokenValidationParameters`. With the
+      audience unchecked, a token that was minted for a different API or client
+      is accepted here, turning this service into a confused deputy and enabling
+      cross-service token replay (CWE-287). This is a common AI-generated
+      shortcut: validation is switched off to silence an `aud` mismatch during
+      wiring and never restored.
+
+      Leave `ValidateAudience` at its secure default (`true`) and pin the
+      expected audience with `ValidAudience` (or `ValidAudiences`) so only tokens
+      issued for this API are honored.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-audience-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateAudience = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-issuer-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables issuer validation
+      (`ValidateIssuer = false`) on `TokenValidationParameters`. With the issuer
+      unchecked, a token from any issuer or identity provider is accepted, so an
+      attacker who controls (or spins up) any IdP can mint tokens this service
+      will trust (CWE-287). This is a common AI-generated shortcut: the check is
+      disabled to get past an `iss` mismatch during setup and never restored.
+
+      Leave `ValidateIssuer` at its secure default (`true`) and pin the expected
+      issuer with `ValidIssuer` (or `ValidIssuers`) so only tokens from your own
+      authority are honored.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-issuer-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateIssuer = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-lifetime-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables lifetime validation
+      (`ValidateLifetime = false`) on `TokenValidationParameters`. With the
+      lifetime unchecked, expired tokens are accepted forever, so a leaked or
+      revoked token never stops working and cannot be timed out (CWE-613). This
+      is a common AI-generated shortcut: expiry checks are turned off to stop a
+      short-lived test token from failing and then left disabled.
+
+      Leave `ValidateLifetime` at its secure default (`true`) so the `exp` (and
+      `nbf`) claims are enforced. If clock drift is the real problem, set a small
+      `ClockSkew` instead of disabling the check.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-lifetime-disabled
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateLifetime = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-signing-key-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables signature validation
+      (`ValidateIssuerSigningKey = false`) on `TokenValidationParameters`. With
+      the signing key unchecked, a token carrying any signature (or none) is
+      accepted, so an attacker can forge a token for any user or role (CWE-347).
+      This is a frequent AI-generated shortcut: validation is turned off to get
+      past a local key-setup error and never turned back on.
+
+      Leave `ValidateIssuerSigningKey` at its secure default (`true`) and supply
+      the real key via `IssuerSigningKey` / `IssuerSigningKeys`, loaded from the
+      OIDC metadata or configuration rather than hard-coded.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-signing-key-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    pattern: ValidateIssuerSigningKey = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.hardcoded-client-secret
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OAuth/OIDC client secret is assigned from a hard-coded string literal
+      (`options.ClientSecret = "..."`). This secret authenticates the whole
+      application to the identity provider: committed to source control it is one
+      search away from letting an attacker impersonate the app, redeem codes, and
+      obtain tokens (CWE-798). This is a common AI-generated mistake: the literal
+      secret is inlined to make the sample "just work" and never externalized.
+
+      Read it from configuration or a secret store instead — e.g.
+      `options.ClientSecret = builder.Configuration["Authentication:ClientSecret"]`
+      or a value from Azure Key Vault / environment — and rotate the leaked
+      secret out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/app-secrets
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    patterns:
+      - pattern: $O.ClientSecret = "..."
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["']<[^"']*>["']
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.pkce-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OpenID Connect handler turns PKCE off (`UsePkce = false`). Without
+      Proof Key for Code Exchange, an authorization code intercepted on the
+      redirect (a malicious app, a leaked URL, a network hop) can be redeemed by
+      the attacker, defeating the code-flow protection that PKCE provides
+      (CWE-287). This is a common AI-generated change made to work around a
+      provider quirk and never reverted.
+
+      Leave PKCE enabled — it is the modern default (`UsePkce = true`) and is
+      required for public clients. Fix the underlying provider configuration
+      rather than disabling the proof key.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-pkce-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    pattern-either:
+      - pattern: UsePkce = false
+      - pattern: $X.UsePkce = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.require-https-metadata-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OIDC/JWT bearer handler disables HTTPS for its metadata and token
+      exchange (`RequireHttpsMetadata = false`). The discovery document, JWKS,
+      and token traffic can then travel over plain HTTP, where an on-path
+      attacker can swap signing keys or tokens and defeat the whole trust chain
+      (CWE-319). This is a common AI-generated leftover from local development
+      that ships to production.
+
+      Leave `RequireHttpsMetadata` at its secure default (`true`). If you truly
+      need cleartext for local development only, guard it behind an environment
+      check such as `env.IsDevelopment()` so production stays on HTTPS.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-require-https-metadata-disabled
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    pattern-either:
+      - pattern: RequireHttpsMetadata = false
+      - pattern: $X.RequireHttpsMetadata = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.tls.disable-cert-validation
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      TLS server-certificate validation is turned off: the handler accepts any
+      certificate via `DangerousAcceptAnyServerCertificateValidator` or a
+      callback that always returns `true`. With validation bypassed, an on-path
+      attacker presenting a forged or self-signed certificate is trusted, and the
+      entire TLS protection (including any OAuth token in transit) is defeated
+      (CWE-295). This is a common AI-generated shortcut to silence a certificate
+      error during development.
+
+      Remove the override and let the system trust store validate the
+      certificate. If a private CA is involved, install/trust that CA rather than
+      accepting all certificates; scope any relaxed check to a single pinned host
+      in development only.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-tls-disable-cert-validation
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - aspnetcore
+        - httpclient
+    pattern-either:
+      - pattern: $R.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: $R.ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateCustomValidationCallback = $X => true
+      - pattern: ServerCertificateCustomValidationCallback = $X => true
+      - pattern: $R.RemoteCertificateValidationCallback = (...) => true
+      - pattern: RemoteCertificateValidationCallback = (...) => true
+      - pattern: $R.RemoteCertificateValidationCallback = $X => true
+      - pattern: RemoteCertificateValidationCallback = $X => true
+      - pattern: $R.ServerCertificateValidationCallback = (...) => true
+      - pattern: ServerCertificateValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateValidationCallback = $X => true
+      - pattern: ServerCertificateValidationCallback = $X => true
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.express.auth-middleware-noop
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An authentication/authorization middleware does nothing but call `next()`.
+      A guard whose entire body is `next()` (or `return next()`) authorises every
+      request, so any route it protects is effectively public. This is the classic
+      "stubbed out for now" middleware that ships to production and silently
+      removes access control.
+
+      Implement the check: verify the session/token, and either call `next()` on
+      success or short-circuit with `res.status(401).end()` /
+      `res.status(403).end()` (or `next(err)`) when it fails. If a route is meant
+      to be public, remove the guard entirely rather than leaving a no-op that
+      reads as protected.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-auth-middleware-noop
+      category: security
+      cwe: CWE-287
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - express
+    patterns:
+      - pattern-either:
+          - pattern: function $F($REQ, $RES, $NEXT) { $NEXT(); }
+          - pattern: function $F($REQ, $RES, $NEXT) { return $NEXT(); }
+          - pattern: const $F = ($REQ, $RES, $NEXT) => $NEXT();
+          - pattern: const $F = ($REQ, $RES, $NEXT) => { $NEXT(); }
+          - pattern: const $F = ($REQ, $RES, $NEXT) => { return $NEXT(); }
+          - pattern: const $F = function ($REQ, $RES, $NEXT) { $NEXT(); }
+          - pattern: const $F = function ($REQ, $RES, $NEXT) { return $NEXT(); }
+      - metavariable-regex:
+          metavariable: $F
+          regex: (?i).*(auth|login|logged|protect|guard|permission|verifytoken|verifyjwt|isadmin|requireadmin|restrict)
   - id: auth.express.cookie-insecure
     languages:
       - javascript
@@ -454,6 +1021,359 @@ rules:
       - pattern: "expressSession({..., cookie: {..., httpOnly: false, ...}, ...})"
       - pattern: "cookieSession({..., secure: false, ...})"
       - pattern: "cookieSession({..., httpOnly: false, ...})"
+  - id: auth.express.cookie-parser-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `cookie-parser` is initialised with a hard-coded string secret
+      (`cookieParser('some-secret')`). That secret signs every signed cookie
+      (`res.cookie(name, val, { signed: true })`, read back from
+      `req.signedCookies`). Anyone who reads it from your source or git history
+      can forge signed cookies and tamper with values your app trusts.
+
+      Load the secret from the environment (`cookieParser(process.env.COOKIE_SECRET)`)
+      or a secret manager, and rotate the leaked value out of source control.
+      Add a placeholder to `.env.example` so contributors know it is required.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-cookie-parser-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/expressjs/cookie-parser#cookieparsersecret-options
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - express
+        - cookie-parser
+    patterns:
+      - pattern-either:
+          - pattern: cookieParser($S)
+          - pattern: cookieParser($S, $OPTS)
+      - metavariable-pattern:
+          metavariable: $S
+          patterns:
+            - pattern-regex: ^['"].*['"]$
+  - id: auth.express.helmet-disabled-protection
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A Helmet security header is explicitly turned off. Passing
+      `contentSecurityPolicy: false`, `hsts: false`, `frameguard: false`, or
+      `noSniff: false` to `helmet()` disables a protection Helmet enables by
+      default: CSP (XSS/data-injection defense), HSTS (forces HTTPS),
+      X-Frame-Options (clickjacking defense), or X-Content-Type-Options (MIME
+      sniffing defense) respectively.
+
+      Remove the `false` override so the default protection stays on, or replace
+      it with a real configuration object (for example
+      `contentSecurityPolicy: { directives: { ... } }` or
+      `hsts: { maxAge: 31536000 }`). If a header genuinely must be managed
+      elsewhere, set it there rather than shipping the response with the
+      protection silently missing.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-helmet-disabled-protection
+      category: security
+      cwe: CWE-693
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://helmetjs.github.io/
+        - https://cwe.mitre.org/data/definitions/693.html
+      technology:
+        - express
+        - helmet
+    pattern-either:
+      - pattern: "helmet({..., contentSecurityPolicy: false, ...})"
+      - pattern: "helmet({..., hsts: false, ...})"
+      - pattern: "helmet({..., frameguard: false, ...})"
+      - pattern: "helmet({..., noSniff: false, ...})"
+  - id: auth.express.static-dotfiles-allow
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A static file handler is configured with `dotfiles: 'allow'`, which serves
+      dotfiles from the mounted directory. If that directory (or anything under
+      it) contains `.env`, `.git/`, `.npmrc`, `.aws/`, or similar, an attacker
+      can fetch them directly (for example `GET /.env`) and harvest OAuth client
+      secrets, API keys, and database credentials.
+
+      Remove the option to keep the safe default (`dotfiles: 'ignore'`), or set
+      `dotfiles: 'deny'` to return 403. Never serve dotfiles from a public web
+      root; keep secrets out of any statically served directory.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-static-dotfiles-allow
+      category: security
+      cwe: CWE-538
+      owasp: A05:2021
+      llm-prevalence: LOW
+      references:
+        - https://expressjs.com/en/4x/api.html#express.static
+        - https://cwe.mitre.org/data/definitions/538.html
+      technology:
+        - express
+        - serve-static
+    pattern-either:
+      - pattern: 'express.static($DIR, {..., dotfiles: "allow", ...})'
+      - pattern: 'serveStatic($DIR, {..., dotfiles: "allow", ...})'
+  - id: auth.express.trust-proxy-true
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      Express is configured to trust EVERY proxy (`app.set('trust proxy', true)`
+      or the equivalent `app.enable('trust proxy')`). With unbounded trust,
+      Express believes the `X-Forwarded-For` and `X-Forwarded-Proto` headers on
+      any incoming request. A client can then spoof its source IP (defeating
+      IP allowlists, rate limiters, and audit logs) and spoof `https`, which can
+      trick `secure` session cookies into being sent over plain HTTP.
+
+      Set `trust proxy` to the number of proxies actually in front of the app
+      (e.g. `app.set('trust proxy', 1)`), or to a specific address / subnet /
+      preset (`'loopback'`, `'uniquelocal'`, a CIDR, or an allowlist array), so
+      only your real infrastructure is trusted. Never trust all proxies.
+    metadata:
+      oauthlint-rule-id: AUTH-EXPRESS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/express-trust-proxy-true
+      category: security
+      cwe: CWE-348
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://expressjs.com/en/guide/behind-proxies.html
+        - https://cwe.mitre.org/data/definitions/348.html
+      technology:
+        - express
+    pattern-either:
+      - pattern: $APP.set("trust proxy", true)
+      - pattern: $APP.enable("trust proxy")
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+  - id: auth.fastify.cookie-session-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `@fastify/cookie`, `@fastify/session`, or `@fastify/secure-session` is
+      registered with a hard-coded `secret` string literal. This key signs the
+      session/cookie: anyone who reads it from your source or git history can
+      forge signed cookies and impersonate any user.
+
+      Load it from the environment
+      (`fastify.register(fastifySession, { secret: process.env.SESSION_SECRET })`)
+      or a secret manager, and add a placeholder to `.env.example`. The secret
+      must be at least 32 characters. Rotate the leaked value out of source
+      control.
+    metadata:
+      oauthlint-rule-id: AUTH-FASTIFY-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/fastify-cookie-session-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/fastify/session#options
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fastify
+        - "@fastify/cookie"
+        - "@fastify/session"
+    patterns:
+      - pattern: "$F.register($PLUGIN, { ..., secret: $S, ... })"
+      - metavariable-regex:
+          metavariable: $PLUGIN
+          regex: (?i).*(cookie|session)
+      - metavariable-pattern:
+          metavariable: $S
+          patterns:
+            - pattern-regex: ^['"].*['"]$
+            - pattern-not-regex: (?i)^['"]\$\{?[A-Za-z_]+\}?['"]$
+            - pattern-not-regex: (?i)^['"]<[^'"]*>['"]$
+            - pattern-not-regex: (?i)^['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.fastify.cors-wildcard-credentials
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `@fastify/cors` is registered with a wildcard/reflected origin
+      (`origin: '*'` or `origin: true`) together with `credentials: true`. The
+      CORS spec forbids `Access-Control-Allow-Origin: *` with credentials, so
+      `origin: true` reflects the caller's origin back instead, effectively
+      allowing credentialed cross-site requests from ANYWHERE. That is a
+      CSRF / account-takeover primitive.
+
+      Enumerate the exact trusted origins instead:
+      `fastify.register(cors, { origin: ['https://app.example.com'], credentials: true })`,
+      or pass a function that validates the origin against an allowlist. If the
+      API is public and needs no cookies or auth headers, keep `credentials` at
+      its default `false`.
+    metadata:
+      oauthlint-rule-id: AUTH-FASTIFY-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/fastify-cors-wildcard-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/fastify/fastify-cors#options
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+      technology:
+        - fastify
+        - "@fastify/cors"
+    patterns:
+      - pattern-either:
+          - pattern: '$F.register($PLUGIN, { ..., origin: "*", ..., credentials: true, ... })'
+          - pattern: '$F.register($PLUGIN, { ..., credentials: true, ..., origin: "*", ... })'
+          - pattern: "$F.register($PLUGIN, { ..., origin: true, ..., credentials: true, ... })"
+          - pattern: "$F.register($PLUGIN, { ..., credentials: true, ..., origin: true, ... })"
+      - metavariable-regex:
+          metavariable: $PLUGIN
+          regex: (?i).*cors
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.fastify.jwt-hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      `@fastify/jwt` is registered with a hard-coded `secret` string literal.
+      This key signs and verifies every token: committed to git it is one search
+      away from compromise, letting an attacker forge tokens for any user.
+
+      Load it from the environment instead
+      (`fastify.register(fastifyJwt, { secret: process.env.JWT_SECRET })`) and add
+      the variable to `.env.example` with a placeholder. Rotate the leaked value
+      out of source control. For asymmetric signing pass a key pair
+      (`{ private, public }`) read from files or a secret manager, not inline.
+    metadata:
+      oauthlint-rule-id: AUTH-FASTIFY-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/fastify-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/fastify/fastify-jwt#usage
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fastify
+        - "@fastify/jwt"
+    patterns:
+      - pattern: "$F.register($PLUGIN, { ..., secret: $S, ... })"
+      - metavariable-regex:
+          metavariable: $PLUGIN
+          regex: (?i).*jwt
+      - metavariable-pattern:
+          metavariable: $S
+          patterns:
+            - pattern-regex: ^['"].*['"]$
+            - pattern-not-regex: (?i)^['"]\$\{?[A-Za-z_]+\}?['"]$
+            - pattern-not-regex: (?i)^['"]<[^'"]*>['"]$
+            - pattern-not-regex: (?i)^['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.fastify.trust-proxy-true
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      Fastify is created with `trustProxy: true`, which trusts EVERY proxy. With
+      unbounded trust Fastify believes the `X-Forwarded-For` and
+      `X-Forwarded-Proto` headers on any incoming request, so a client can spoof
+      its source IP (defeating IP allowlists, rate limiters, and audit logs) and
+      spoof `https`, which can trick `secure` session cookies into being sent
+      over plain HTTP.
+
+      Set `trustProxy` to the number of proxies actually in front of the app
+      (`Fastify({ trustProxy: 1 })`), or to a specific address / subnet / preset
+      (`'loopback'`, a CIDR, or an allowlist array), so only your real
+      infrastructure is trusted. Never trust all proxies.
+    metadata:
+      oauthlint-rule-id: AUTH-FASTIFY-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/fastify-trust-proxy-true
+      category: security
+      cwe: CWE-348
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://fastify.dev/docs/latest/Reference/Server/#trustproxy
+        - https://cwe.mitre.org/data/definitions/348.html
+      technology:
+        - fastify
+    pattern-either:
+      - pattern: "Fastify({ ..., trustProxy: true, ... })"
+      - pattern: "fastify({ ..., trustProxy: true, ... })"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
   - id: auth.flow.basic-auth-in-log
     languages:
       - javascript
@@ -916,6 +1836,27 @@ rules:
           - metavariable-regex:
               metavariable: $PWD
               regex: (?i)^(?!.*hash).*$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.flow.secret-in-log
     languages:
       - javascript
@@ -1190,6 +2131,17 @@ rules:
           - metavariable-regex:
               metavariable: $A
               regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          - metavariable-pattern:
+              metavariable: $A
+              patterns:
+                - pattern-not: $X.name
+                - pattern-not: $X.codes.$Y
+          - metavariable-pattern:
+              metavariable: $B
+              patterns:
+                - pattern-not: name
+                - pattern-not: $X.name
+                - pattern-not: $X.codes.$Y
           - pattern-not: typeof $X === $Y
           - pattern-not: typeof $X !== $Y
           - pattern-not: typeof $X == $Y
@@ -1239,6 +2191,17 @@ rules:
           - metavariable-regex:
               metavariable: $B
               regex: (?i)^.*(?:password|secret|token|apikey|api_key|csrf|hmac|signature)$
+          - metavariable-pattern:
+              metavariable: $B
+              patterns:
+                - pattern-not: $X.name
+                - pattern-not: $X.codes.$Y
+          - metavariable-pattern:
+              metavariable: $A
+              patterns:
+                - pattern-not: name
+                - pattern-not: $X.name
+                - pattern-not: $X.codes.$Y
           - pattern-not: typeof $X === $Y
           - pattern-not: typeof $X !== $Y
           - pattern-not: typeof $X == $Y
@@ -1288,6 +2251,12 @@ rules:
         - "**/example/**"
         - "**/examples/**"
         - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
         - "**/docs/**"
         - "**/__mocks__/**"
         - "**/mocks/**"
@@ -3681,6 +4650,312 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.nestjs.cors-wildcard-credentials
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      NestJS `app.enableCors()` is configured with a wildcard/reflected origin
+      (`origin: '*'` or `origin: true`) together with `credentials: true`. The
+      CORS spec forbids `Access-Control-Allow-Origin: *` with credentials, so
+      `origin: true` echoes the caller's origin back instead, effectively
+      allowing credentialed cross-site requests from ANYWHERE. That is a
+      CSRF / account-takeover primitive.
+
+      Enumerate the exact trusted origins instead:
+      `app.enableCors({ origin: ['https://app.example.com'], credentials: true })`.
+      If the API is public and needs no cookies or auth headers, keep
+      `credentials` at its default `false`.
+    metadata:
+      oauthlint-rule-id: AUTH-NESTJS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/nestjs-cors-wildcard-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.nestjs.com/security/cors
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+      technology:
+        - nestjs
+    pattern-either:
+      - pattern: '$APP.enableCors({ ..., origin: "*", ..., credentials: true, ... })'
+      - pattern: '$APP.enableCors({ ..., credentials: true, ..., origin: "*", ... })'
+      - pattern: "$APP.enableCors({ ..., origin: true, ..., credentials: true, ... })"
+      - pattern: "$APP.enableCors({ ..., credentials: true, ..., origin: true, ... })"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.nestjs.guard-always-true
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A NestJS guard's `canActivate` returns a constant `true`. A guard that
+      unconditionally authorises every request removes access control from every
+      route, controller, or handler it protects, so the endpoint is effectively
+      public. This is the classic "stubbed out for now" guard that ships to
+      production.
+
+      Implement the check: read the request from
+      `context.switchToHttp().getRequest()`, verify the session/token/role, and
+      return `true` only when it passes (return `false` or throw
+      `UnauthorizedException` / `ForbiddenException` otherwise). If a route is
+      meant to be public, apply a `@Public()` decorator and remove the guard
+      rather than leaving one that reads as protected but is not.
+    metadata:
+      oauthlint-rule-id: AUTH-NESTJS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/nestjs-guard-always-true
+      category: security
+      cwe: CWE-287
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.nestjs.com/guards
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - nestjs
+    patterns:
+      - pattern-inside: |
+          class $C implements CanActivate {
+            ...
+          }
+      - pattern-either:
+          - pattern: canActivate($CTX) { return true; }
+          - pattern: canActivate($CTX) { return Promise.resolve(true); }
+          - pattern: async canActivate($CTX) { return true; }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.nestjs.jwt-hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A NestJS `JwtModule` is configured with a hard-coded `secret` (or
+      `secretOrPrivateKey`) string literal. This key signs and verifies every
+      access token: committed to git it is one search away from compromise,
+      letting an attacker forge tokens for any user.
+
+      Read it from the environment instead. Use `JwtModule.registerAsync` with
+      `ConfigService` (`useFactory: (config) => ({ secret: config.get('JWT_SECRET') })`)
+      or `secret: process.env.JWT_SECRET`, and add the variable to `.env.example`
+      with a placeholder. Rotate the leaked value out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-NESTJS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/nestjs-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://docs.nestjs.com/security/authentication
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - nestjs
+        - "@nestjs/jwt"
+    patterns:
+      - pattern-either:
+          - pattern: 'secret: "..."'
+          - pattern: 'secretOrPrivateKey: "..."'
+      - pattern-not-regex: (?i)(?:secret|secretOrPrivateKey)\s*:\s*['"]\$\{?[A-Za-z_]+\}?['"]
+      - pattern-not-regex: (?i)(?:secret|secretOrPrivateKey)\s*:\s*['"]<[^'"]*>['"]
+      - pattern-not-regex: (?i)(?:secret|secretOrPrivateKey)\s*:\s*['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+      - pattern-either:
+          - pattern-inside: JwtModule.register({...})
+          - pattern-inside: JwtModule.registerAsync({...})
+          - pattern-inside: new JwtService({...})
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/integration/**"
+        - "**/*.tst.*"
+  - id: auth.nextauth.authorized-always-true
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The NextAuth/Auth.js `authorized` callback returns `true`
+      unconditionally.
+
+      This callback is the gate the middleware uses to protect routes, so
+      returning a constant `true` authorizes every request and disables the
+      protection entirely. Check the session instead, for example
+      `authorized: ({ auth }) => !!auth?.user`, and return `false` (or a
+      `Response.redirect` to your login page) when there is no signed-in user.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-authorized-always-true
+      category: security
+      cwe: CWE-862
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://authjs.dev/reference/nextjs#authorized
+        - https://cwe.mitre.org/data/definitions/862.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern-inside: "callbacks: {...}"
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+      - pattern-either:
+          - pattern: authorized($P) { return true; }
+          - pattern: async authorized($P) { return true; }
+          - pattern: "authorized: ($P) => true"
+          - pattern: "authorized: async ($P) => true"
+          - pattern: "authorized: ($P) => { return true; }"
+          - pattern: "authorized: async ($P) => { return true; }"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+  - id: auth.nextauth.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A NextAuth/Auth.js custom cookie is configured as insecure. Setting
+      `secure: false` lets the browser send the session-token cookie over plain
+      HTTP, and `httpOnly: false` exposes it to `document.cookie` so any XSS can
+      read it.
+
+      Set `secure: true` and `httpOnly: true` on the cookie options (Auth.js
+      already applies these defaults, so the safest fix is to delete the
+      overrides). If you need insecure cookies for local HTTP development, gate
+      the value on `process.env.NODE_ENV !== 'production'` rather than
+      hard-coding `false`.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://authjs.dev/reference/core#cookies
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern-either:
+          - pattern: "secure: false"
+          - pattern: "httpOnly: false"
+      - pattern-inside: "cookies: {...}"
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+  - id: auth.nextauth.debug-enabled
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      The NextAuth/Auth.js config hard-codes `debug: true`.
+
+      Debug mode writes verbose diagnostics, including provider responses and
+      token material, to the server logs, and leaving it on in production leaks
+      that data to anyone who can read the logs. Gate it on the environment
+      instead, for example `debug: process.env.NODE_ENV !== 'production'`, or
+      remove the flag so it defaults to off.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-debug-enabled
+      category: security
+      cwe: CWE-489
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://authjs.dev/reference/core#debug
+        - https://cwe.mitre.org/data/definitions/489.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern: "debug: true"
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
   - id: auth.nextauth.hardcoded-secret
     languages:
       - javascript
@@ -3730,6 +5005,124 @@ rules:
         - "**/example/**"
         - "**/examples/**"
         - "**/demo/**"
+  - id: auth.nextauth.redirect-open
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The NextAuth/Auth.js `redirect` callback returns the incoming `url`
+      without validating it against `baseUrl`.
+
+      `url` is attacker-controllable (it comes from the `callbackUrl` request
+      parameter), so returning it verbatim turns your sign-in flow into an open
+      redirect: `/api/auth/signin?callbackUrl=https://evil.example` lands the
+      user on the attacker's site after login. Only return a `url` you have
+      confirmed is local, for example
+      `return url.startsWith(baseUrl) ? url : baseUrl` (and resolve relative
+      paths against `baseUrl` yourself).
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-redirect-open
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://authjs.dev/reference/core/types#redirect
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern-inside: "callbacks: {...}"
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+      - pattern-either:
+          - pattern: redirect($P) { return url; }
+          - pattern: async redirect($P) { return url; }
+          - pattern: "redirect: ($P) => url"
+          - pattern: "redirect: async ($P) => url"
+          - pattern: "redirect: ($P) => { return url; }"
+          - pattern: "redirect: async ($P) => { return url; }"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+  - id: auth.nextauth.session-token-leak
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      The NextAuth/Auth.js `session` callback copies an OAuth token onto the
+      `session` object.
+
+      Whatever the `session` callback returns is serialized and sent to the
+      browser (and readable by client-side JavaScript), so assigning
+      `session.accessToken = token.accessToken` exposes a bearer token to every
+      script on the page, including any XSS. Keep access and refresh tokens in
+      the encrypted JWT (the `token` argument) or a server-side store, and put
+      only non-sensitive fields such as `session.user.id` or `session.user.role`
+      on the session.
+    metadata:
+      oauthlint-rule-id: AUTH-NEXTAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/nextauth-session-token-leak
+      category: security
+      cwe: CWE-522
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://authjs.dev/guides/extending-the-session
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - next-auth
+    patterns:
+      - pattern-inside: "callbacks: {...}"
+      - pattern-either:
+          - pattern-inside: NextAuth({...})
+          - pattern-inside: NextAuth($A, {...})
+          - pattern-inside: NextAuth($A, $B, {...})
+          - pattern-inside: Auth($A, {...})
+          - pattern-inside: authOptions = {...}
+          - pattern-inside: authConfig = {...}
+          - pattern-inside: "$X: NextAuthOptions = {...}"
+          - pattern-inside: "$X: NextAuthConfig = {...}"
+          - pattern-inside: "$X: AuthOptions = {...}"
+      - pattern-either:
+          - pattern-inside: session($P) {...}
+          - pattern-inside: async session($P) {...}
+          - pattern-inside: "session: ($P) => {...}"
+          - pattern-inside: "session: async ($P) => {...}"
+      - pattern-either:
+          - pattern: session.$FIELD = $VAL
+          - pattern: session.user.$FIELD = $VAL
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: ^(accessToken|access_token|refreshToken|refresh_token|idToken|id_token)$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
   - id: auth.oauth.access-token-in-url
     languages:
       - javascript
@@ -6655,6 +8048,27 @@ rules:
     pattern-either:
       - pattern-regex: "[?&](?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)="
       - pattern-regex: "\\?\\s*['\"]?(?:session|sid|sess|auth_token|access_token|refresh_token|token|api[_-]?key|jwt|bearer)['\"]?\\s*:"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.session.no-regeneration
     languages:
       - javascript
@@ -6704,6 +8118,27 @@ rules:
       - pattern-not-inside: |
           await promisify($REQ.session.regenerate)(...);
           ...
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/sample/**"
+        - "**/samples/**"
+        - "**/benchmark/**"
+        - "**/benchmarks/**"
+        - "**/bench/**"
+        - "**/integration/**"
+        - "**/docs/**"
+        - "**/__mocks__/**"
+        - "**/mocks/**"
+        - "**/vendored/**"
+        - "**/node_modules/**"
+        - "**/*.stories.*"
   - id: auth.tls.reject-unauthorized
     languages:
       - javascript
