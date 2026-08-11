@@ -4,9 +4,11 @@
     <vendor url="https://oauthlint.dev" email="support@oauthlint.dev">Auspeo</vendor>
 
     <description><![CDATA[
-        <p>OAuthLint catches OAuth, OIDC, JWT, session, cookie, and CORS anti-patterns
+        <p>OAuthLint catches OAuth, OIDC, JWT, MCP, session, cookie, and CORS anti-patterns
         that AI coding tools frequently produce, and surfaces them as native inline
-        annotations while you edit.</p>
+        annotations while you edit. This includes a dedicated MCP server-auth pack
+        (token pass-through, RFC 8707 audience binding, unauthenticated transports,
+        tool-handler SSRF) for the TypeScript and Python MCP SDKs.</p>
 
         <p>It scans the current file on open and on save and highlights each finding
         with a gutter marker and a tooltip that carries the rule id, the explanation,

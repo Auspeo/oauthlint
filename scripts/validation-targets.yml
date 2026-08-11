@@ -179,3 +179,18 @@ targets:
   # ─────────────────────────────────────────────────────────────
   - repo: dotnet-architecture/eShopOnWeb
     expectedSignal: high
+
+  # ─────────────────────────────────────────────────────────────
+  # MCP official SDKs — the `mcp/` + `py/mcp/` rule pack targets these.
+  # Their LIBRARY SOURCE (packages/*/src, src/mcp) must fire ZERO rules
+  # (validated 2026-08-11: 0 findings on lib source; example/docs demos
+  # fire the expected true positives). Any lib-source finding = triage.
+  # ─────────────────────────────────────────────────────────────
+  - repo: modelcontextprotocol/typescript-sdk
+    ref: main
+    expectedSignal: low
+    notes: Official MCP TS SDK. Lib source must stay at 0; examples/ are insecure demos.
+  - repo: modelcontextprotocol/python-sdk
+    ref: main
+    expectedSignal: low
+    notes: Official MCP Python SDK (mcp / FastMCP). Lib source must stay at 0; docs_src are demos.

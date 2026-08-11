@@ -20,10 +20,10 @@ describe('buildProgram', () => {
     expect(program.version()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it('registers the scan, baseline, list, init, doctor and explain commands', async () => {
+  it('registers the scan, baseline, list, init, doctor, explain and probe commands', async () => {
     const program = await buildProgram();
     const names = program.commands.map((c) => c.name()).sort();
-    expect(names).toEqual(['baseline', 'doctor', 'explain', 'init', 'list', 'scan']);
+    expect(names).toEqual(['baseline', 'doctor', 'explain', 'init', 'list', 'probe', 'scan']);
   });
 
   it('explain takes a required <rule> arg and a --json flag', async () => {

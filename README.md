@@ -2,7 +2,7 @@
 
 <a href="https://oauthlint.dev"><img src="docs/public/banner.png" alt="OAuthLint: AI ships the auth bug. Catch it before the PR." width="840" /></a>
 
-**Catch the OAuth / OIDC / JWT / session / CORS anti-patterns AI coding tools systematically produce.**
+**Catch the OAuth / OIDC / JWT / MCP / session / CORS anti-patterns AI coding tools systematically produce.**
 
 A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Rust · Java · C#/.NET, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
@@ -39,7 +39,8 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - password persisted in plaintext
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
-- …and many more: 180+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET, including framework-aware coverage (ASP.NET Core, Spring Security, NextAuth, Passport, FastAPI, Django REST, Express, and more)
+- **MCP server auth** — token pass-through (confused deputy), missing RFC 8707 audience/resource binding, unauthenticated MCP transports, and SSRF from tool-handler arguments, for the official TypeScript and Python MCP SDKs
+- …and many more: 190+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET, including framework-aware coverage (ASP.NET Core, Spring Security, NextAuth, Passport, FastAPI, Django REST, Express, MCP, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -150,7 +151,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**180+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets and session hygiene, in JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET (ASP.NET Core). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. The catalogue grows with every release.
+**190+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets, session hygiene and **MCP server auth**, in JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET (ASP.NET Core). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. A dedicated **MCP rule pack** catches the OAuth 2.1 resource-server mistakes MCP servers ship — token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF — for the official TypeScript (`@modelcontextprotocol/sdk`) and Python (`mcp` / FastMCP) SDKs. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 

@@ -1,0 +1,38 @@
+rules:
+  - id: auth.mcp.missing-resource-binding
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      This MCP server enforces bearer auth via `requireBearerAuth(...)` but
+      passes no `resourceMetadataUrl`. Per the MCP spec, an OAuth 2.1 resource
+      server MUST advertise its Protected Resource Metadata (RFC 9728): without
+      `resourceMetadataUrl`, the 401 `WWW-Authenticate` response carries no
+      `resource_metadata`, so MCP clients cannot discover the authorization
+      server, and there is no anchor for RFC 8707 audience binding (CWE-345).
+
+      Provide it (and mount `mcpAuthMetadataRouter`):
+        requireBearerAuth({
+          verifier,
+          resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
+        })
+    # Scoped to the MCP SDK symbol `requireBearerAuth({...})`, so generic auth
+    # middleware doesn't trip. Fires only when resourceMetadataUrl is absent.
+    patterns:
+      - pattern: requireBearerAuth({...})
+      - pattern-not: 'requireBearerAuth({..., resourceMetadataUrl: $X, ...})'
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-missing-resource-binding
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://datatracker.ietf.org/doc/html/rfc8707
+        - https://datatracker.ietf.org/doc/html/rfc9728
