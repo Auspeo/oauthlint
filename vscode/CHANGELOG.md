@@ -4,6 +4,15 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-08-12
+
+### Added
+
+- MCP server-auth coverage: the bundled rule pack now catches the OAuth 2.1
+  mistakes MCP servers ship — token pass-through (confused deputy), missing
+  RFC 8707 audience binding, unauthenticated transports, and tool-handler SSRF —
+  for the official TypeScript and Python MCP SDKs.
+
 ## [0.7.1] - 2026-08-10
 
 ### Changed
