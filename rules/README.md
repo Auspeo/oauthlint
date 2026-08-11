@@ -1,6 +1,6 @@
 # oauthlint-rules
 
-A focused Semgrep rule library targeting the OAuth/OIDC/JWT anti-patterns that
+A focused Semgrep rule library targeting the OAuth/OIDC/JWT/MCP anti-patterns that
 AI coding tools (Cursor, Claude Code, Copilot, Gemini Code Assist) produce on a
 recurring basis.
 

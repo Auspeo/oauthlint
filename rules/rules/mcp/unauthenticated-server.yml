@@ -1,0 +1,56 @@
+rules:
+  - id: auth.mcp.unauthenticated-server
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      This MCP transport is mounted on an Express route with NO auth middleware
+      — the tools are reachable unauthenticated (CWE-306). The route passes only
+      (path, handler): there is no `requireBearerAuth(...)` in the chain, so any
+      caller can drive the MCP server. A Knostic scan found none of ~2,000
+      internet-exposed MCP servers required auth.
+
+      Put `requireBearerAuth(...)` before the transport handler:
+        const auth = requireBearerAuth({ verifier, resourceMetadataUrl });
+        app.post('/mcp', auth, async (req, res) => { await transport.handleRequest(req, res, req.body); });
+    # A route with only (path, handler) has no middleware; adding requireBearerAuth
+    # would make it (path, middleware, handler), which these patterns do NOT match.
+    # Scoped to handlers that actually dispatch the MCP transport (.handleRequest /
+    # toNodeHandler / createMcpHandler), so ordinary routes don't trip.
+    pattern-either:
+      # (a) a handler that dispatches the MCP transport, inside a 2-arg Express
+      #     route (verb, path, handler) — i.e. no requireBearerAuth middleware.
+      #     Scoped to real HTTP verbs so an ordinary 2-arg method call (e.g. the
+      #     SDK's own `transport.handleRequest(req, opts)`) is NOT matched.
+      - patterns:
+          - pattern: $T.handleRequest(...)
+          - pattern-either:
+              - pattern-inside: '$APP.get($PATH, $HANDLER)'
+              - pattern-inside: '$APP.post($PATH, $HANDLER)'
+              - pattern-inside: '$APP.put($PATH, $HANDLER)'
+              - pattern-inside: '$APP.delete($PATH, $HANDLER)'
+              - pattern-inside: '$APP.patch($PATH, $HANDLER)'
+              - pattern-inside: '$APP.all($PATH, $HANDLER)'
+          - pattern-not-inside: '$APP.$V($PATH, requireBearerAuth(...), $HANDLER)'
+      # (b) the v2 node/mcp handler mounted directly on a route with no middleware.
+      - pattern-either:
+          - pattern: '$APP.get($PATH, toNodeHandler(...))'
+          - pattern: '$APP.post($PATH, toNodeHandler(...))'
+          - pattern: '$APP.all($PATH, toNodeHandler(...))'
+          - pattern: '$APP.get($PATH, createMcpHandler(...))'
+          - pattern: '$APP.post($PATH, createMcpHandler(...))'
+          - pattern: '$APP.all($PATH, createMcpHandler(...))'
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-unauthenticated-server
+      category: security
+      cwe: CWE-306
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://healthsystemcio.com/2026/07/28/mcp-server-exposure-health-isac/

@@ -1,6 +1,6 @@
 # OAuthLint for JetBrains IDEs
 
-OAuthLint catches OAuth, OIDC, JWT, session, cookie, and CORS anti-patterns that
+OAuthLint catches OAuth, OIDC, JWT, MCP, session, cookie, and CORS anti-patterns that
 AI coding tools frequently produce, and surfaces them as native inline
 annotations while you edit. It is the JetBrains counterpart to the OAuthLint
 VS Code extension and shares the same rule pack and scan engine.

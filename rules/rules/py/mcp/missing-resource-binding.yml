@@ -1,0 +1,40 @@
+rules:
+  - id: auth.py.mcp.missing-resource-binding
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      This MCP server enables auth via `AuthSettings(...)` but never sets
+      `resource_server_url`. Per the MCP spec, the server is an OAuth 2.1
+      resource server and MUST bind tokens to its own resource identifier
+      (RFC 8707). Without `resource_server_url`, FastMCP does NOT serve the
+      Protected Resource Metadata endpoint (RFC 9728), so clients cannot
+      discover the authorization server, and the token audience is not
+      anchored to this server (CWE-345).
+
+      Set it to this server's canonical URL:
+        auth=AuthSettings(
+            issuer_url=AUTH_SERVER_URL,
+            resource_server_url=THIS_SERVER_URL,   # RFC 8707 + serves RFC 9728 metadata
+            required_scopes=[MCP_SCOPE],
+        )
+    # Scoped to the MCP SDK's own `AuthSettings(...)` constructor, so generic
+    # settings objects don't trip. Fires only when resource_server_url is absent.
+    patterns:
+      - pattern: AuthSettings(...)
+      - pattern-not: AuthSettings(..., resource_server_url=$X, ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-MCP-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-mcp-missing-resource-binding
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - fastmcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://datatracker.ietf.org/doc/html/rfc8707
+        - https://datatracker.ietf.org/doc/html/rfc9728

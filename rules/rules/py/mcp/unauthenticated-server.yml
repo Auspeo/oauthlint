@@ -1,0 +1,52 @@
+rules:
+  - id: auth.py.mcp.unauthenticated-server
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      This MCP server is exposed over a NETWORK transport (streamable-http /
+      SSE) but was constructed with no authentication — no `auth=` and no
+      `token_verifier=`. Its tools are reachable by anyone who can reach the
+      port (CWE-306). A Knostic scan found none of ~2,000 internet-exposed MCP
+      servers required auth; unauthenticated `/mcp` endpoints are the surface
+      behind CVE-2026-66012 and the Q2-2026 MCP exposure wave.
+
+      Require auth before serving over the network:
+        mcp = FastMCP("name", token_verifier=verifier,
+                      auth=AuthSettings(issuer_url=..., resource_server_url=..., required_scopes=[...]))
+      (A `stdio` transport is local and out of scope for this rule.)
+    # Fires on a network-transport call whose FastMCP/MCPServer instance was
+    # created WITHOUT auth= or token_verifier=. stdio is intentionally excluded.
+    patterns:
+      - pattern-either:
+          - pattern: '$M.run(transport="streamable-http")'
+          - pattern: '$M.run(transport="sse")'
+          - pattern: $M.streamable_http_app()
+          - pattern: $M.sse_app()
+      - pattern-either:
+          - pattern-inside: |
+              $M = FastMCP(...)
+              ...
+          - pattern-inside: |
+              $M = MCPServer(...)
+              ...
+      - pattern-not-inside: |
+          $M = $CTOR(..., auth=$A, ...)
+          ...
+      - pattern-not-inside: |
+          $M = $CTOR(..., token_verifier=$V, ...)
+          ...
+    metadata:
+      oauthlint-rule-id: AUTH-PY-MCP-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-mcp-unauthenticated-server
+      category: security
+      cwe: CWE-306
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - fastmcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://healthsystemcio.com/2026/07/28/mcp-server-exposure-health-isac/

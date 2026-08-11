@@ -1,0 +1,51 @@
+rules:
+  - id: auth.mcp.tool-handler-ssrf
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An argument of an MCP tool handler (`server.registerTool` / `server.tool`)
+      flows into an outbound HTTP request without validation — a server-side
+      request forgery (SSRF, CWE-918). Tool arguments are attacker-influenced:
+      an LLM or a malicious caller can point the URL at internal services, cloud
+      metadata (169.254.169.254), or localhost. BlueRock found ~36.7% of MCP
+      servers SSRF-prone.
+
+      Validate the target before fetching: resolve and allow-list the host,
+      reject private/link-local ranges, and disable redirects. Never pass a raw
+      tool argument straight into `fetch`/`axios`.
+    # Taint from the tool handler's own argument object to an outbound request.
+    # Distinct from generic SSRF (source = HTTP request) — here the source is the
+    # MCP tool argument itself.
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: '$S.registerTool($NAME, $SCHEMA, async ($ARGS) => { ... })'
+              - pattern: '$S.registerTool($NAME, $SCHEMA, ($ARGS) => { ... })'
+              - pattern: '$S.tool($NAME, $SCHEMA, async ($ARGS) => { ... })'
+              - pattern: '$S.tool($NAME, $SCHEMA, ($ARGS) => { ... })'
+          - focus-metavariable: $ARGS
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($SINK, ...)
+              - pattern: fetch($SINK)
+              - pattern: axios($SINK, ...)
+              - pattern: axios.$M($SINK, ...)
+              - pattern: axios($SINK)
+          - focus-metavariable: $SINK
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-tool-handler-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://cwe.mitre.org/data/definitions/918.html

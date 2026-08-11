@@ -15,7 +15,7 @@ interface Props {
 
 const {
   title,
-  description = 'A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns AI coding tools generate by default. Hand-curated rules, zero false positives on clean auth libraries. Open source, MIT.',
+  description = 'A static-analysis linter for the OAuth, OIDC, JWT, MCP, session and CORS anti-patterns AI coding tools generate by default. Hand-curated rules, zero false positives on clean auth libraries. Open source, MIT.',
   ogImage = '/og.png',
   ogImageAlt = 'OAuthLint — a static-analysis linter for the auth bugs AI coding tools ship by default.',
   ogType = 'website',
@@ -50,7 +50,7 @@ const jsonLd = {
       url: site,
       name: 'OAuthLint',
       description:
-        'A static-analysis linter for the OAuth, OIDC, JWT, session and CORS anti-patterns AI coding tools generate.',
+        'A static-analysis linter for the OAuth, OIDC, JWT, MCP, session and CORS anti-patterns AI coding tools generate.',
       publisher: { '@id': `${site}#org` },
     },
     {
@@ -60,11 +60,11 @@ const jsonLd = {
       operatingSystem: 'Cross-platform',
       url: site,
       description:
-        'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java and Rust.',
+        'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/MCP/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java and Rust, with a dedicated MCP server-auth rule pack.',
       license: 'https://opensource.org/licenses/MIT',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       keywords:
-        'AI auth bugs, JWT lint, OAuth security linter, AI code security, OAuth OIDC static analysis, JWT security, session security, CORS misconfiguration, Semgrep auth rules',
+        'AI auth bugs, JWT lint, OAuth security linter, AI code security, OAuth OIDC static analysis, JWT security, session security, CORS misconfiguration, Semgrep auth rules, MCP security, MCP auth linter, Model Context Protocol security',
       publisher: { '@id': `${site}#org` },
     },
   ],
