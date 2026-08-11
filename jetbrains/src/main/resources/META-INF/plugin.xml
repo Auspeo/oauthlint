@@ -23,6 +23,18 @@
         activated automatically wherever the matching language support is present.</p>
     ]]></description>
 
+    <change-notes><![CDATA[
+        <h3>0.2.1</h3>
+        <ul>
+          <li><b>MCP server-auth coverage.</b> Catches the OAuth 2.1 mistakes Model Context
+              Protocol servers ship: token pass-through (confused deputy), missing RFC 8707
+              audience binding, unauthenticated transports, and tool-handler SSRF, for the
+              official TypeScript and Python MCP SDKs.</li>
+          <li>Rule pack refreshed; the extraction cache key was bumped so the new rules load on upgrade.</li>
+        </ul>
+        <p>Full release notes: <a href="https://github.com/Auspeo/oauthlint/releases">github.com/Auspeo/oauthlint/releases</a></p>
+    ]]></change-notes>
+
     <!-- Loads in every JetBrains IDE. -->
     <depends>com.intellij.modules.platform</depends>
 
