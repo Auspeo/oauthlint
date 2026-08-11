@@ -113,9 +113,12 @@ beforeAll(async () => {
     const counts = await Promise.all(batch.map((j) => scanCount(j.ruleFile, j.file)));
     batch.forEach((j, idx) => actual.set(j.key, counts[idx]));
   }
-  // ~180 Semgrep invocations (90 rules x 2 fixtures); the budget scales with the
-  // pack size, so this is generous headroom over a typical ~60-90s warm run.
-}, 300_000);
+  // ~200 Semgrep invocations (rules x 2 fixtures); the budget scales with the
+  // pack size, so this is generous headroom over a typical ~60-90s warm run. Bumped
+  // to 600s because the parallel warm run (concurrency 12) can transiently exceed
+  // 300s under semgrep contention on constrained CI runners, which flaked the whole
+  // suite (all fixtures skipped on a hook timeout) regardless of the rules themselves.
+}, 600_000);
 
 describe.skipIf(!semgrepAvailable)('rule fixtures fire as annotated', () => {
   for (const dir of fixtureDirs) {

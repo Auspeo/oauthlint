@@ -4,7 +4,7 @@
 
 # oauthlint for VS Code
 
-Catch the OAuth, OIDC, JWT, session, and CORS anti-patterns that AI coding tools
+Catch the OAuth, OIDC, JWT, MCP, session, and CORS anti-patterns that AI coding tools
 produce, right in your editor. oauthlint flags risky auth code as you save, links
 every finding to its explanation, and (when a finding ships a safe rewrite) offers
 a one-click fix.
@@ -102,8 +102,10 @@ download.
 - **oauthlint: Retry scan engine setup**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
-pack covers **180+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET**,
-including dataflow (taint) rules for open-redirect and SSRF, and
+pack covers **190+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET**,
+including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience
+binding, unauthenticated transports, tool-handler SSRF) and dataflow (taint) rules for
+open-redirect and SSRF, and
 runs from the [CLI](https://www.npmjs.com/package/oauthlint) and
 [GitHub Action](https://github.com/Auspeo/oauthlint/tree/main/action).
 

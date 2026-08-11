@@ -8,6 +8,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runExplain } from './commands/explain.js';
 import { runInit } from './commands/init.js';
 import { runList } from './commands/list.js';
+import { runProbe } from './commands/probe.js';
 import { type ScanFormat, runScan } from './commands/scan.js';
 import { maybeNotifyUpdate } from './core/update-notifier.js';
 import { setEngineOverride } from './engine/index.js';
@@ -227,6 +228,22 @@ export async function buildProgram(): Promise<Command> {
     .option('--json', 'Emit JSON instead of pretty output')
     .action(async (opts: { json?: boolean }) => {
       const code = await runDoctor({ json: opts.json });
+      await finishWithNotice(code, {
+        version,
+        machineReadable: opts.json === true,
+        updateCheck: updateCheckEnabled(),
+      });
+    });
+
+  program
+    .command('probe')
+    .argument('<url>', 'URL of a running MCP server endpoint (e.g. https://host/mcp)')
+    .description(
+      'Probe a live MCP server for OAuth 2.1 resource-server conformance (no token needed)',
+    )
+    .option('--json', 'Emit JSON instead of pretty output')
+    .action(async (url: string, opts: { json?: boolean }) => {
+      const code = await runProbe(url, { json: opts.json });
       await finishWithNotice(code, {
         version,
         machineReadable: opts.json === true,

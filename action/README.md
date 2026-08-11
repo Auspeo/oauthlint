@@ -1,6 +1,6 @@
 # OAuthLint GitHub Action
 
-Catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce,
+Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools systematically produce,
 right inside your CI.
 
 Out of the box, every finding shows up **inline on the PR's _Files changed_ tab**
