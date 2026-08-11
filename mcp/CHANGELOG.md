@@ -1,5 +1,15 @@
 # oauthlint-mcp
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [97eaaae]
+- Updated dependencies [97eaaae]
+- Updated dependencies [a3a1ccb]
+  - oauthlint-rules@0.9.0
+  - oauthlint@0.12.0
+
 ## 0.2.3
 
 ### Patch Changes
