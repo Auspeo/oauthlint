@@ -6,8 +6,9 @@ recurring basis.
 
 The full pack ships 250+ rules across JavaScript/TypeScript, Python, Go, Rust,
 Java, C#/.NET, PHP, Ruby, and Kotlin, with framework-aware coverage (ASP.NET Core,
-Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor, Laravel/Socialite,
-Rails/Devise/OmniAuth/Doorkeeper) and a dedicated MCP server-auth pack.
+Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security,
+Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport,
+Express/Fastify/NestJS) and a dedicated MCP server-auth pack.
 
 This package contains:
 

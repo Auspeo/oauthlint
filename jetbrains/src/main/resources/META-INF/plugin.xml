@@ -30,7 +30,8 @@
     <change-notes><![CDATA[
         <h3>0.3.0</h3>
         <ul>
-          <li><b>New languages: PHP, Ruby, and Kotlin.</b> The pack now spans nine languages,
+          <li><b>New languages: PHP, Ruby, and Kotlin.</b> The pack now spans ten languages
+              (JavaScript, TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin),
               with framework-aware rules for Laravel/Socialite (PHP),
               Rails/Devise/OmniAuth/Doorkeeper (Ruby), and Ktor (Kotlin).</li>
           <li><b>More framework packs.</b> ASP.NET Core (C#), Gin/Echo/Fiber (Go),
