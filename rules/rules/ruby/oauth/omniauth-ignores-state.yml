@@ -1,0 +1,35 @@
+rules:
+  - id: auth.ruby.oauth.omniauth-ignores-state
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      An OmniAuth provider is configured with `provider_ignores_state: true`,
+      which disables verification of the OAuth `state` parameter on the
+      callback. `state` is the OAuth CSRF defence: without it, an attacker can
+      splice their own authorization code/response into a victim's session and
+      complete a login/link they did not initiate (CWE-352). This flag exists
+      only as an escape hatch and is a common LLM "fix" for state-mismatch
+      errors caused by a broken session store.
+
+      Remove `provider_ignores_state: true` and fix the real cause (usually a
+      session that is not shared between the request and callback phases, e.g.
+      a cookie store misconfiguration or a load balancer without sticky
+      sessions). Let OmniAuth validate `state` on every callback.
+    pattern-either:
+      - pattern: 'provider ..., provider_ignores_state: true, ...'
+      - pattern: '{ ..., provider_ignores_state: true, ... }'
+      - pattern: "{ ..., 'provider_ignores_state' => true, ... }"
+      - pattern: '{ ..., "provider_ignores_state" => true, ... }'
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-omniauth-ignores-state
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - omniauth
+      references:
+        - https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12

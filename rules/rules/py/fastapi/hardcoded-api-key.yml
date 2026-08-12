@@ -1,0 +1,65 @@
+rules:
+  - id: auth.py.fastapi.hardcoded-api-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A FastAPI security dependency (`Security(...)` — an API-key scheme such as
+      `APIKeyHeader`/`APIKeyQuery`/`APIKeyCookie`, or an OAuth2 bearer scheme)
+      injects a credential that is then compared against a hard-coded string
+      literal. The accepted key/token is baked into the source, so anyone who
+      reads the code — or a leaked repo — can authenticate, and the secret cannot
+      be rotated without a redeploy (CWE-798). This is a common AI-generated
+      shortcut: a single inline literal replaces a real key store.
+
+      Compare against a secret loaded from the environment or a secret manager
+      with a constant-time check instead, e.g.
+      `secrets.compare_digest(api_key, os.environ["API_KEY"])`, and issue/verify
+      per-client keys rather than one shared literal.
+    # Fires only INSIDE a function whose parameter is injected by `Security(...)`
+    # (the FastAPI security-scheme dependency), binding that parameter name, then
+    # matching a comparison of THAT value against a string/bytes literal (`==` or
+    # a `compare_digest`). `Depends(...)` is deliberately NOT used as the anchor:
+    # values from generic `Depends` (roles, config) are legitimately compared to
+    # literals, which would false-positive — `Security(...)` marks a credential.
+    # Comparing against `os.environ[...]` / a settings value / any variable does
+    # not match, so an externalised key never fires.
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              def $FN(..., $K = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $K: $T = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K: $T = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $K: Annotated[$T, Security(...)], ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K: Annotated[$T, Security(...)], ...):
+                  ...
+      - pattern-either:
+          - pattern: $K == "..."
+          - pattern: '"..." == $K'
+          - pattern: secrets.compare_digest($K, "...")
+          - pattern: secrets.compare_digest($K.encode(...), b"...")
+          - pattern: hmac.compare_digest($K, "...")
+          - pattern: hmac.compare_digest($K.encode(...), b"...")
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-hardcoded-api-key
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - fastapi
+      references:
+        - https://fastapi.tiangolo.com/reference/security/
+        - https://cwe.mitre.org/data/definitions/798.html

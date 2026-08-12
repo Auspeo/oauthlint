@@ -1,0 +1,48 @@
+rules:
+  - id: auth.php.jwt.manual-decode-no-verify
+    languages:
+      - php
+    severity: ERROR
+    message: |
+      A JWT payload is read by hand — `json_decode(base64_decode($parts[1]))` on
+      the second dot-segment of a token — without ever verifying the signature.
+      The claims (user id, roles, scopes) are trusted straight from an attacker-
+      controllable string, so anyone can forge a token with any identity and it
+      will be accepted (CWE-347). This is a common AI-generated shortcut: the
+      model "decodes" the token to read a claim and skips verification entirely.
+
+      Verify the signature with the library instead, pinning the algorithm and a
+      key from configuration:
+        use Firebase\JWT\JWT;
+        use Firebase\JWT\Key;
+        $claims = JWT::decode($jwt, new Key($_ENV['JWT_SECRET'], 'HS256'));
+    # Structurally requires decoding the payload segment (index [1]) — the header
+    # (`$parts[0]`) and real verification (`JWT::decode($jwt, new Key(...))`) are
+    # excluded. The pattern-regex requires the exploded source variable to be
+    # named like a token (jwt/token/bearer/authoriz*), so generic base64 of an
+    # image/data-URI segment does not fire.
+    patterns:
+      - pattern-either:
+          - pattern: json_decode(base64_decode($SRC[1]))
+          - pattern: json_decode(base64_decode($SRC[1]), true)
+      - pattern-regex: '(?i)base64_decode\s*\(\s*\$\w*(?:jwt|token|bearer|authoriz)\w*\s*\[\s*1\s*\]'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-jwt-manual-decode-no-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - php
+      references:
+        - https://github.com/firebase/php-jwt
+        - https://cwe.mitre.org/data/definitions/347.html

@@ -1,0 +1,59 @@
+rules:
+  - id: auth.php.jwt.unsecured-signer
+    languages:
+      - php
+    severity: ERROR
+    message: |
+      A JWT is configured with an unsecured / `none` signer — e.g.
+      `Configuration::forUnsecuredSigner()` or `new Signer\None()` (lcobucci/jwt),
+      or the `'none'` algorithm passed to `JWT::encode()` / `new Key(...)`
+      (firebase/php-jwt). Unsecured tokens carry no signature, so anyone can mint
+      a token with any claims and it will be accepted (CWE-347). This appears in
+      AI-generated "quick token" and debugging code that then ships.
+
+      Use a real signer with a key from configuration:
+        use Lcobucci\JWT\Configuration;
+        use Lcobucci\JWT\Signer\Hmac\Sha256;
+        use Lcobucci\JWT\Signer\Key\InMemory;
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(), InMemory::base64Encoded(getenv('JWT_KEY'))
+        );
+    # Near-zero FP: matches the explicit unsecured-signer constructors and the
+    # `none` algorithm string (case-insensitive). `JWT::decode($j, new Key($k,
+    # 'none'))` is caught through its inner `new Key(..., 'none')`.
+    patterns:
+      - pattern-either:
+          - pattern: Configuration::forUnsecuredSigner()
+          - pattern: new Signer\None()
+          - patterns:
+              - pattern: new Key($K, $ALG)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']none["']$
+          - patterns:
+              - pattern: JWT::encode($P, $K, $ALG)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']none["']$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-jwt-unsecured-signer
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - lcobucci-jwt
+        - firebase-php-jwt
+      references:
+        - https://github.com/lcobucci/jwt
+        - https://github.com/firebase/php-jwt
+        - https://cwe.mitre.org/data/definitions/347.html

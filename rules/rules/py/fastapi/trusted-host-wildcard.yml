@@ -1,0 +1,47 @@
+rules:
+  - id: auth.py.fastapi.trusted-host-wildcard
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      Starlette's `TrustedHostMiddleware` is added but configured to trust every
+      Host header (`allowed_hosts=["*"]`, or a list that contains `"*"`). The
+      middleware exists specifically to validate the incoming `Host`/`X-Forwarded-Host`
+      header against an allow-list; a wildcard disables that check, re-opening Host
+      header injection — password-reset-link poisoning, cache poisoning, and
+      routing of absolute URLs the app builds from the Host (CWE-346). This is a
+      common AI-generated shortcut to silence a host-validation error rather than
+      enumerate the real hostnames.
+
+      List the exact hostnames the service answers on, e.g.
+      `app.add_middleware(TrustedHostMiddleware, allowed_hosts=["app.example.com",
+      "www.example.com"])` (a leading-dot entry like `"*.example.com"` matches
+      subdomains and is fine — the problem is the bare `"*"`).
+    # Scoped to Starlette/FastAPI `TrustedHostMiddleware`, added via
+    # `app.add_middleware(...)` or instantiated directly, with a bare `"*"`
+    # anywhere in `allowed_hosts`. A concrete allow-list (including subdomain
+    # wildcards such as `"*.example.com"`) does not contain the bare `"*"` element
+    # and therefore never fires.
+    patterns:
+      - pattern-either:
+          - pattern: $APP.add_middleware(TrustedHostMiddleware, ..., allowed_hosts=$HOSTS, ...)
+          - pattern: TrustedHostMiddleware(..., allowed_hosts=$HOSTS, ...)
+      - metavariable-pattern:
+          metavariable: $HOSTS
+          patterns:
+            - pattern-either:
+                - pattern: '["*"]'
+                - pattern: '[..., "*", ...]'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-trusted-host-wildcard
+      category: security
+      cwe: CWE-346
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - fastapi
+        - starlette
+      references:
+        - https://www.starlette.io/middleware/#trustedhostmiddleware
+        - https://cwe.mitre.org/data/definitions/346.html

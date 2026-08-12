@@ -37,7 +37,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(HERE, '..', 'public', 'r');
 
 /** Per-language bundles to emit alongside the combined pack. */
-const LANGUAGE_SUBSETS = ['javascript', 'typescript', 'python', 'go', 'java', 'rust'] as const;
+const LANGUAGE_SUBSETS = [
+  'javascript',
+  'typescript',
+  'python',
+  'go',
+  'java',
+  'rust',
+  'php',
+  'ruby',
+] as const;
 
 /**
  * Serialize a list of rules into a valid Semgrep ruleset document.
