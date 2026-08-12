@@ -1,0 +1,51 @@
+rules:
+  - id: auth.py.mcp.dns-rebinding-unprotected
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      This FastMCP server binds to `0.0.0.0` and serves a network transport
+      (streamable-http / SSE) without DNS-rebinding protection (CWE-346). When
+      the host is not loopback, the SDK does NOT auto-enable protection, so a
+      web page the user visits can rebind a DNS name to this server and drive
+      its tools cross-origin. (Binding to `127.0.0.1` auto-protects since 1.23.0.)
+
+      Pass explicit transport security with a Host allow-list:
+        from mcp.server.transport_security import TransportSecuritySettings
+        mcp = FastMCP(
+            "name", host="0.0.0.0",
+            transport_security=TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=["mcp.example.com"],
+                allowed_origins=["https://app.example.com"],
+            ),
+        )
+    # Fires on a network-transport run whose FastMCP was created with an explicit
+    # host="0.0.0.0" (not loopback) and NO transport_security= (on the ctor or the
+    # run call). Loopback binds auto-protect and are intentionally out of scope.
+    patterns:
+      - pattern-either:
+          - pattern: '$M.run(transport="streamable-http", ...)'
+          - pattern: '$M.run(transport="sse", ...)'
+      - pattern-inside: |
+          $M = FastMCP(..., host="0.0.0.0", ...)
+          ...
+      - pattern-not-inside: |
+          $M = FastMCP(..., transport_security=$TS, ...)
+          ...
+      - pattern-not: '$M.run(..., transport_security=$TS)'
+    metadata:
+      oauthlint-rule-id: AUTH-PY-MCP-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-mcp-dns-rebinding-unprotected
+      category: security
+      cwe: CWE-346
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - mcp
+        - fastmcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://www.cve.org/CVERecord?id=CVE-2025-66416
+        - https://cwe.mitre.org/data/definitions/346.html

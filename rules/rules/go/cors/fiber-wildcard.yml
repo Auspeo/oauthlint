@@ -1,0 +1,39 @@
+rules:
+  - id: auth.go.cors.fiber-wildcard
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A Fiber CORS middleware is configured with the wildcard origin `"*"`.
+      Fiber's `cors.Config.AllowOrigins` is a single comma-separated STRING (not
+      a `[]string`), so this shape is missed by the generic slice/`AllowAllOrigins`
+      CORS checks. `"*"` lets any website make cross-origin requests to this
+      API, defeating the same-origin policy (CWE-942); combined with
+      `AllowCredentials: true` it becomes an account-takeover primitive that
+      leaks OAuth/OIDC tokens cross-origin. This is a common AI-generated
+      default pasted in to "make the browser call work".
+
+      Restrict to an explicit allowlist, e.g.
+        cors.Config{AllowOrigins: "https://app.example.com"}
+      and never combine a wildcard origin with credentials.
+    # Fiber-specific: `cors.Config` with a STRING `AllowOrigins` equal to (or
+    # containing) the wildcard `"*"`. gin's `cors.Config` uses a `[]string`
+    # AllowOrigins / `AllowAllOrigins` bool and is handled by
+    # auth.go.cors.allow-all, so this does not overlap.
+    patterns:
+      - pattern: 'cors.Config{..., AllowOrigins: $O, ...}'
+      - metavariable-regex:
+          metavariable: $O
+          regex: ^"(\*|[^"]*,\s*\*|\*\s*,[^"]*)"$
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-fiber-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - fiber
+      references:
+        - https://docs.gofiber.io/api/middleware/cors
+        - https://cwe.mitre.org/data/definitions/942.html

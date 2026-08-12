@@ -1,0 +1,34 @@
+rules:
+  - id: auth.csharp.crypto.ecb-mode
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A symmetric cipher is configured with `CipherMode.ECB`. ECB encrypts each
+      block independently, so identical plaintext blocks produce identical
+      ciphertext, leaking structure and enabling block-shuffling attacks
+      (CWE-327). This matters for anything auth-related: encrypted tokens,
+      cookies, or credentials.
+
+      Use an authenticated mode instead: prefer AES-GCM
+      (`AesGcm`) or, failing that, CBC with a random IV and a separate MAC.
+    patterns:
+      - pattern-either:
+          - pattern: $X.Mode = System.Security.Cryptography.CipherMode.ECB
+          - pattern: $X.Mode = CipherMode.ECB
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - dotnet
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html

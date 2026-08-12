@@ -1,0 +1,45 @@
+rules:
+  - id: auth.betterauth.trusted-origins-wildcard
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A fully-permissive wildcard appears in better-auth's `trustedOrigins`.
+
+      `trustedOrigins` is better-auth's origin allow-list for CSRF and callback
+      protection. An entry of `"*"`, `"**"`, or a protocol-only wildcard like
+      `"https://*"` / `"*://*"` matches EVERY host, so any website can drive
+      authenticated cross-origin requests and receive OAuth callbacks — this
+      defeats the origin check entirely (CWE-942 / CWE-352).
+
+      List the exact origins you trust instead:
+      `trustedOrigins: ["https://app.example.com"]`. A scoped subdomain wildcard
+      (`"https://*.example.com"`) is fine; a bare or protocol-only `*` is not.
+    patterns:
+      - pattern-inside: 'betterAuth({...})'
+      - pattern: 'trustedOrigins: [..., $O, ...]'
+      - metavariable-regex:
+          metavariable: $O
+          regex: '^["''](\*{1,2}|(?:https?|\*)://\*{1,2})["'']$'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-trusted-origins-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - better-auth
+      references:
+        - https://www.better-auth.com/docs/reference/security
+        - https://cwe.mitre.org/data/definitions/942.html

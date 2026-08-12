@@ -1,0 +1,39 @@
+rules:
+  - id: auth.py.oauth.no-pkce
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      An OAuth authorization URL is created without PKCE (no `code_challenge` /
+      `code_verifier`). For a public client (mobile, SPA, CLI, native app) that
+      cannot keep a secret, PKCE is what stops an attacker who intercepts the
+      authorization code from redeeming it (CWE-345). AI-generated auth-code
+      flows routinely omit it.
+
+      Generate a verifier and pass it, e.g.
+      `client.create_authorization_url(url, code_verifier=generate_token(48))`
+      (Authlib derives the S256 challenge for you).
+    patterns:
+      - pattern-either:
+          - pattern: $SESS.create_authorization_url($URL)
+          - pattern: $SESS.create_authorization_url($URL, state=$S)
+      - pattern-not: $SESS.create_authorization_url(..., code_verifier=$V, ...)
+      - pattern-not: $SESS.create_authorization_url(..., code_challenge=$C, ...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "**/conftest.py"
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-no-pkce
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - authlib
+      references:
+        - https://docs.authlib.org/en/latest/client/oauth2.html
+        - https://datatracker.ietf.org/doc/html/rfc7636

@@ -1,0 +1,45 @@
+rules:
+  - id: auth.mcp.predictable-session-id
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      This MCP `StreamableHTTPServerTransport` derives its session id from a
+      predictable source — `Date.now()`, `Math.random()`, or an incrementing
+      counter (CWE-330). Session ids are the bearer of the MCP session; if an
+      attacker can guess or enumerate them, they can hijack another client's
+      session and issue tool calls as that client. `Math.random()` is not a CSPRNG
+      and time/counter values are trivially predictable.
+
+      Use a cryptographically secure generator:
+        sessionIdGenerator: () => randomUUID()   // from node:crypto
+      (Omit `sessionIdGenerator` entirely for stateless mode — that is fine.)
+    # Scoped to the inline arrow generator's body ($BODY), then narrowed via
+    # metavariable-pattern to the weak idioms only. `undefined` (stateless mode)
+    # is not an arrow so is NOT matched; `() => randomUUID()` has no weak idiom
+    # so is NOT matched. (A metavariable cannot bind an arrow value directly in
+    # object-value position, so the arrow is destructured as `() => $BODY`.)
+    patterns:
+      - pattern: 'new StreamableHTTPServerTransport({..., sessionIdGenerator: () => $BODY, ...})'
+      - metavariable-pattern:
+          metavariable: $BODY
+          patterns:
+            - pattern-either:
+                - pattern: Date.now()
+                - pattern: Math.random()
+                - pattern: $C++
+                - pattern: ++$C
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-predictable-session-id
+      category: security
+      cwe: CWE-330
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://cwe.mitre.org/data/definitions/330.html

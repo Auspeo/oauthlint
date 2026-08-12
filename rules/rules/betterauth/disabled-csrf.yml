@@ -1,0 +1,44 @@
+rules:
+  - id: auth.betterauth.disabled-csrf
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      better-auth's CSRF / origin protection is explicitly disabled.
+
+      In `advanced`, `disableCSRFCheck: true` turns off ALL of better-auth's
+      CSRF protection (origin-header validation and Fetch-Metadata checks), and
+      `disableOriginCheck: true` drops the origin-header validation on its own.
+      Either one lets a malicious site drive state-changing authentication
+      requests against a logged-in user's session (CWE-352).
+
+      Remove the flag and keep the checks on. If a specific trusted front-end
+      needs to reach the auth API cross-origin, add its exact origin to
+      `trustedOrigins` instead of disabling the check globally.
+    patterns:
+      - pattern-inside: 'betterAuth({...})'
+      - pattern-either:
+          - pattern: 'disableCSRFCheck: true'
+          - pattern: 'disableOriginCheck: true'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-disabled-csrf
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - better-auth
+      references:
+        - https://www.better-auth.com/docs/reference/security
+        - https://cwe.mitre.org/data/definitions/352.html

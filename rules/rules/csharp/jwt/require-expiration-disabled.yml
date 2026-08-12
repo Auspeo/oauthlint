@@ -1,0 +1,45 @@
+rules:
+  - id: auth.csharp.jwt.require-expiration-disabled
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A JWT setup sets `RequireExpirationTime = false` on
+      `TokenValidationParameters`. Tokens without an `exp` claim are then accepted,
+      so a leaked or stolen token stays valid forever — it can never expire or be
+      timed out (CWE-613). This is a common AI-generated shortcut to accept tokens
+      that happen to omit `exp`.
+
+      Leave `RequireExpirationTime` at its secure default (`true`) and keep
+      `ValidateLifetime = true` so every token must carry an `exp` claim and is
+      rejected once it lapses.
+    # Matches the explicit `RequireExpirationTime = false` downgrade as an object
+    # initializer or a member assignment. The secure default is `true`, so only an
+    # explicit disable fires.
+    pattern-either:
+      - pattern: RequireExpirationTime = false
+      - pattern: $X.RequireExpirationTime = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-require-expiration-disabled
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.requireexpirationtime
+        - https://cwe.mitre.org/data/definitions/613.html

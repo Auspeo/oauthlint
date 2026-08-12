@@ -1,0 +1,37 @@
+rules:
+  - id: auth.py.crypto.ecb-mode
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A symmetric cipher is configured in ECB mode. ECB encrypts each block
+      independently, so identical plaintext blocks yield identical ciphertext,
+      leaking structure and enabling block-shuffling attacks (CWE-327). This
+      matters for anything auth-related: encrypted tokens, cookies, credentials.
+
+      Use an authenticated mode: AES-GCM (`AESGCM` / `modes.GCM`) or, failing
+      that, CBC with a random IV plus a separate MAC.
+    pattern-either:
+      - pattern: AES.new($K, AES.MODE_ECB, ...)
+      - pattern: AES.new($K, $LIB.MODE_ECB, ...)
+      - pattern: Cipher($ALG, modes.ECB(), ...)
+      - pattern: Cipher($ALG, $M.modes.ECB(), ...)
+      - pattern: modes.ECB()
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "**/conftest.py"
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - pycryptodome
+        - cryptography
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html

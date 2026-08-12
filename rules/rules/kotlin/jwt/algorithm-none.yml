@@ -1,0 +1,35 @@
+rules:
+  - id: auth.kotlin.jwt.algorithm-none
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A JWT signer or verifier is built with `Algorithm.none()`, the unsecured
+      algorithm that produces (and accepts) tokens with no signature. An
+      `alg=none` token can be forged by anyone — changing the subject, roles, or
+      expiry costs nothing because there is no signature to verify (CWE-347). This
+      is a common AI-generated mistake: the "no signature" algorithm is reached
+      for during prototyping or a Ktor demo and never swapped for a real key.
+
+      Sign and verify with a real algorithm and a key from configuration —
+      `Algorithm.HMAC256(System.getenv("JWT_SECRET"))` or an RSA/EC key — e.g.
+      `JWT.require(Algorithm.HMAC256(secret)).build().verify(token)`.
+    # Auth0 java-jwt (com.auth0.jwt): the Algorithm.none() factory, used for both
+    # JWT.create().sign(alg) and the JWT.require(alg) verifier.
+    pattern-either:
+      - pattern: com.auth0.jwt.algorithms.Algorithm.none()
+      - pattern: Algorithm.none()
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-jwt-algorithm-none
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - java-jwt
+        - ktor
+      references:
+        - https://github.com/auth0/java-jwt
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-2.1
+        - https://cwe.mitre.org/data/definitions/347.html

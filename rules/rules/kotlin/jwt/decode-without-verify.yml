@@ -1,0 +1,36 @@
+rules:
+  - id: auth.kotlin.jwt.decode-without-verify
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      A JWT is decoded but its signature is never verified. Auth0 java-jwt's
+      `JWT.decode(token)` only base64-decodes the token — it does NOT check the
+      signature — so any claim it exposes (subject, roles, expiry) is fully
+      attacker-controlled (CWE-345). This is a common AI-generated mistake:
+      `JWT.decode(...)` is reached for to "read the claims" and its result is
+      trusted as if it had been verified.
+
+      Verify the signature before reading any claim. With Auth0 java-jwt build a
+      verifier and call it:
+        `JWT.require(Algorithm.HMAC256(secret)).withIssuer(iss).withAudience(aud).build().verify(token)`
+      The `DecodedJWT` returned by `verify(...)` is the only trustworthy one.
+    # Auth0 java-jwt (com.auth0.jwt): JWT.decode(token) returns an UNVERIFIED
+    # DecodedJWT. The verified path is JWT.require(alg).build().verify(token),
+    # which uses .verify(...), not .decode(...), so it is not matched.
+    pattern-either:
+      - pattern: com.auth0.jwt.JWT.decode($T)
+      - pattern: JWT.decode($T)
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-jwt-decode-without-verify
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - java-jwt
+      references:
+        - https://github.com/auth0/java-jwt#decode-a-token
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-3.1
+        - https://cwe.mitre.org/data/definitions/345.html

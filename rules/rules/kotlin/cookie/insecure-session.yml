@@ -1,0 +1,45 @@
+rules:
+  - id: auth.kotlin.cookie.insecure-session
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      A Ktor session cookie is configured without `cookie.secure = true`, so the
+      browser will send it over plain HTTP as well as HTTPS. On any unencrypted
+      request the session identifier is exposed to network eavesdroppers and can
+      be captured and replayed to hijack the session (CWE-614, Sensitive Cookie
+      Without 'Secure' Attribute). This is a common AI-generated mistake: the
+      `cookie<Session>(...) { }` block sets `path`/`maxAge` but omits the security
+      flags.
+
+      Mark the cookie secure (and add signing/encryption) inside the block:
+        `cookie.secure = true`
+        `cookie.httpOnly = true`
+        `transform(SessionTransportTransformerEncrypt(encryptKey, signKey))`
+    # Ktor ktor-server-sessions: the cookie<T>(name) { ... } configuration block.
+    # Fire only when the block configures the cookie yet never sets
+    # `cookie.secure = true`. The safe form (secure = true present) is excluded
+    # structurally, so it never fires.
+    patterns:
+      - pattern: |
+          cookie<$T>($NAME) {
+            ...
+          }
+      - pattern-not: |
+          cookie<$T>($NAME) {
+            ...
+            cookie.secure = true
+            ...
+          }
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-cookie-insecure-session
+      category: security
+      cwe: CWE-614
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - ktor
+      references:
+        - https://ktor.io/docs/server-sessions.html
+        - https://cwe.mitre.org/data/definitions/614.html

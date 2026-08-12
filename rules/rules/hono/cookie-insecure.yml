@@ -1,0 +1,76 @@
+rules:
+  - id: auth.hono.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A session/auth cookie is set with Hono's `setCookie(c, name, value, ...)`
+      helper WITHOUT the `Secure` flag, or with `secure`/`httpOnly` explicitly
+      disabled. Missing `Secure` lets the browser send the cookie over plain
+      HTTP where a network attacker can capture it (CWE-614); `httpOnly: false`
+      exposes it to `document.cookie`, so any XSS on the origin can steal the
+      session (CWE-1004).
+
+      Harden every auth cookie:
+        setCookie(c, 'session', value, {
+          httpOnly: true, secure: true, sameSite: 'Lax'
+        })
+      If you genuinely need insecure cookies in dev, gate the value on the
+      environment rather than hard-coding `secure: false`.
+    # Scoped to auth-looking cookie names via the shared name regex, matching the
+    # Hono `setCookie(context, name, value, options)` helper (never Express's
+    # `res.cookie(...)`, which the auth.cookie.* rules cover). We flag: an options
+    # object missing `secure`, an explicit `secure: false` / `httpOnly: false`,
+    # or the 3-arg form with no options at all. A cookie carrying `secure: true`
+    # (or a computed `secure: $X`) is left alone, mirroring auth.cookie.no-secure.
+    pattern-either:
+      # Options object present but missing `secure` (and not a computed value).
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., secure: true, ...}'
+                - pattern-not: '{..., secure: $X, ...}'
+                - pattern: '{...}'
+      # `secure` explicitly disabled — the exact bug, must fire.
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., secure: false, ...}'
+      # `httpOnly` explicitly disabled — the exact bug, must fire.
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: '{..., httpOnly: false, ...}'
+      # 3-arg form with no options object at all → no Secure, no HttpOnly.
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+    metadata:
+      oauthlint-rule-id: AUTH-HONO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/hono-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - hono
+      references:
+        - https://hono.dev/docs/helpers/cookie
+        - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.5
+        - https://cwe.mitre.org/data/definitions/1004.html

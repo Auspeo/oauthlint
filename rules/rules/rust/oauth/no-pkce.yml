@@ -1,0 +1,64 @@
+rules:
+  - id: auth.rust.oauth.no-pkce
+    languages:
+      - rust
+    severity: WARNING
+    message: |
+      An OAuth authorization request is built with the `oauth2` crate's
+      `authorize_url(...)` builder but never chains
+      `.set_pkce_challenge(...)`. Without PKCE, an authorization code
+      intercepted on the redirect (a malicious app registered for the same
+      URI scheme, a leaking Referer/log, a network attacker on a public
+      client) can be redeemed by the attacker at the token endpoint, taking
+      over the user's session (CWE-345).
+
+      PKCE is REQUIRED for the authorization-code flow by the OAuth 2.0
+      Security BCP (RFC 9700) and OAuth 2.1. Generate a challenge and chain it:
+        let (pkce_challenge, pkce_verifier) =
+            PkceCodeChallenge::new_random_sha256();
+        let (auth_url, csrf) = client
+            .authorize_url(CsrfToken::new_random)
+            .set_pkce_challenge(pkce_challenge)
+            .url();
+      then pass `pkce_verifier` to `exchange_code(...).set_pkce_verifier(...)`.
+    # Absence detection scoped to the fluent authorize_url builder. We anchor on
+    # the `$C.authorize_url(...)` node itself, require it to be part of a chain
+    # that terminates in `.url()` (a completed AuthorizationRequest — this keeps
+    # the rule off any unrelated `authorize_url` helper), and suppress the
+    # finding when the same chain also contains `.set_pkce_challenge(...)`. In
+    # oauth2's typestate builder, PKCE is always chained into this one
+    # expression, so `pattern-not-inside: $X.set_pkce_challenge(...)` cleanly
+    # separates the secure flow from the vulnerable one regardless of how many
+    # `.add_scope(...)` / `.add_extra_param(...)` calls sit in between.
+    patterns:
+      - pattern: $C.authorize_url(...)
+      - pattern-inside: $ANY.url()
+      - pattern-not-inside: $X.set_pkce_challenge(...)
+    # Never fire on test/example/vendored/generated trees. `tests.rs` is Rust's
+    # sibling test-module file convention (e.g. oauth2-rs' own crate tests).
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/tests.rs"
+        - "**/*_test.*"
+        - "**/*.test.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/mock*/**"
+        - "**/vendor/**"
+        - "**/node_modules/**"
+        - "**/target/**"
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-no-pkce
+      category: security
+      cwe: CWE-345
+      owasp: API1:2023
+      llm-prevalence: HIGH
+      technology:
+        - oauth2
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700#section-2.1
+        - https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1#section-4.1.1
+        - https://docs.rs/oauth2/latest/oauth2/struct.Client.html#method.authorize_url
+        - https://cwe.mitre.org/data/definitions/345.html

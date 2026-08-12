@@ -1,0 +1,51 @@
+rules:
+  - id: auth.java.jwt.no-claims-validation
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      This JWT is verified for signature but its intended-recipient claims are
+      never asserted: the Auth0 `JWT.require(alg)...build()` verifier pins no
+      `withIssuer(...)`/`withAudience(...)`, or the jjwt parser sets a signature
+      key but pins no `requireIssuer(...)`/`requireAudience(...)`. A valid
+      signature only proves the token was minted by whoever holds the key — not
+      that it was issued by the expected authority or meant for THIS service. A
+      token your provider issued for a different audience (or one minted by any
+      party that shares the key) will still verify, enabling token replay across
+      services (CWE-345, Insufficient Verification of Data Authenticity). This is
+      a common AI-generated mistake: the sample verifies the signature and stops
+      there.
+
+      Pin the token's recipient. With Auth0 java-jwt chain
+      `.withIssuer("https://your-idp")` and `.withAudience("your-api")` before
+      `.build()`; with jjwt chain `.requireIssuer(...)` and `.requireAudience(...)`
+      before `.build()`.
+    # Structural chain matching breaks the moment an intermediate builder call
+    # (e.g. `.acceptLeeway(60)`) sits between `require(...)` and `.build()`, so
+    # this uses tempered-greedy regex spanning the whole builder chain.
+    #   - Auth0: fire on a `JWT.require(...)....build()` chain that reaches
+    #     `.build()` WITHOUT passing `.withIssuer(`/`.withAudience(`/
+    #     `.withAnyOfAudience(`. If either is pinned the negative lookahead stops
+    #     the match, so the safe (issuer+audience) chain never fires.
+    #   - jjwt: the positive lookahead REQUIRES a `.setSigningKey(`/`.verifyWith(`
+    #     somewhere before `.build()` (so signature IS verified — an unsigned
+    #     parser is out of scope and handled by unsigned-jwt), while the tempered
+    #     body forbids `.requireIssuer(`/`.requireAudience(`. Order-independent:
+    #     any recipient assertion anywhere in the chain clears the finding.
+    pattern-either:
+      - pattern-regex: 'JWT\.require\((?:(?!\.build\(\)|\.withIssuer\(|\.withAudience\(|\.withAnyOfAudience\()[\s\S])*?\.build\(\)'
+      - pattern-regex: 'Jwts\.parser(?:Builder)?\(\)(?=(?:(?!\.build\(\))[\s\S])*?\.(?:setSigningKey|verifyWith)\()(?:(?!\.build\(\)|\.requireIssuer\(|\.requireAudience\()[\s\S])*?\.build\(\)'
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-no-claims-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - java-jwt
+        - jjwt
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-3.8
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
+        - https://cwe.mitre.org/data/definitions/345.html

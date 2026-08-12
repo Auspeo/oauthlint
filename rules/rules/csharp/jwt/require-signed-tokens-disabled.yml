@@ -1,0 +1,46 @@
+rules:
+  - id: auth.csharp.jwt.require-signed-tokens-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT setup sets `RequireSignedTokens = false` on
+      `TokenValidationParameters`. With signed tokens no longer required, an
+      unsigned token (`alg: none`, empty signature segment) is returned by the
+      handler as valid, so an attacker can forge tokens with arbitrary claims and
+      no key at all (CWE-347). This is a common AI-generated shortcut to get past a
+      "token is not signed" error during local wiring.
+
+      Leave `RequireSignedTokens` at its secure default (`true`) so every accepted
+      token must carry a signature that verifies against a trusted key
+      (`IssuerSigningKey` / keys from OIDC metadata).
+    # Matches the explicit `RequireSignedTokens = false` downgrade as an object
+    # initializer or a member assignment. The secure default is `true`, so only an
+    # explicit disable fires.
+    pattern-either:
+      - pattern: RequireSignedTokens = false
+      - pattern: $X.RequireSignedTokens = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-require-signed-tokens-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.requiresignedtokens
+        - https://cwe.mitre.org/data/definitions/347.html

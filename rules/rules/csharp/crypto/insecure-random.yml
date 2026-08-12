@@ -1,0 +1,45 @@
+rules:
+  - id: auth.csharp.crypto.insecure-random
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A security-sensitive value is generated with `System.Random` or
+      `Guid.NewGuid()` inside a token/secret/OTP generator. `System.Random` is a
+      non-cryptographic PRNG seeded from the clock: its output is predictable and
+      its state is recoverable from a few samples, so an attacker can reconstruct
+      the "random" secret (CWE-338). `Guid.NewGuid()` is not guaranteed to be
+      cryptographically random either. AI tools paste these in because they look
+      random enough.
+
+      Use `System.Security.Cryptography.RandomNumberGenerator` instead, e.g.
+      `RandomNumberGenerator.GetBytes(32)` (then Base64/hex encode) or
+      `RandomNumberGenerator.GetInt32(...)`.
+    patterns:
+      - pattern-either:
+          - pattern: new System.Random(...)
+          - pattern: new Random(...)
+          - pattern: Guid.NewGuid()
+          - pattern: System.Guid.NewGuid()
+      - pattern-inside: |
+          $RET $METHOD(...) { ... }
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: (?i).*(token|secret|otp|apikey|api_?key|reset|nonce|passcode|verificationcode|salt).*
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-crypto-insecure-random
+      category: security
+      cwe: CWE-338
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      technology:
+        - dotnet
+      references:
+        - https://learn.microsoft.com/dotnet/api/system.security.cryptography.randomnumbergenerator
+        - https://cwe.mitre.org/data/definitions/338.html
