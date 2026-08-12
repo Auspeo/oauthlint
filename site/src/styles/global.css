@@ -303,3 +303,23 @@ nav a[href]:hover {
     color: #000 !important;
   }
 }
+
+/* Fenced markdown code blocks are highlighted at build time with a dual Shiki
+   theme (see astro.config.mjs, defaultColor:false). The site is dark-first, so
+   default to the dark palette and swap to the light palette under
+   [data-theme="light"]. Scoped under .prose and using pre.astro-code so these
+   beat the generic `.prose pre` / `.prose pre code` rules in the doc layouts;
+   without this, light-mode blocks rendered dark with faint, unreadable text. */
+.prose pre.astro-code,
+.prose .astro-code span {
+  background-color: var(--shiki-dark-bg);
+  color: var(--shiki-dark);
+}
+.prose pre.astro-code {
+  border: 1px solid var(--ol-code-border);
+}
+:root[data-theme="light"] .prose pre.astro-code,
+:root[data-theme="light"] .prose .astro-code span {
+  background-color: var(--shiki-light-bg);
+  color: var(--shiki-light);
+}
