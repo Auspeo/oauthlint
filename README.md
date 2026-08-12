@@ -208,12 +208,13 @@ especially welcome.
 
 ### Shipped
 
-- 180+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET
+- 190+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET, including a dedicated MCP server-auth pack
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
-- JetBrains IDE plugin (IntelliJ, WebStorm, PyCharm, GoLand, and more), in review on the JetBrains Marketplace
+- JetBrains IDE plugin (IntelliJ, WebStorm, PyCharm, GoLand, and more) on the JetBrains Marketplace
 - MCP server, so AI coding tools scan the auth code they generate, in-loop
+- `oauthlint probe`, a live OAuth 2.1 conformance check for running MCP servers
 - Shareable HTML reports
 - A guide for writing your own low-false-positive rules ([docs](https://oauthlint.dev/docs/writing-rules))
 
