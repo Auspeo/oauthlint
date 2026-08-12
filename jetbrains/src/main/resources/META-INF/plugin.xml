@@ -19,8 +19,8 @@
         the Opengrep scan engine is downloaded once and verified against a pinned
         SHA-256 checksum. There is nothing else to install.</p>
 
-        <p>Supported languages: JavaScript, TypeScript, Python, Go, Rust, Java,
-        C#/.NET, PHP, Ruby, and Kotlin, activated automatically wherever the
+        <p>Supported languages: ten in all, from JavaScript and Python to Go,
+        C#, and Kotlin, activated automatically wherever the
         matching language support is present. The 250+ rule pack adds framework-aware
         coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor,
         Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper) alongside the MCP

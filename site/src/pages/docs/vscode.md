@@ -29,7 +29,7 @@ If you already run `opengrep` or `semgrep` on your machine, point `oauthlint.eng
 
 ## What it does
 
-- **Inline diagnostics** for every language OAuthLint supports: JavaScript, TypeScript, Python, Go, Java, Rust, C#/.NET, PHP, Ruby, and Kotlin. A scan runs when you **save** or **open** a file (debounced, and re-run when you change a setting). Severity maps to the editor's familiar squiggles: `CRITICAL` and `HIGH` show as errors, `MEDIUM` as a warning, `LOW` and `INFO` as information.
+- **Inline diagnostics** for every language OAuthLint supports, ten in all: JavaScript, TypeScript, Python, Go, C#, and more. A scan runs when you **save** or **open** a file (debounced, and re-run when you change a setting). Severity maps to the editor's familiar squiggles: `CRITICAL` and `HIGH` show as errors, `MEDIUM` as a warning, `LOW` and `INFO` as information.
 - **Rule id + docs link on every finding.** Each diagnostic carries its rule id (e.g. `auth.jwt.no-verification`) and a link straight to that rule's page on oauthlint.dev.
 - **Quick Fix → apply the fix.** When a finding ships a safe autofix, the lightbulb offers **Apply OAuthLint fix for `<rule-id>`** (marked as the preferred action). It rewrites just the offending span in place, the same deterministic replacement the CLI's [`--fix`](/docs/cli#scan) applies, without touching the rest of the file. Findings without a fix don't show this action.
 - **Quick Fix → suppress this line.** On any finding, the lightbulb offers **Suppress `<rule-id>` on this line**, which inserts an `// oauthlint-disable-next-line <rule-id>` directive above the offending line, the same auditable comment the CLI honours. See [Suppressing rules](/docs/suppressing).

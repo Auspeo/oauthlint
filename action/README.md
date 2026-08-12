@@ -3,8 +3,8 @@
 Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools systematically produce,
 right inside your CI.
 
-It runs the full oauthlint pack, 250+ rules across JavaScript/TypeScript, Python,
-Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, plus a dedicated MCP server-auth
+It runs the full oauthlint pack, 250+ rules across ten languages (JavaScript,
+TypeScript, Python, Go, C#, and more), plus a dedicated MCP server-auth
 pack, in any repository, with no language toolchain to install (the Action is
 Docker-based).
 

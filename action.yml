@@ -1,4 +1,4 @@
-# Root action.yml — the GitHub Marketplace-facing entrypoint for OAuthLint.
+# Root action.yml, the GitHub Marketplace-facing entrypoint for OAuthLint.
 #
 # The Marketplace only lists actions whose `action.yml` lives at the repository
 # root, but the real, battle-tested Docker action lives in `action/`. Rather than
@@ -10,10 +10,10 @@
 #   • `Auspeo/oauthlint/action@v1` → the Docker action (unchanged; still works)
 #
 # Every input/default/output below MIRRORS `action/action.yml` exactly so the two
-# entrypoints behave identically. Keep them in sync — `action/tests/root-action.test.ts`
+# entrypoints behave identically. Keep them in sync, `action/tests/root-action.test.ts`
 # fails if they drift.
 name: OAuthLint
-description: Catch OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.
+description: Catch the OAuth, OIDC, JWT, and MCP security bugs AI coding tools produce.
 author: Maurice Anney <webofboss@gmail.com>
 branding:
   icon: shield
@@ -78,7 +78,7 @@ outputs:
 runs:
   using: composite
   steps:
-    # Delegate to the real Docker action in ./action — no logic is duplicated.
+    # Delegate to the real Docker action in ./action, no logic is duplicated.
     - id: run
       uses: ./action
       with:

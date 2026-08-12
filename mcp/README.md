@@ -10,7 +10,7 @@ OAuthLint exists because AI coding tools reproduce a small, predictable set of a
 
 The server exposes four tools:
 
-- `scan_code` scans an in-memory snippet. The model pastes the code it just wrote, names the language (JavaScript, TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, or Kotlin), and gets back the findings. The snippet is written to a private temporary file, scanned, and the temporary file is removed. Nothing touches your working tree.
+- `scan_code` scans an in-memory snippet. The model pastes the code it just wrote, names the language (any of the ten OAuthLint supports: JavaScript, TypeScript, Python, Go, C#, and more), and gets back the findings. The snippet is written to a private temporary file, scanned, and the temporary file is removed. Nothing touches your working tree.
 - `scan_path` scans a real file or directory on disk.
 - `explain_rule` returns the full detail of a rule: severity, CWE, OWASP mapping, why it matters, how to fix it, and vulnerable and safe examples.
 - `list_rules` lists the rules OAuthLint ships, optionally filtered by language and minimum severity.

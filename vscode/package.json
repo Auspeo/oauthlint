@@ -2,7 +2,7 @@
   "name": "oauthlint-vscode",
   "private": true,
   "displayName": "oauthlint",
-  "description": "Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools produce across JS/TS, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, right inside VS Code.",
+  "description": "Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools produce across ten languages (JS/TS, Python, Go, C#, and more), right inside VS Code.",
   "version": "0.9.0",
   "icon": "icon.png",
   "publisher": "auspeo",

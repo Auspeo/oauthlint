@@ -7,7 +7,7 @@ section: "getting-started"
 
 # Getting started
 
-OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-patterns that AI coding tools ship by default. It covers ten languages (JavaScript, TypeScript, Python, Go, Java, Rust, C#/.NET, PHP, Ruby, and Kotlin) and flags each finding with a fix, before the code reaches a pull request.
+OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-patterns that AI coding tools ship by default. It covers ten languages (JavaScript, TypeScript, Python, Go, C#, and more) and flags each finding with a fix, before the code reaches a pull request.
 
 ## Run your first scan
 

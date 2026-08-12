@@ -52,8 +52,12 @@ const COVERAGE_SURFACES = [
   'site/src/layouts/Base.astro',
 ];
 
-// Coverage terms that must appear on every surface above. Extend on each new pack.
-const MUST_MENTION = ['MCP', 'PHP', 'Ruby', 'Kotlin'];
+// Differentiating CAPABILITY terms that must appear on every surface above.
+// Keep this to genuine differentiators (e.g. "MCP"), NOT individual languages:
+// languages scale, so listing every one on every surface does not. Language
+// completeness is enforced by check 4 against the two canonical TABLES instead,
+// and prose elsewhere names a few relevant languages plus "and more".
+const MUST_MENTION = ['MCP'];
 
 const problems = [];
 const passes = [];
@@ -105,9 +109,12 @@ else if (annVer !== expectedAnnounce)
   );
 else passes.push(`announcement bar: ${annVer} (matches release)`);
 
-// 4) Every language in the pack must be named on the surfaces that enumerate coverage.
-//    Source of truth = the languages the rules actually declare, so a new language
-//    pack forces the coverage prose and the docs to advertise it (no manual list).
+// 4) Every language in the pack must appear in the two CANONICAL exhaustive lists:
+//    the README "Language support" table and the docs per-language bundle table.
+//    These are tables (one row per language), so listing every language scales.
+//    Prose everywhere else names a few relevant languages plus "and more" and is
+//    intentionally NOT checked for completeness. Source of truth = the languages
+//    the rules actually declare, so a new pack forces the two tables to keep up.
 const LANG_DISPLAY = {
   javascript: 'JavaScript',
   typescript: 'TypeScript',
@@ -123,11 +130,7 @@ const LANG_DISPLAY = {
 const packLangs = [...new Set(loaded.flatMap((x) => x.rule.languages))]
   .filter((l) => LANG_DISPLAY[l])
   .sort();
-const LANGUAGE_SURFACES = [
-  'README.md',
-  'site/src/pages/docs/semgrep.md',
-  'site/src/pages/docs/index.md',
-];
+const LANGUAGE_SURFACES = ['README.md', 'site/src/pages/docs/semgrep.md'];
 for (const f of LANGUAGE_SURFACES) {
   const body = read(f);
   for (const l of packLangs) {
@@ -170,6 +173,17 @@ const proseFiles = [
   'action/README.md',
   'mcp/README.md',
   'site/src/html/index.html',
+  'site/src/layouts/Base.astro',
+  // npm / marketplace manifests: their descriptions render on npmjs, the VS Code
+  // and JetBrains marketplaces, and GitHub Marketplace, so they are prose too.
+  'package.json',
+  'cli/package.json',
+  'rules/package.json',
+  'vscode/package.json',
+  'mcp/package.json',
+  'action.yml',
+  'action/action.yml',
+  'jetbrains/src/main/resources/META-INF/plugin.xml',
 ];
 let emdashHits = 0;
 for (const f of proseFiles) {

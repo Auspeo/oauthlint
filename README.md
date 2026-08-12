@@ -40,7 +40,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
 - **MCP server auth**: token pass-through (confused deputy), missing RFC 8707 audience/resource binding, unauthenticated MCP transports, and SSRF from tool-handler arguments, for the official TypeScript and Python MCP SDKs
-- …and many more: 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS, MCP, and more)
+- …and many more: 250+ rules across ten languages (JavaScript, TypeScript, Python, Go, C#, and more), including framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS, MCP, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -151,7 +151,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**250+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets, session hygiene and **MCP server auth**, in JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET (ASP.NET Core), PHP (Laravel), Ruby (Rails), and Kotlin (Ktor). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. A dedicated **MCP rule pack** catches the OAuth 2.1 resource-server mistakes MCP servers ship (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the official TypeScript (`@modelcontextprotocol/sdk`) and Python (`mcp` / FastMCP) SDKs. The catalogue grows with every release.
+**250+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets, session hygiene and **MCP server auth**, spanning ten languages from JavaScript and Python to Go, C#, and Kotlin, with framework-aware coverage (ASP.NET Core, Laravel, Rails, Ktor, and more). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. A dedicated **MCP rule pack** catches the OAuth 2.1 resource-server mistakes MCP servers ship (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the official TypeScript (`@modelcontextprotocol/sdk`) and Python (`mcp` / FastMCP) SDKs. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -212,7 +212,7 @@ especially welcome.
 
 ### Shipped
 
-- 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including a dedicated MCP server-auth pack and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS)
+- 250+ rules across ten languages (JavaScript, TypeScript, Python, Go, C#, and more), including a dedicated MCP server-auth pack and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS)
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
