@@ -1,0 +1,40 @@
+rules:
+  - id: auth.mcp.dns-rebinding-unprotected
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      This MCP `StreamableHTTPServerTransport` is created without DNS-rebinding
+      protection (CWE-346). `enableDnsRebindingProtection` defaults to `false`
+      in the TypeScript SDK, so a malicious web page the user visits can rebind
+      a DNS name to the loopback address and POST to the local MCP server —
+      driving its tools cross-origin from the browser. This is CVE-2025-66416.
+
+      Enable it and pin the Host/Origin allow-lists:
+        new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          enableDnsRebindingProtection: true,
+          allowedHosts: ['127.0.0.1:3000'],
+          allowedOrigins: ['https://app.example.com'],
+        })
+    # Fires when the transport is constructed WITHOUT `enableDnsRebindingProtection:
+    # true`. `pattern-not` subtracts the explicitly-enabled form, so a hardened
+    # transport (or one that sets it true) does NOT trip; absent-or-false trips.
+    patterns:
+      - pattern: new StreamableHTTPServerTransport({...})
+      - pattern-not: 'new StreamableHTTPServerTransport({..., enableDnsRebindingProtection: true, ...})'
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-dns-rebinding-unprotected
+      category: security
+      cwe: CWE-346
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://www.cve.org/CVERecord?id=CVE-2025-66416
+        - https://cwe.mitre.org/data/definitions/346.html

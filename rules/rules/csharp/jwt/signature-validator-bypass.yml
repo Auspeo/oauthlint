@@ -1,0 +1,54 @@
+rules:
+  - id: auth.csharp.jwt.signature-validator-bypass
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A custom `SignatureValidator` on `TokenValidationParameters` returns a parsed
+      token WITHOUT verifying its signature — it just constructs and returns
+      `new JwtSecurityToken(token)` / `new JsonWebToken(token)`. Because the
+      delegate replaces the built-in signature check, any token (including an
+      unsigned or attacker-forged one) is accepted, letting an attacker impersonate
+      any user or role (CWE-347). This is a well-known "make validation pass" hack
+      that AI assistants reproduce from blog posts.
+
+      Remove the custom `SignatureValidator` and let the handler verify signatures
+      with `IssuerSigningKey` / `IssuerSigningKeys` (or keys resolved from OIDC
+      metadata). If you truly need a custom validator, it must cryptographically
+      verify the signature and throw on failure — never return a freshly parsed
+      token unchecked.
+    # Fires only on the canonical bypass shape: a SignatureValidator delegate whose
+    # body simply parses and returns the token. A real validator performs crypto
+    # work and returns the verified token, so it does not match.
+    patterns:
+      - pattern-either:
+          - pattern: SignatureValidator = ($TOK, $P) => new JwtSecurityToken(...)
+          - pattern: SignatureValidator = ($TOK, $P) => new JsonWebToken(...)
+          - pattern: |
+              SignatureValidator = ($TOK, $P) => { ... return new JwtSecurityToken(...); ... }
+          - pattern: |
+              SignatureValidator = ($TOK, $P) => { ... return new JsonWebToken(...); ... }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-signature-validator-bypass
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.signaturevalidator
+        - https://cwe.mitre.org/data/definitions/347.html

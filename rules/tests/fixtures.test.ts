@@ -54,6 +54,7 @@ const LANG_DIRS: Record<string, { ext: string }> = {
   csharp: { ext: 'cs' },
   php: { ext: 'php' },
   ruby: { ext: 'rb' },
+  kotlin: { ext: 'kt' },
 };
 
 function langOf(dir: string): { lang: string; ext: string } | null {

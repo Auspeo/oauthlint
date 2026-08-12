@@ -1,0 +1,48 @@
+rules:
+  - id: auth.csharp.web.authentication-after-authorization
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      The middleware pipeline calls `UseAuthorization()` BEFORE
+      `UseAuthentication()`. ASP.NET Core requires authentication to run first so
+      that `HttpContext.User` is populated before authorization evaluates policies;
+      in the reverse order authorization sees an unauthenticated, anonymous user,
+      which either blocks legitimate users or — with a permissive fallback policy —
+      lets requests through unauthenticated (CWE-696). This is a common
+      AI-generated ordering mistake when wiring up `Program.cs`.
+
+      Register the middleware in the correct order: call
+      `app.UseAuthentication();` immediately before `app.UseAuthorization();` (both
+      after `UseRouting()` and before the endpoint mapping).
+    # Two-statement sequence on the SAME app object: UseAuthorization() appearing
+    # before UseAuthentication(). The `...` tolerates intervening middleware. The
+    # correct order (authentication first) does not match this shape.
+    patterns:
+      - pattern: |
+          $APP.UseAuthorization();
+          ...
+          $APP.UseAuthentication();
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-WEB-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-web-authentication-after-authorization
+      category: security
+      cwe: CWE-696
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+      references:
+        - https://learn.microsoft.com/aspnet/core/fundamentals/middleware
+        - https://cwe.mitre.org/data/definitions/696.html

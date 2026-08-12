@@ -46,6 +46,7 @@ const LANGUAGE_SUBSETS = [
   'rust',
   'php',
   'ruby',
+  'kotlin',
 ] as const;
 
 /**

@@ -1,0 +1,52 @@
+rules:
+  - id: auth.betterauth.insecure-cookie
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      better-auth is configured to issue insecure session cookies.
+
+      Under `advanced`, `useSecureCookies: false` forces the session cookie to
+      be sent without the `Secure` flag (so it travels over plain HTTP and can
+      be sniffed), and `secure: false` / `httpOnly: false` in
+      `defaultCookieAttributes` (or a per-cookie `attributes` block) strips the
+      protections that keep the cookie off HTTP and out of `document.cookie`.
+
+      Leave better-auth's secure defaults in place, or set `useSecureCookies:
+      true` and keep `secure`/`httpOnly` at `true`. If you need insecure cookies
+      for local HTTP dev, gate the value on `process.env.NODE_ENV !==
+      'production'` rather than hard-coding `false`.
+    # Anchored inside the `advanced: {...}` block of a `betterAuth({...})` call,
+    # so a `secure: false` on any other object cannot fire. Only an explicit
+    # `false` matches; an omitted flag is left alone (better-auth supplies a
+    # secure default keyed on the environment).
+    patterns:
+      - pattern-inside: 'betterAuth({...})'
+      - pattern-inside: 'advanced: {...}'
+      - pattern-either:
+          - pattern: 'useSecureCookies: false'
+          - pattern: 'secure: false'
+          - pattern: 'httpOnly: false'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-insecure-cookie
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - better-auth
+      references:
+        - https://www.better-auth.com/docs/concepts/cookies
+        - https://cwe.mitre.org/data/definitions/614.html

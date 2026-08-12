@@ -1,0 +1,41 @@
+rules:
+  - id: auth.go.cookie.gin-insecure
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A Gin auth/session cookie is written with `secure` or `httpOnly` set to a
+      literal `false`. `gin.Context.SetCookie` takes them positionally —
+      `SetCookie(name, value, maxAge, path, domain, secure, httpOnly)`. With
+      `secure=false` the cookie rides over plain HTTP where a network attacker
+      can read it; with `httpOnly=false` any XSS can read it from JavaScript.
+      For OAuth/OIDC this exposes session and token cookies to theft and
+      hijacking (CWE-1004, CWE-614). LLM-generated Gin handlers frequently pass
+      `false, false` to "make it work" over http://localhost.
+
+      Set both flags to `true` on auth cookies:
+        c.SetCookie("session_id", tok, 3600, "/", "", true, true)
+    # Positional discrimination: arg6 = secure, arg7 = httpOnly. Fires when
+    # either is the literal `false`. `$NAME` is constrained to auth-ish cookie
+    # names so non-sensitive cookies (theme, locale, analytics) are not
+    # flagged, and `true` / a variable flag never match the literal `false`.
+    patterns:
+      - pattern-either:
+          - pattern: $C.SetCookie($NAME, $V, $MA, $P, $D, false, $HO)
+          - pattern: $C.SetCookie($NAME, $V, $MA, $P, $D, $S, false)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^["']?.*(sess|sid|auth|token|jwt|csrf|xsrf|login|remember|access|refresh|oauth|oidc)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-gin-insecure
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - gin
+      references:
+        - https://pkg.go.dev/github.com/gin-gonic/gin#Context.SetCookie
+        - https://cwe.mitre.org/data/definitions/1004.html
+        - https://cwe.mitre.org/data/definitions/614.html

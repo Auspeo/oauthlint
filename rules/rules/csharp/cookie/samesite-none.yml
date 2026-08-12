@@ -1,0 +1,47 @@
+rules:
+  - id: auth.csharp.cookie.samesite-none
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A cookie is set to `SameSite = SameSiteMode.None`, which removes the SameSite
+      defense and sends the cookie on cross-site requests. For an authentication or
+      session cookie this re-opens the CSRF surface that `Lax`/`Strict` closes, and
+      `None` is only safe when the cookie is also marked `Secure` (browsers reject
+      `SameSite=None` without it) (CWE-1275). This is a common AI-generated change
+      made to get a cookie flowing in an embedded/cross-site scenario.
+
+      Leave auth/session cookies at `SameSiteMode.Lax` (the framework default) or
+      `SameSiteMode.Strict`. Only use `SameSiteMode.None` for a genuinely
+      cross-site cookie, and when you do, also set `Secure = true` and rely on
+      anti-forgery tokens for CSRF protection.
+    # Matches the explicit `SameSite = SameSiteMode.None` downgrade as an object
+    # initializer (CookieOptions / CookieBuilder) or a member assignment. The
+    # framework default is `Lax`, so only an explicit downgrade to `None` fires.
+    pattern-either:
+      - pattern: SameSite = SameSiteMode.None
+      - pattern: $X.SameSite = SameSiteMode.None
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-samesite-none
+      category: security
+      cwe: CWE-1275
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+        - cookies
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/samesite
+        - https://cwe.mitre.org/data/definitions/1275.html

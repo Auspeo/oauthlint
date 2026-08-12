@@ -27,6 +27,7 @@ const SHIKI_LANG: Record<FixtureLang, BundledLanguage> = {
   csharp: 'csharp',
   php: 'php',
   ruby: 'ruby',
+  kotlin: 'kotlin',
 };
 
 /**

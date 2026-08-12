@@ -1,0 +1,41 @@
+rules:
+  - id: auth.go.jwt.fiber-hardcoded-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      The Fiber JWT middleware (`gofiber/contrib/jwt`) is configured with a
+      hardcoded string-literal signing key
+      (`SigningKey: jwtware.SigningKey{Key: []byte("...")}`). This key verifies
+      every request token; committed to source it lets anyone forge a valid JWT
+      for any user or role, a complete authentication bypass (CWE-798). LLMs
+      commonly inline `[]byte("secret")` so the middleware "just works".
+
+      Load the key from configuration or a secret store:
+        app.Use(jwtware.New(jwtware.Config{
+          SigningKey: jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
+        }))
+      Rotate any key already committed.
+    # fiber contrib jwt `SigningKey{Key: []byte("literal")}`. The `"..."`
+    # metavariadic matches a string-literal only, so `[]byte(os.Getenv(...))` /
+    # a variable is excluded. Not covered by auth.go.jwt.hardcoded-secret
+    # (golang-jwt `SignedString` / Keyfunc).
+    patterns:
+      - pattern: 'jwtware.SigningKey{..., Key: []byte("..."), ...}'
+      - pattern-not-regex: |-
+          (?i)Key:\s*\[\]byte\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: |-
+          (?i)Key:\s*\[\]byte\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|<)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-fiber-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - fiber
+        - gofiber-jwt
+      references:
+        - https://github.com/gofiber/contrib/tree/main/jwt
+        - https://cwe.mitre.org/data/definitions/798.html

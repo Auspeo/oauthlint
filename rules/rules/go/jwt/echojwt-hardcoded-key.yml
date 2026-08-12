@@ -1,0 +1,42 @@
+rules:
+  - id: auth.go.jwt.echojwt-hardcoded-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      The Echo JWT middleware (`labstack/echo-jwt`) is configured with a
+      hardcoded string-literal `SigningKey`. This key verifies every request
+      token; committed to source it lets anyone forge a valid JWT for any user
+      or role, a complete authentication bypass (CWE-798). An empty key
+      (`[]byte("")`) is worse still — it accepts trivially forged tokens. LLMs
+      commonly inline `[]byte("secret")` so the middleware "just works".
+
+      Load the key from configuration or a secret store:
+        e.Use(echojwt.WithConfig(echojwt.Config{
+          SigningKey: []byte(os.Getenv("JWT_SECRET")),
+        }))
+      Rotate any key already committed.
+    # echo-jwt `Config{SigningKey: []byte("literal")}` (also matches via
+    # WithConfig / a bare Config literal). The `"..."` metavariadic matches a
+    # string-literal only, so `[]byte(os.Getenv(...))` / a variable is excluded.
+    # Not covered by auth.go.jwt.hardcoded-secret (which targets
+    # golang-jwt `SignedString` / Keyfunc). Empty `""` is intentionally caught.
+    patterns:
+      - pattern: 'echojwt.Config{..., SigningKey: []byte("..."), ...}'
+      - pattern-not-regex: |-
+          (?i)SigningKey:\s*\[\]byte\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: |-
+          (?i)SigningKey:\s*\[\]byte\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|<)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-echojwt-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - echo
+        - echo-jwt
+      references:
+        - https://github.com/labstack/echo-jwt
+        - https://cwe.mitre.org/data/definitions/798.html

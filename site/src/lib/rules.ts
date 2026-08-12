@@ -38,7 +38,8 @@ export type FixtureLang =
   | 'rust'
   | 'csharp'
   | 'php'
-  | 'ruby';
+  | 'ruby'
+  | 'kotlin';
 
 export interface Fixture {
   /** Raw fixture source code. */
@@ -91,6 +92,7 @@ const EXT_LANG: Record<string, FixtureLang> = {
   cs: 'csharp',
   php: 'php',
   rb: 'ruby',
+  kt: 'kotlin',
 };
 const FIXTURE_EXTS = Object.keys(EXT_LANG);
 
@@ -105,6 +107,7 @@ const LANG_LABEL: Record<string, string> = {
   csharp: 'C#',
   php: 'PHP',
   ruby: 'Ruby',
+  kotlin: 'Kotlin',
 };
 
 /** Map a Semgrep / OAuthLint severity onto the design severity scale. */

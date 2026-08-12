@@ -34,7 +34,13 @@ describe('loadAllRules', () => {
               ? 'rs'
               : rule.languages.includes('csharp')
                 ? 'cs'
-                : 'ts';
+                : rule.languages.includes('php')
+                  ? 'php'
+                  : rule.languages.includes('ruby')
+                    ? 'rb'
+                    : rule.languages.includes('kotlin')
+                      ? 'kt'
+                      : 'ts';
       const vuln = `${fixturesRoot}${fixtureName}/vulnerable.${ext}`;
       const safe = `${fixturesRoot}${fixtureName}/safe.${ext}`;
       expect(existsSync(vuln), `Missing vulnerable fixture for ${rule.id} at ${vuln}`).toBe(true);

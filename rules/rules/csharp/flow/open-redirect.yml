@@ -1,0 +1,48 @@
+rules:
+  - id: auth.csharp.flow.open-redirect
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A redirect target comes straight from user input (a query-string value or a
+      `returnUrl`-style parameter) and is passed to `Redirect(...)` without a
+      local-URL check. An attacker can craft a link that bounces the victim to an
+      external phishing site after login, and this is the classic OAuth/OIDC
+      `returnUrl` open-redirect (CWE-601).
+
+      Validate the target before redirecting: use `Url.IsLocalUrl(returnUrl)` (or
+      `LocalRedirect(returnUrl)`, which throws on a non-local URL) so only
+      same-application paths are allowed.
+    patterns:
+      - pattern-either:
+          - pattern: Redirect(Request.Query[$K])
+          - pattern: Redirect(Request.Query[$K].ToString())
+          - patterns:
+              - pattern-either:
+                  - pattern: Redirect($URL)
+                  - pattern: RedirectPermanent($URL)
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: (?i)^(returnurl|redirecturl|redirect_uri|returnto|next|url)$
+      # Not when the redirect is already guarded by a local-URL check.
+      - pattern-not-inside: |
+          if (Url.IsLocalUrl(...)) { ... }
+      - pattern-not-inside: |
+          if ($U.IsLocalUrl(...)) { ... }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - aspnetcore
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/preventing-open-redirects
+        - https://cwe.mitre.org/data/definitions/601.html

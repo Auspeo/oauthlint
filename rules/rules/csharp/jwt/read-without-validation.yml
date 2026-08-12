@@ -1,0 +1,55 @@
+rules:
+  - id: auth.csharp.jwt.read-without-validation
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A JWT is decoded with a read-only API that performs NO validation
+      (`new JwtSecurityToken(tokenString)`, `handler.ReadJwtToken(...)`, or
+      `new JsonWebToken(tokenString)`). These constructors/methods only parse the
+      token; they do not check the signature, issuer, audience, or expiry. Trusting
+      the claims that come back lets an attacker forge any identity or role by
+      hand-crafting an unsigned token (CWE-345). This is a common AI-generated
+      shortcut for "reading the user id from the token" that silently skips
+      verification.
+
+      Validate the token before trusting its claims: call
+      `handler.ValidateToken(token, tokenValidationParameters, out var validated)`
+      (or `await handler.ValidateTokenAsync(...)`) and read claims from the
+      validated result. Only parse a token unvalidated when you are inspecting a
+      token you just issued, never one received from a client.
+    # Arity-discriminated: `new JwtSecurityToken($T)` / `new JsonWebToken($T)` match
+    # the single-string DECODE constructor only — token CREATION uses the
+    # multi-argument (issuer, audience, claims, ...) constructors and does not fire.
+    # `ReadJwtToken` is a read-only, non-validating API by definition.
+    patterns:
+      - pattern-either:
+          - pattern: new System.IdentityModel.Tokens.Jwt.JwtSecurityToken($T)
+          - pattern: new JwtSecurityToken($T)
+          - pattern: new Microsoft.IdentityModel.JsonWebTokens.JsonWebToken($T)
+          - pattern: new JsonWebToken($T)
+          - pattern: $H.ReadJwtToken(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-read-without-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - aspnetcore
+        - jwt-bearer
+      references:
+        - https://learn.microsoft.com/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler.validatetoken
+        - https://cwe.mitre.org/data/definitions/345.html

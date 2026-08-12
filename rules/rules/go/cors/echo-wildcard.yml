@@ -1,0 +1,33 @@
+rules:
+  - id: auth.go.cors.echo-wildcard
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An Echo CORS middleware is configured to allow every origin with the
+      wildcard `"*"`. Echo uses its own `middleware.CORSConfig` struct, which is
+      missed by the generic `cors.Config` / `cors.Options` CORS checks. A
+      wildcard origin lets any website make cross-origin requests to this API,
+      defeating the same-origin policy (CWE-942); with `AllowCredentials: true`
+      it becomes an account-takeover primitive that leaks OAuth/OIDC tokens
+      cross-origin. LLM-generated Echo setups often paste `[]string{"*"}` to
+      "make the browser call work".
+
+      Restrict to an explicit allowlist, e.g.
+        middleware.CORSConfig{AllowOrigins: []string{"https://app.example.com"}}
+      and never combine a wildcard origin with credentials.
+    # Echo-specific: `middleware.CORSConfig` whose `AllowOrigins` slice literal
+    # contains the wildcard `"*"`. Explicit origins are not flagged.
+    pattern: 'middleware.CORSConfig{..., AllowOrigins: []string{..., "*", ...}, ...}'
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-echo-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - echo
+      references:
+        - https://echo.labstack.com/docs/middleware/cors
+        - https://cwe.mitre.org/data/definitions/942.html
