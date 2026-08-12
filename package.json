@@ -20,7 +20,8 @@
     "prepare": "husky",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "check:surfaces": "node scripts/check-surfaces.mjs"
   },
   "lint-staged": {
     "*.{ts,js,json,jsonc}": ["biome check --write --no-errors-on-unmatched"],
