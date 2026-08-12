@@ -11,12 +11,12 @@ import type { Finding, ScanResult, SeverityName } from '../types.js';
  *   per-severity summary, and findings grouped by severity (worst first).
  * - **Safe**: EVERY interpolated value (paths, messages, rule ids, code
  *   snippets, scan target) is HTML-escaped via {@link escapeHtml}, so hostile
- *   source under scan — even a literal `</script>` or `<img onerror>` — is
+ *   source under scan, even a literal `</script>` or `<img onerror>`, is
  *   rendered as inert text and can never execute in the report.
  *
  * Output is deterministic given its inputs: the timestamp is injected (see
  * {@link HtmlReportOptions.generatedAt}) rather than read from the clock, so
- * the same scan always produces byte-identical HTML — which keeps tests stable.
+ * the same scan always produces byte-identical HTML, which keeps tests stable.
  */
 
 export interface HtmlReportOptions {
@@ -42,7 +42,7 @@ const SEVERITY_ORDER: SeverityName[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'IN
 
 /**
  * HTML-escape a value for safe interpolation in element text OR attribute
- * context. Covers `&`, `<`, `>`, `"`, and `'` — the full set needed so that
+ * context. Covers `&`, `<`, `>`, `"`, and `'`, the full set needed so that
  * neither markup nor an attribute-quote breakout is possible. `&` is replaced
  * first so the other entities aren't double-encoded.
  */
@@ -61,7 +61,7 @@ export function escapeHtml(value: unknown): string {
  * `escapeHtml` neutralises markup/attribute breakouts but NOT the scheme: a
  * `javascript:` (or `data:`) URL contains no HTML-significant characters, so it
  * would survive escaping and render as a live, executable `href`. Restricting
- * the scheme here is what actually prevents that XSS — callers must omit the
+ * the scheme here is what actually prevents that XSS, callers must omit the
  * link when this returns `null`.
  */
 export function safeHref(url: unknown): string | null {
@@ -365,7 +365,7 @@ ${renderGroups(findings, snippets)}`;
 <body>
   <header class="report">
     <div class="wrap">
-      <h1><span class="mark">OAuth</span>Lint — Security Audit Report</h1>
+      <h1><span class="mark">OAuth</span>Lint, Security Audit Report</h1>
       <p class="meta">
         Target: <code>${escapeHtml(options.target)}</code><br>
         Generated: <code>${escapeHtml(timestamp)}</code>

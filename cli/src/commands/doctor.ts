@@ -57,7 +57,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<number> {
     checks.push({
       name: 'Scan engine',
       status: 'ok',
-      details: `${engine.engine} ${version} (${sourceLabel(engine.source)}) — ${engine.path}`,
+      details: `${engine.engine} ${version} (${sourceLabel(engine.source)}), ${engine.path}`,
     });
   } catch (err) {
     const detail =
@@ -85,7 +85,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<number> {
   if (opts.json) {
     out.write(`${JSON.stringify({ checks }, null, 2)}\n`);
   } else {
-    out.write(pc.bold('OAuthLint — environment check\n'));
+    out.write(pc.bold('OAuthLint environment check\n'));
     out.write(`${pc.dim('─'.repeat(60))}\n`);
     for (const c of checks) {
       out.write(`${badge(c.status)} ${c.name.padEnd(20, ' ')} ${pc.dim(c.details)}\n`);

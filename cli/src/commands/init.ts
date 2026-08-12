@@ -43,7 +43,7 @@ export async function runInit(opts: InitOptions): Promise<number> {
   const out = opts.stream ?? process.stdout;
   const target = resolve(opts.cwd, '.oauthlintrc.yml');
   if (existsSync(target) && !opts.force) {
-    out.write(pc.yellow(`✗ ${target} already exists — pass --force to overwrite.\n`));
+    out.write(pc.yellow(`✗ ${target} already exists, pass --force to overwrite.\n`));
     return 1;
   }
   await writeFile(target, TEMPLATE, 'utf8');

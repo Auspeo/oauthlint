@@ -1,13 +1,13 @@
 ---
 layout: ../../layouts/DocsLayout.astro
 title: "CLI reference"
-description: "Every OAuthLint command and flag (scan, list, init, doctor), with accepted values, defaults, exit codes and CI examples."
+description: "Every OAuthLint command and flag (scan, list, baseline, init, doctor, explain, probe), with accepted values, defaults, exit codes and CI examples."
 section: "cli"
 ---
 
 # CLI reference
 
-The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS anti-patterns, lists the shipped rules, scaffolds a config, and diagnoses your install. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
+The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS anti-patterns, lists the shipped rules, captures a baseline, scaffolds a config, diagnoses your install, explains a rule, and probes a running MCP server. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
 
 ## `scan`
 
@@ -139,6 +139,26 @@ npx oauthlint doctor
 # machine-readable
 npx oauthlint doctor --json
 ```
+
+## `probe`
+
+Probe a running MCP server for OAuth 2.1 resource-server conformance. Unlike `scan`, which reads your source, `probe` tests a live server's deployed behaviour. It is credential-free: every check is a negative test (unauthenticated and invalid-token requests) plus RFC 9728 metadata discovery, so it never needs a token and never writes anything.
+
+```bash
+npx oauthlint probe <url>
+```
+
+The `<url>` is the endpoint of a running MCP server, for example `https://host/mcp`. It runs four checks: the server requires a token (401 / 403, not 200), the 401 `WWW-Authenticate` challenge advertises `resource_metadata`, the Protected Resource Metadata is discoverable at `/.well-known/oauth-protected-resource` (RFC 9728), and a bogus bearer token is rejected.
+
+```bash
+# probe a deployed server
+npx oauthlint probe https://mcp.example.com/mcp
+
+# machine-readable output ({ url, checks })
+npx oauthlint probe https://mcp.example.com/mcp --json
+```
+
+`probe` exits `1` if any check hard-fails (an unauthenticated endpoint, an accepted invalid token, or no Protected Resource Metadata), and `0` otherwise. An invalid or unreachable URL exits `2`. See [Scanning MCP servers](/docs/mcp-server-auth) for how it pairs with the static MCP rule pack.
 
 ## Exit codes
 
