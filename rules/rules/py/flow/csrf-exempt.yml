@@ -8,7 +8,7 @@ rules:
       (from `django.views.decorators.csrf`), or `@method_decorator(csrf_exempt,
       ...)` on a class-based view, turns off Django's CSRF middleware check for
       that endpoint. An attacker can then forge cross-site requests that the
-      victim's browser submits with their session cookie — a CSRF vulnerability.
+      victim's browser submits with their session cookie, a CSRF vulnerability.
 
       Do not exempt views from CSRF. Keep the default protection and submit the
       CSRF token from your client. For machine-to-machine endpoints such as

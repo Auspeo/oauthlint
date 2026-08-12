@@ -1,5 +1,11 @@
 # oauthlint-rules
 
+## 0.10.0
+
+### Minor Changes
+
+- Add PHP, Ruby, and Kotlin rule packs, plus framework coverage for ASP.NET Core, Gin/Echo/Fiber, Hono, FastAPI, and better-auth. Fill OAuth PKCE / hardcoded-client-secret / crypto gaps across the existing Go, C#, Java, Rust, and Python packs, and add MCP DNS-rebinding and predictable-session-id rules. The pack now ships 250+ hand-curated, low-false-positive rules.
+
 ## 0.9.0
 
 ### Minor Changes

@@ -1,0 +1,457 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# ruby subset — 11 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.ruby.cookie.insecure-session-store
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      The Rails cookie session store is configured with `secure: false` or
+      `httponly: false`. `secure: false` lets the session cookie ride over
+      plaintext HTTP where a network attacker can capture it; `httponly: false`
+      exposes it to `document.cookie`, so any XSS turns into full session theft
+      (CWE-614). LLM-generated configs flip these off to make sessions work over
+      local HTTP and never restore them.
+
+      Drop these overrides. Rails already defaults `httponly` to true, and gate
+      `secure` on the environment instead of disabling it, e.g.
+      `session_store :cookie_store, secure: Rails.env.production?`. Never hard-
+      code `secure: false` / `httponly: false` in code that reaches production.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-cookie-insecure-session-store
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://guides.rubyonrails.org/security.html#session-storage
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - rails
+    pattern-either:
+      - pattern: "session_store :cookie_store, ..., secure: false, ..."
+      - pattern: "session_store :cookie_store, ..., httponly: false, ..."
+      - pattern: "$APP.session_store :cookie_store, ..., secure: false, ..."
+      - pattern: "$APP.session_store :cookie_store, ..., httponly: false, ..."
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.cors.wildcard-origin-with-credentials
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      A rack-cors `allow` block combines `origins '*'` with
+      `credentials: true`. That instructs browsers to send cookies and
+      Authorization headers to a resource that trusts EVERY origin, which is
+      exactly the combination the CORS spec forbids and a CSRF/data-theft
+      primitive (CWE-942). LLM-generated CORS setups routinely pair a wildcard
+      origin with credentials to make cross-site auth "just work".
+
+      Decide what the endpoint actually needs:
+       - Public, no cookies/auth cross-site -> `origins '*'` with no
+         `credentials: true` (the default).
+       - Authenticated for a known frontend -> enumerate the exact origins,
+         e.g. `origins 'https://app.example.com'`, and keep `credentials: true`.
+
+      Never combine a wildcard origin with credentials enabled.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-cors-wildcard-origin-with-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/cyu/rack-cors#origin
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+      technology:
+        - rack-cors
+    patterns:
+      - pattern: "resource ..., credentials: true, ..."
+      - pattern-either:
+          - pattern-inside: |
+              allow do
+                ...
+                origins '*'
+                ...
+              end
+          - pattern-inside: |
+              allow do
+                ...
+                origins "*"
+                ...
+              end
+  - id: auth.ruby.jwt.algorithm-none
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      A JWT is encoded or decoded with the `none` algorithm, which produces (and
+      accepts) unsigned tokens. Anyone can craft a token with any claims and it
+      will be trusted, because there is no signature to verify (CWE-347). This
+      shows up in AI-generated "quick token" and debugging code that then ships.
+
+      Sign with a real algorithm and a key from configuration:
+        JWT.encode(payload, ENV.fetch('JWT_SECRET'), 'HS256')
+        JWT.decode(token, key, true, { algorithm: 'HS256' })
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-jwt-algorithm-none
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - ruby-jwt
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: JWT.encode($P, $K, $ALG)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']?none["']?$
+          - patterns:
+              - pattern: "JWT.decode($T, $K, $V, algorithm: $ALG)"
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']?none["']?$
+          - patterns:
+              - pattern: "JWT.decode($T, $K, $V, {algorithm: $ALG})"
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']?none["']?$
+          - pattern-regex: (?i)JWT\.decode\([^)]*algorithms:\s*\[[^\]]*["']none["']
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.jwt.decode-verify-disabled
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      `JWT.decode` is called with its third positional argument set to `false`,
+      which disables signature verification entirely. The library will happily
+      return the claims of any token, including one an attacker forged, so any
+      authorization decision made on the decoded `sub` / `role` / `scope` is
+      trivially bypassed (CWE-347). This is a common AI-generated mistake: the
+      assistant "just wants the payload" and turns verification off to make the
+      call succeed.
+
+      Verify the signature and pin the algorithm instead:
+        JWT.decode(token, key, true, { algorithm: 'HS256' })
+      For asymmetric tokens pass the public key and an `algorithms:` allow-list.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-jwt-decode-verify-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - ruby-jwt
+    patterns:
+      - pattern-either:
+          - pattern: JWT.decode($T, $K, false)
+          - pattern: JWT.decode($T, $K, false, ...)
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.jwt.missing-algorithm-allowlist
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      `JWT.decode` is called with verification enabled (`true`) but no
+      `algorithm:` / `algorithms:` option, so the library trusts whatever `alg`
+      the token header names. An attacker can switch the algorithm, e.g. present
+      an `HS256` token signed with your RSA *public* key as if it were the HMAC
+      secret, and the signature check passes (algorithm-confusion, CWE-347).
+
+      Always pin the accepted algorithm(s):
+        JWT.decode(token, key, true, { algorithm: 'HS256' })
+        JWT.decode(token, public_key, true, { algorithms: ['RS256'] })
+      ruby-jwt's own docs mark this allow-list as mandatory for safe decoding.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-jwt-missing-algorithm-allowlist
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
+      technology:
+        - ruby-jwt
+    patterns:
+      - pattern: JWT.decode($T, $K, true)
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.oauth.doorkeeper-insecure-config
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      A Doorkeeper (OAuth provider) initializer weakens a core protection:
+      `force_ssl_in_redirect_uri false` allows plaintext `http://` redirect
+      URIs (authorization codes/tokens travel in cleartext and are open to
+      interception/redirect tampering, CWE-601); `allow_blank_redirect_uri
+      true` accepts clients with no registered redirect URI; and an
+      unconditional `skip_authorization do true end` auto-approves EVERY client
+      with no user consent. These are frequent LLM shortcuts to get a local
+      OAuth flow working.
+
+      Keep `force_ssl_in_redirect_uri` on (default) so redirect URIs must be
+      HTTPS, require every client to register a redirect URI, and make
+      `skip_authorization` conditional on a trusted first-party client rather
+      than returning a bare `true`, e.g.
+      `skip_authorization { |resource_owner, client| client.application.trusted? }`.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-doorkeeper-insecure-config
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://doorkeeper.gitbook.io/guides/ruby-on-rails/skip-authorization
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - doorkeeper
+    pattern-either:
+      - pattern: force_ssl_in_redirect_uri false
+      - pattern: allow_blank_redirect_uri true
+      - patterns:
+          - pattern: |
+              skip_authorization do
+                true
+              end
+          - pattern-not: |
+              skip_authorization do |$A, $B|
+                ...
+              end
+  - id: auth.ruby.oauth.omniauth-allows-get
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      OmniAuth is configured to accept GET requests on the request phase
+      (`allowed_request_methods` includes `:get`, or `silence_get_warning`
+      is set to `true`). A GET auth-initiation URL can be triggered by any
+      cross-site `<img>`/link, which lets an attacker start a login/account-
+      link flow without the user's intent, a CSRF vector OmniAuth explicitly
+      warns about (CWE-352). LLM-generated fixes often add `:get` (or silence
+      the warning) to make a plain link work.
+
+      Keep the request phase POST-only: `OmniAuth.config.allowed_request_methods
+      = [:post]`, and initiate login with a real form/button that POSTs to
+      `/auth/:provider` (or use the request-forgery-protection middleware).
+      Do not silence the GET warning.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-omniauth-allows-get
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - omniauth
+    pattern-either:
+      - pattern: OmniAuth.config.allowed_request_methods = [..., :get, ...]
+      - pattern: OmniAuth.config.silence_get_warning = true
+  - id: auth.ruby.oauth.omniauth-ignores-state
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      An OmniAuth provider is configured with `provider_ignores_state: true`,
+      which disables verification of the OAuth `state` parameter on the
+      callback. `state` is the OAuth CSRF defence: without it, an attacker can
+      splice their own authorization code/response into a victim's session and
+      complete a login/link they did not initiate (CWE-352). This flag exists
+      only as an escape hatch and is a common LLM "fix" for state-mismatch
+      errors caused by a broken session store.
+
+      Remove `provider_ignores_state: true` and fix the real cause (usually a
+      session that is not shared between the request and callback phases, e.g.
+      a cookie store misconfiguration or a load balancer without sticky
+      sessions). Let OmniAuth validate `state` on every callback.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-omniauth-ignores-state
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+      technology:
+        - omniauth
+    pattern-either:
+      - pattern: "provider ..., provider_ignores_state: true, ..."
+      - pattern: "{ ..., provider_ignores_state: true, ... }"
+      - pattern: "{ ..., 'provider_ignores_state' => true, ... }"
+      - pattern: '{ ..., "provider_ignores_state" => true, ... }'
+  - id: auth.ruby.secret.hardcoded-jwt-secret
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      The HMAC key passed to `JWT.encode` / `JWT.decode` is a hard-coded string
+      literal. This key signs and verifies every token: committed to source
+      control it is one search away from compromise, letting an attacker forge a
+      token for any user or role (CWE-798). AI-generated samples inline the
+      secret to make the snippet "just work" and it ships unchanged.
+
+      Read the key from the environment or Rails credentials instead:
+        JWT.encode(payload, ENV.fetch('JWT_SECRET'), 'HS256')
+        JWT.decode(token, Rails.application.credentials.jwt_secret, true, { algorithm: 'HS256' })
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-secret-hardcoded-jwt-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - ruby-jwt
+    patterns:
+      - pattern-either:
+          - pattern: JWT.encode($P, $K, $ALG)
+          - pattern: JWT.decode($T, $K, $V)
+          - pattern: JWT.decode($T, $K, $V, ...)
+      - metavariable-regex:
+          metavariable: $K
+          regex: ^["'][^"']{5,}["']$
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.secret.hardcoded-secret-key-base
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      A Rails `secret_key_base` / `secret_key` is assigned a hard-coded string
+      literal. This value keys the whole application's signed/encrypted cookies
+      (including the session cookie) and message verifiers: committed to source
+      control it is one search away from letting an attacker forge session
+      cookies and impersonate any user (CWE-798). Inlining a literal secret to
+      make an app "just run" is a classic LLM-generated mistake.
+
+      Never assign the secret in code. Store it in `Rails.application.credentials`
+      (encrypted) or read it from the environment, e.g.
+      `ENV.fetch("SECRET_KEY_BASE")`, and rotate the leaked value out of source
+      control and git history.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-SECRET-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-secret-hardcoded-secret-key-base
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://guides.rubyonrails.org/security.html#custom-credentials
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - rails
+    patterns:
+      - pattern-either:
+          - pattern: $X.secret_key_base = $V
+          - pattern: $X.secret_key = $V
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?s)^["'].{8,}["']$
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+  - id: auth.ruby.session.skip-verify-authenticity-token
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      A Rails controller disables CSRF protection with
+      `skip_before_action :verify_authenticity_token`. This turns off the
+      authenticity-token check for the actions it covers, so a malicious page
+      can drive a logged-in user's browser into submitting state-changing
+      requests (CWE-352). LLM-generated controllers reach for this line to
+      "fix" a 422 InvalidAuthenticityToken error instead of sending the token.
+
+      If the controller serves browser forms, keep CSRF on and send the token.
+      If it is a genuine token-authenticated API or webhook endpoint (no cookie
+      session), that is legitimate, but prove the request some other way:
+      verify a signature/HMAC or a bearer token on every action, and scope this
+      skip narrowly with `only:` rather than across the whole controller.
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-session-skip-verify-authenticity-token
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://guides.rubyonrails.org/security.html#cross-site-request-forgery-csrf
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - rails
+    pattern-either:
+      - pattern: skip_before_action :verify_authenticity_token
+      - pattern: skip_before_action :verify_authenticity_token, ...
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"

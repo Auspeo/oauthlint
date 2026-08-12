@@ -7,7 +7,7 @@ rules:
       Untrusted request input flows into the verification key returned by a
       `golang-jwt` `Keyfunc` (or into the `WithValidMethods` allowlist). When
       the attacker controls the key, they sign their own forged token and
-      supply the matching key, so every token "verifies" — a complete
+      supply the matching key, so every token "verifies": a complete
       authentication bypass. When the attacker controls the accepted methods,
       they can downgrade verification and defeat the signature check (CWE-347,
       Improper Verification of Cryptographic Signature).
@@ -15,12 +15,12 @@ rules:
       The verification key and the accepted algorithms must be fixed
       server-side. Return the key from trusted configuration or a vetted key
       set keyed by a validated `kid`, and pin accepted methods to a constant
-      allowlist — never resolve them from `r.URL.Query()`, `r.FormValue`, or a
+      allowlist. Never resolve them from `r.URL.Query()`, `r.FormValue`, or a
       request header.
     # Taint mode. The source is request input; the sink is the value RETURNED
     # from a keyfunc (focused on the key expression, not the token) or the
-    # argument to `jwt.WithValidMethods`. Focusing on the key/methods — never
-    # the token, which is supposed to come from the request — keeps this from
+    # argument to `jwt.WithValidMethods`. Focusing on the key/methods (never
+    # the token, which is supposed to come from the request) keeps this from
     # firing on every correct call. Distinct from auth.go.jwt.unchecked-method
     # (a keyfunc that skips the `token.Method` check): this is about a
     # request-CONTROLLED key or method list. Routing the value through an

@@ -8,7 +8,7 @@ rules:
       (`allowed_request_methods` includes `:get`, or `silence_get_warning`
       is set to `true`). A GET auth-initiation URL can be triggered by any
       cross-site `<img>`/link, which lets an attacker start a login/account-
-      link flow without the user's intent — a CSRF vector OmniAuth explicitly
+      link flow without the user's intent, a CSRF vector OmniAuth explicitly
       warns about (CWE-352). LLM-generated fixes often add `:get` (or silence
       the warning) to make a plain link work.
 

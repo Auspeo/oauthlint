@@ -17,7 +17,7 @@ rules:
     # omitted field are not flagged. The struct-literal form
     # `Validation { validate_aud: false, .. }` is a known false negative:
     # Semgrep's Rust parser cannot match a field inside a struct literal with a
-    # rest (`..`), and a text regex would false-positive on comments — kept
+    # rest (`..`), and a text regex would false-positive on comments, kept
     # AST-only for precision.
     pattern: $V.validate_aud = false
     metadata:

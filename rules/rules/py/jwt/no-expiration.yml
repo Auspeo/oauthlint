@@ -6,7 +6,7 @@ rules:
     message: |
       A JWT is decoded with `options={"verify_exp": False}`, which turns off
       PyJWT's `exp` (expiration) check. With expiry verification disabled, an
-      expired — or stolen and long-since-revoked — token is still accepted, so
+      expired (or stolen and long-since-revoked) token is still accepted, so
       tokens effectively never expire.
 
       Remove the `"verify_exp": False` option; PyJWT verifies `exp` by default,

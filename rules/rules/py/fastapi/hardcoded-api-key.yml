@@ -4,11 +4,11 @@ rules:
       - python
     severity: ERROR
     message: |
-      A FastAPI security dependency (`Security(...)` — an API-key scheme such as
+      A FastAPI security dependency (`Security(...)`, an API-key scheme such as
       `APIKeyHeader`/`APIKeyQuery`/`APIKeyCookie`, or an OAuth2 bearer scheme)
       injects a credential that is then compared against a hard-coded string
       literal. The accepted key/token is baked into the source, so anyone who
-      reads the code — or a leaked repo — can authenticate, and the secret cannot
+      reads the code (or a leaked repo) can authenticate, and the secret cannot
       be rotated without a redeploy (CWE-798). This is a common AI-generated
       shortcut: a single inline literal replaces a real key store.
 
@@ -21,7 +21,7 @@ rules:
     # matching a comparison of THAT value against a string/bytes literal (`==` or
     # a `compare_digest`). `Depends(...)` is deliberately NOT used as the anchor:
     # values from generic `Depends` (roles, config) are legitimately compared to
-    # literals, which would false-positive — `Security(...)` marks a credential.
+    # literals, which would false-positive: `Security(...)` marks a credential.
     # Comparing against `os.environ[...]` / a settings value / any variable does
     # not match, so an externalised key never fires.
     patterns:

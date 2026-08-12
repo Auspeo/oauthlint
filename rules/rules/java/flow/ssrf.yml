@@ -28,7 +28,7 @@ rules:
       allow-list of hosts (resolve the URL and check its host against the
       allow-list, rejecting private/loopback ranges) before issuing the request
       with `RestTemplate`, `WebClient`, OkHttp, or Apache HttpClient.
-    # Taint mode so indirection is caught — `String u = req.getParameter("url");
+    # Taint mode so indirection is caught: `String u = req.getParameter("url");
     # restTemplate.getForObject(u, ...)` flags, not just the inline form.
     # Passing the value through a host allow-list / validation guard
     # (isAllowedUrl, validateUrl, assertAllowedHost, or an allow-list

@@ -6,7 +6,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read
+      `code_verifier` then travel unencrypted: a network attacker can read
       or rewrite them and take over the flow.
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token

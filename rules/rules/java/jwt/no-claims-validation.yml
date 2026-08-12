@@ -8,7 +8,7 @@ rules:
       never asserted: the Auth0 `JWT.require(alg)...build()` verifier pins no
       `withIssuer(...)`/`withAudience(...)`, or the jjwt parser sets a signature
       key but pins no `requireIssuer(...)`/`requireAudience(...)`. A valid
-      signature only proves the token was minted by whoever holds the key — not
+      signature only proves the token was minted by whoever holds the key, not
       that it was issued by the expected authority or meant for THIS service. A
       token your provider issued for a different audience (or one minted by any
       party that shares the key) will still verify, enabling token replay across
@@ -28,7 +28,7 @@ rules:
     #     `.withAnyOfAudience(`. If either is pinned the negative lookahead stops
     #     the match, so the safe (issuer+audience) chain never fires.
     #   - jjwt: the positive lookahead REQUIRES a `.setSigningKey(`/`.verifyWith(`
-    #     somewhere before `.build()` (so signature IS verified — an unsigned
+    #     somewhere before `.build()` (so signature IS verified; an unsigned
     #     parser is out of scope and handled by unsigned-jwt), while the tempered
     #     body forbids `.requireIssuer(`/`.requireAudience(`. Order-independent:
     #     any recipient assertion anywhere in the chain clears the finding.

@@ -6,7 +6,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials grant
       (`grant_type=password`). The application collects the user's password and
-      replays it to the authorization server — exactly what OAuth was designed
+      replays it to the authorization server, exactly what OAuth was designed
       to avoid. It cannot support federation, MFA, or step-up auth, and any
       compromise of your service exposes raw user passwords (CWE-522).
 

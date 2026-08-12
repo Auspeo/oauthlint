@@ -10,7 +10,7 @@ rules:
       `trustedOrigins` is better-auth's origin allow-list for CSRF and callback
       protection. An entry of `"*"`, `"**"`, or a protocol-only wildcard like
       `"https://*"` / `"*://*"` matches EVERY host, so any website can drive
-      authenticated cross-origin requests and receive OAuth callbacks — this
+      authenticated cross-origin requests and receive OAuth callbacks. This
       defeats the origin check entirely (CWE-942 / CWE-352).
 
       List the exact origins you trust instead:

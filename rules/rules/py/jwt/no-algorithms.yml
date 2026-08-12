@@ -16,12 +16,12 @@ rules:
       algorithms your application actually uses.
     # Scoped to PyJWT's `jwt.decode(token, key, ...)` with a verification key
     # and NO `algorithms=` kwarg. The `verify_signature: False` /
-    # `verify=False` cases are intentionally excluded here — those are reported
+    # `verify=False` cases are intentionally excluded here. Those are reported
     # by auth.py.jwt.no-verify, so we avoid a duplicate finding.
     #
     # The `import jwt` guard pins this to PyJWT. Other libraries expose a
     # `jwt.decode(token, key)` that DOES verify and takes no `algorithms`
-    # kwarg — notably joserfc (`from joserfc import jwt`), used by Authlib.
+    # kwarg, notably joserfc (`from joserfc import jwt`), used by Authlib.
     # Requiring the bare `import jwt` excludes those (real-world FP on Authlib).
     patterns:
       - pattern: jwt.decode($T, $K, ...)

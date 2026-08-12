@@ -5,8 +5,8 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      This MCP transport is mounted on an Express route with NO auth middleware
-      — the tools are reachable unauthenticated (CWE-306). The route passes only
+      This MCP transport is mounted on an Express route with NO auth middleware.
+      The tools are reachable unauthenticated (CWE-306). The route passes only
       (path, handler): there is no `requireBearerAuth(...)` in the chain, so any
       caller can drive the MCP server. A Knostic scan found none of ~2,000
       internet-exposed MCP servers required auth.
@@ -20,7 +20,7 @@ rules:
     # toNodeHandler / createMcpHandler), so ordinary routes don't trip.
     pattern-either:
       # (a) a handler that dispatches the MCP transport, inside a 2-arg Express
-      #     route (verb, path, handler) — i.e. no requireBearerAuth middleware.
+      #     route (verb, path, handler), i.e. no requireBearerAuth middleware.
       #     Scoped to real HTTP verbs so an ordinary 2-arg method call (e.g. the
       #     SDK's own `transport.handleRequest(req, opts)`) is NOT matched.
       - patterns:

@@ -5,7 +5,7 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      `jwt.decode()` from `jsonwebtoken` only parses the token — it does NOT
+      `jwt.decode()` from `jsonwebtoken` only parses the token. It does NOT
       verify the signature. Trusting any claim returned by `decode()` (e.g.
       `sub`, `role`, `scope`) lets an attacker forge a token and bypass
       authentication entirely.
@@ -21,7 +21,7 @@ rules:
     #
     # FP guard: jsonwebtoken's `decode(token[, options])` takes the token STRING
     # as its first argument and is synchronous. Other libraries that expose a
-    # `jwt.decode` — notably next-auth's own jose-backed helper — are called as
+    # `jwt.decode` (notably next-auth's own jose-backed helper) are called as
     # `await jwt.decode({ token, salt, ... })` (awaited, single options object).
     # We exclude both shapes so we don't flag those (real-world FP on next-auth).
     pattern-either:

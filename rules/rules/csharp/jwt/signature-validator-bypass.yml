@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       A custom `SignatureValidator` on `TokenValidationParameters` returns a parsed
-      token WITHOUT verifying its signature — it just constructs and returns
+      token WITHOUT verifying its signature: it just constructs and returns
       `new JwtSecurityToken(token)` / `new JsonWebToken(token)`. Because the
       delegate replaces the built-in signature check, any token (including an
       unsigned or attacker-forged one) is accepted, letting an attacker impersonate
@@ -15,7 +15,7 @@ rules:
       Remove the custom `SignatureValidator` and let the handler verify signatures
       with `IssuerSigningKey` / `IssuerSigningKeys` (or keys resolved from OIDC
       metadata). If you truly need a custom validator, it must cryptographically
-      verify the signature and throw on failure — never return a freshly parsed
+      verify the signature and throw on failure, never return a freshly parsed
       token unchecked.
     # Fires only on the canonical bypass shape: a SignatureValidator delegate whose
     # body simply parses and returns the token. A real validator performs crypto

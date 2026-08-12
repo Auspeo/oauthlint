@@ -6,7 +6,7 @@ rules:
     message: |
       CORS is configured to allow every origin with the wildcard `*`. Any
       website can then make cross-origin requests to this endpoint, defeating
-      the same-origin policy (CWE-942). This is a common AI-generated mistake —
+      the same-origin policy (CWE-942). This is a common AI-generated mistake:
       `AllowAllOrigins: true`, `AllowedOrigins: []string{"*"}`, or a raw
       `Access-Control-Allow-Origin: *` header is pasted in to "make the browser
       call work" and the intended scope is never added. Combined with
@@ -21,7 +21,7 @@ rules:
     # rs/cors (`cors.Options{..., AllowedOrigins: []string{..., "*", ...}, ...}`
     # whose list literal contains the wildcard `"*"`), and the raw header
     # `$W.Header().Set("Access-Control-Allow-Origin", "*")`. Only the wildcard /
-    # `AllowAllOrigins: true` is flagged — explicit origins such as
+    # `AllowAllOrigins: true` is flagged. Explicit origins such as
     # `"https://app.example.com"` are not.
     pattern-either:
       - pattern: 'cors.Config{..., AllowAllOrigins: true, ...}'

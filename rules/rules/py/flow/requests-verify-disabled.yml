@@ -7,7 +7,7 @@ rules:
       A `requests` call disables TLS certificate verification with
       `verify=False`. This silences the validation of the server's
       certificate, so an attacker who can intercept the connection can
-      present any certificate and read or tamper with the traffic — a
+      present any certificate and read or tamper with the traffic, a
       classic man-in-the-middle exposure. For OAuth/OIDC this leaks
       authorization codes, access tokens and client secrets.
 

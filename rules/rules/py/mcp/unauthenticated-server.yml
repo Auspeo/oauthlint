@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       This MCP server is exposed over a NETWORK transport (streamable-http /
-      SSE) but was constructed with no authentication — no `auth=` and no
+      SSE) but was constructed with no authentication: no `auth=` and no
       `token_verifier=`. Its tools are reachable by anyone who can reach the
       port (CWE-306). A Knostic scan found none of ~2,000 internet-exposed MCP
       servers required auth; unauthenticated `/mcp` endpoints are the surface

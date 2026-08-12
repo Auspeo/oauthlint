@@ -5,8 +5,8 @@ rules:
     severity: ERROR
     message: |
       A JWT is created or verified with the `none` algorithm, which means there
-      is no signature at all. An `alg=none` token can be forged by anyone —
-      changing the subject, roles, or expiry costs nothing because there is no
+      is no signature at all. An `alg=none` token can be forged by anyone.
+      Changing the subject, roles, or expiry costs nothing because there is no
       signature to verify (CWE-347). This is a common AI-generated mistake: the
       "no signature" algorithm is reached for during prototyping or testing and
       never swapped for a real signing key.

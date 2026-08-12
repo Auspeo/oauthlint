@@ -13,7 +13,7 @@ interface Props {
 }
 // Markdown pages pass meta via `frontmatter`; .astro pages can pass props directly.
 const fm = Astro.props.frontmatter ?? {};
-const title = `${Astro.props.title ?? fm.title ?? 'OAuthLint'} — OAuthLint`;
+const title = `${Astro.props.title ?? fm.title ?? 'OAuthLint'} · OAuthLint`;
 const description = Astro.props.description ?? fm.description;
 ---
 

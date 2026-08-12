@@ -4,7 +4,7 @@ rules:
       - php
     severity: ERROR
     message: |
-      A JWT is configured with an unsecured / `none` signer — e.g.
+      A JWT is configured with an unsecured / `none` signer, e.g.
       `Configuration::forUnsecuredSigner()` or `new Signer\None()` (lcobucci/jwt),
       or the `'none'` algorithm passed to `JWT::encode()` / `new Key(...)`
       (firebase/php-jwt). Unsecured tokens carry no signature, so anyone can mint

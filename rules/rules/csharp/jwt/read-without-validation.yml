@@ -19,7 +19,7 @@ rules:
       validated result. Only parse a token unvalidated when you are inspecting a
       token you just issued, never one received from a client.
     # Arity-discriminated: `new JwtSecurityToken($T)` / `new JsonWebToken($T)` match
-    # the single-string DECODE constructor only — token CREATION uses the
+    # the single-string DECODE constructor only. Token CREATION uses the
     # multi-argument (issuer, audience, claims, ...) constructors and does not fire.
     # `ReadJwtToken` is a read-only, non-validating API by definition.
     patterns:

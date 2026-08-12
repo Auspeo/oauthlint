@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / MCP / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · CLI + GitHub Action + VS Code · free & MIT
+A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
@@ -46,7 +46,7 @@ npx oauthlint scan ./src --fix
 npx oauthlint explain auth.jwt.alg-none
 ```
 
-Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--staged`, or adopt on a large repo with a [baseline](https://oauthlint.dev/docs/cli#baseline) (`oauthlint baseline ./src` then `scan --baseline`) so you're alerted on **new** findings only. Other commands: `list`, `explain`, `init`, `doctor`, and `probe <url>` — a live, credential-free OAuth 2.1 conformance check for a running MCP server (does it require a token, advertise RFC 9728 metadata, and reject invalid tokens?). Run `oauthlint --help` or see the [full CLI reference](https://oauthlint.dev/docs/cli).
+Scan only what changed for fast pre-commit hooks and editors with `--diff` / `--staged`, or adopt on a large repo with a [baseline](https://oauthlint.dev/docs/cli#baseline) (`oauthlint baseline ./src` then `scan --baseline`) so you're alerted on **new** findings only. Other commands: `list`, `explain`, `init`, `doctor`, and `probe <url>`, a live credential-free OAuth 2.1 conformance check for a running MCP server (does it require a token, advertise RFC 9728 metadata, and reject invalid tokens?). Run `oauthlint --help` or see the [full CLI reference](https://oauthlint.dev/docs/cli).
 
 ### Every finding teaches
 
@@ -56,7 +56,7 @@ Each finding ends with a hint, `↳ run \`oauthlint explain <rule-id>\` for deta
 
 AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and others) ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-- **190+ rules** across **JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit) — including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the TypeScript and Python MCP SDKs.
+- **250+ rules** across **JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit). It also ships a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the TypeScript and Python MCP SDKs, and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper).
 - **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks: an OAuth credential reaching a log sink, request input reaching a JWT verification key, **open-redirect** and **SSRF** (now across JS/TS, Python, Go, Java and Rust, plus a rule that flags `Authorization: Basic` credentials written to logs).
 - **Autofix.** `--fix` applies safe rewrites (cookie flags and similar) in place; `--fix-dry-run` previews them as a unified diff first. Per-finding fix data also rides along in `--json` and SARIF under `fixes`.
 - **HTML report.** `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.

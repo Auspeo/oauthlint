@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# python subset — 37 rules.
+# python subset — 44 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -21,7 +21,7 @@ rules:
       A session/auth cookie is issued with a security attribute explicitly
       disabled. `secure=False` lets the cookie travel over plain HTTP (it can be
       sniffed on the wire), and `httponly=False` exposes it to JavaScript so an
-      XSS payload can read and exfiltrate it — either way the session token is
+      XSS payload can read and exfiltrate it. Either way the session token is
       at risk of theft (CWE-614, OWASP A05:2021). The same applies to Django's
       `SESSION_COOKIE_SECURE = False`, `CSRF_COOKIE_SECURE = False`, and
       `SESSION_COOKIE_HTTPONLY = False` settings.
@@ -138,6 +138,42 @@ rules:
       - pattern-either:
           - pattern: $F(..., allow_origins=["*"], ...)
           - pattern: $F(..., allow_origin_regex=".*", ...)
+  - id: auth.py.crypto.ecb-mode
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      A symmetric cipher is configured in ECB mode. ECB encrypts each block
+      independently, so identical plaintext blocks yield identical ciphertext,
+      leaking structure and enabling block-shuffling attacks (CWE-327). This
+      matters for anything auth-related: encrypted tokens, cookies, credentials.
+
+      Use an authenticated mode: AES-GCM (`AESGCM` / `modes.GCM`) or, failing
+      that, CBC with a random IV plus a separate MAC.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+      technology:
+        - pycryptodome
+        - cryptography
+    pattern-either:
+      - pattern: AES.new($K, AES.MODE_ECB, ...)
+      - pattern: AES.new($K, $LIB.MODE_ECB, ...)
+      - pattern: Cipher($ALG, modes.ECB(), ...)
+      - pattern: Cipher($ALG, $M.modes.ECB(), ...)
+      - pattern: modes.ECB()
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "**/conftest.py"
   - id: auth.py.crypto.passlib-weak-scheme
     languages:
       - python
@@ -292,6 +328,202 @@ rules:
     pattern-either:
       - pattern: authentication_classes = []
       - pattern: "@authentication_classes([])"
+  - id: auth.py.fastapi.hardcoded-api-key
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A FastAPI security dependency (`Security(...)`, an API-key scheme such as
+      `APIKeyHeader`/`APIKeyQuery`/`APIKeyCookie`, or an OAuth2 bearer scheme)
+      injects a credential that is then compared against a hard-coded string
+      literal. The accepted key/token is baked into the source, so anyone who
+      reads the code (or a leaked repo) can authenticate, and the secret cannot
+      be rotated without a redeploy (CWE-798). This is a common AI-generated
+      shortcut: a single inline literal replaces a real key store.
+
+      Compare against a secret loaded from the environment or a secret manager
+      with a constant-time check instead, e.g.
+      `secrets.compare_digest(api_key, os.environ["API_KEY"])`, and issue/verify
+      per-client keys rather than one shared literal.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-hardcoded-api-key
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://fastapi.tiangolo.com/reference/security/
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fastapi
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              def $FN(..., $K = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $K: $T = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K: $T = Security(...), ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $K: Annotated[$T, Security(...)], ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $K: Annotated[$T, Security(...)], ...):
+                  ...
+      - pattern-either:
+          - pattern: $K == "..."
+          - pattern: '"..." == $K'
+          - pattern: secrets.compare_digest($K, "...")
+          - pattern: secrets.compare_digest($K.encode(...), b"...")
+          - pattern: hmac.compare_digest($K, "...")
+          - pattern: hmac.compare_digest($K.encode(...), b"...")
+  - id: auth.py.fastapi.hardcoded-http-basic
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A FastAPI HTTP Basic auth dependency compares the request's username or
+      password against a hard-coded string literal. The credential is baked into
+      the source, so anyone who reads the code (or a leaked repo) has a working
+      login, and the secret cannot be rotated without a redeploy (CWE-798). This
+      is a common AI-generated mistake: FastAPI's own HTTP Basic example uses the
+      literals `"stanleyjobson"` / `"swordfish"`, and assistants copy that shape
+      straight into production auth.
+
+      Compare against a secret loaded from the environment or a secret manager
+      instead, e.g. `secrets.compare_digest(credentials.password.encode("utf8"),
+      os.environ["ADMIN_PASSWORD"].encode("utf8"))`, and prefer a real user
+      store with per-user salted password hashes for anything beyond a single
+      service account.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-hardcoded-http-basic
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fastapi
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              def $FN(..., $CRED: HTTPBasicCredentials = ..., ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $CRED: HTTPBasicCredentials = ..., ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $CRED: Annotated[HTTPBasicCredentials, ...], ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $CRED: Annotated[HTTPBasicCredentials, ...], ...):
+                  ...
+      - pattern-either:
+          - pattern: $C.username == "..."
+          - pattern: $C.password == "..."
+          - pattern: '"..." == $C.username'
+          - pattern: '"..." == $C.password'
+          - pattern: $C.username == b"..."
+          - pattern: $C.password == b"..."
+          - pattern: secrets.compare_digest($C.username, "...")
+          - pattern: secrets.compare_digest($C.password, "...")
+          - pattern: secrets.compare_digest($C.username, b"...")
+          - pattern: secrets.compare_digest($C.password, b"...")
+          - pattern: secrets.compare_digest($C.username.encode(...), b"...")
+          - pattern: secrets.compare_digest($C.password.encode(...), b"...")
+          - pattern: secrets.compare_digest($C.username.encode(...), "...")
+          - pattern: secrets.compare_digest($C.password.encode(...), "...")
+          - pattern: hmac.compare_digest($C.username, "...")
+          - pattern: hmac.compare_digest($C.password, "...")
+          - pattern: hmac.compare_digest($C.username.encode(...), b"...")
+          - pattern: hmac.compare_digest($C.password.encode(...), b"...")
+  - id: auth.py.fastapi.session-hardcoded-secret
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      Starlette's `SessionMiddleware` is configured with a hard-coded
+      `secret_key` string literal. That key signs every session cookie: anyone
+      who reads the source or a leaked repo can forge a session and impersonate
+      any user, a complete authentication bypass (CWE-798). This is a common
+      AI-generated shortcut, where a literal secret is inlined so the sample
+      "just works" and is never externalized.
+
+      Load the key from the environment or a secret manager instead, e.g.
+      `app.add_middleware(SessionMiddleware, secret_key=os.environ["SESSION_SECRET"])`,
+      and generate it with a CSPRNG such as `secrets.token_hex(32)`. Rotate the
+      leaked secret out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-session-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://www.starlette.io/middleware/#sessionmiddleware
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fastapi
+        - starlette
+    patterns:
+      - pattern-either:
+          - pattern: $APP.add_middleware(SessionMiddleware, ..., secret_key="...", ...)
+          - pattern: SessionMiddleware(..., secret_key="...", ...)
+      - pattern-not-regex: secret_key\s*=\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: secret_key\s*=\s*["']<[^"']*>["']
+      - pattern-not-regex: (?i)secret_key\s*=\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|\.\.\.)
+  - id: auth.py.fastapi.trusted-host-wildcard
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      Starlette's `TrustedHostMiddleware` is added but configured to trust every
+      Host header (`allowed_hosts=["*"]`, or a list that contains `"*"`). The
+      middleware exists specifically to validate the incoming `Host`/`X-Forwarded-Host`
+      header against an allow-list; a wildcard disables that check, re-opening Host
+      header injection: password-reset-link poisoning, cache poisoning, and
+      routing of absolute URLs the app builds from the Host (CWE-346). This is a
+      common AI-generated shortcut to silence a host-validation error rather than
+      enumerate the real hostnames.
+
+      List the exact hostnames the service answers on, e.g.
+      `app.add_middleware(TrustedHostMiddleware, allowed_hosts=["app.example.com",
+      "www.example.com"])` (a leading-dot entry like `"*.example.com"` matches
+      subdomains and is fine; the problem is the bare `"*"`).
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-trusted-host-wildcard
+      category: security
+      cwe: CWE-346
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.starlette.io/middleware/#trustedhostmiddleware
+        - https://cwe.mitre.org/data/definitions/346.html
+      technology:
+        - fastapi
+        - starlette
+    patterns:
+      - pattern-either:
+          - pattern: $APP.add_middleware(TrustedHostMiddleware, ..., allowed_hosts=$HOSTS, ...)
+          - pattern: TrustedHostMiddleware(..., allowed_hosts=$HOSTS, ...)
+      - metavariable-pattern:
+          metavariable: $HOSTS
+          patterns:
+            - pattern-either:
+                - pattern: '["*"]'
+                - pattern: '[..., "*", ...]'
   - id: auth.py.flask.session-cookie-insecure
     languages:
       - python
@@ -337,7 +569,7 @@ rules:
       (from `django.views.decorators.csrf`), or `@method_decorator(csrf_exempt,
       ...)` on a class-based view, turns off Django's CSRF middleware check for
       that endpoint. An attacker can then forge cross-site requests that the
-      victim's browser submits with their session cookie — a CSRF vulnerability.
+      victim's browser submits with their session cookie, a CSRF vulnerability.
 
       Do not exempt views from CSRF. Keep the default protection and submit the
       CSRF token from your client. For machine-to-machine endpoints such as
@@ -530,7 +762,7 @@ rules:
     severity: ERROR
     message: |
       Untrusted request data flows into a Flask `redirect(...)` without
-      validation — an open redirect (CWE-601). An attacker can craft a link
+      validation, an open redirect (CWE-601). An attacker can craft a link
       to your trusted domain that bounces the victim to an attacker-controlled
       site, enabling phishing and OAuth redirect/authorization-code abuse (the
       victim trusts your URL, then lands on the attacker's page).
@@ -604,7 +836,7 @@ rules:
       A `requests` call disables TLS certificate verification with
       `verify=False`. This silences the validation of the server's
       certificate, so an attacker who can intercept the connection can
-      present any certificate and read or tamper with the traffic — a
+      present any certificate and read or tamper with the traffic, a
       classic man-in-the-middle exposure. For OAuth/OIDC this leaks
       authorization codes, access tokens and client secrets.
 
@@ -654,7 +886,7 @@ rules:
     severity: ERROR
     message: |
       A server-side secret read from the environment flows into an HTTP
-      response sent back to the client — leaking it (CWE-200). Anything you
+      response sent back to the client, leaking it (CWE-200). Anything you
       return from a Flask view (via `jsonify(...)`, `make_response(...)`,
       `Response(...)`) is visible to every caller, so an env value whose name
       looks like a credential (`API_KEY`, `CLIENT_SECRET`, `*_TOKEN`,
@@ -720,7 +952,7 @@ rules:
     severity: ERROR
     message: |
       Untrusted request data flows into an outbound HTTP request without
-      validation — a Server-Side Request Forgery (SSRF, CWE-918). An attacker
+      validation, a Server-Side Request Forgery (SSRF, CWE-918). An attacker
       who controls the target URL can make your server reach internal-only
       services (admin panels, databases, other microservices behind your
       firewall) or the cloud metadata endpoint (e.g. http://169.254.169.254/),
@@ -827,7 +1059,7 @@ rules:
       A password is being hashed with a fast, general-purpose digest from
       `hashlib` (MD5, SHA-1, SHA-256, SHA-512). These algorithms are designed
       to be fast, which makes offline brute-force and rainbow-table attacks
-      cheap — they are NOT suitable for storing passwords.
+      cheap. They are NOT suitable for storing passwords.
 
       Use a dedicated, slow password-hashing function with a per-password salt
       and a tunable work factor: `bcrypt` (`bcrypt.hashpw`), `argon2`
@@ -884,7 +1116,7 @@ rules:
     message: |
       A JWT is decoded or signed with the `none` algorithm. The `none`
       algorithm means the token is NOT cryptographically signed, so any
-      attacker can forge a token with arbitrary claims and have it accepted —
+      attacker can forge a token with arbitrary claims and have it accepted,
       a complete authentication bypass (CVE-class JWT alg=none vulnerability).
 
       Never allow `none`. Pin a strong signing algorithm explicitly:
@@ -1030,7 +1262,7 @@ rules:
     message: |
       A JWT is decoded with `options={"verify_exp": False}`, which turns off
       PyJWT's `exp` (expiration) check. With expiry verification disabled, an
-      expired — or stolen and long-since-revoked — token is still accepted, so
+      expired (or stolen and long-since-revoked) token is still accepted, so
       tokens effectively never expire.
 
       Remove the `"verify_exp": False` option; PyJWT verifies `exp` by default,
@@ -1063,7 +1295,7 @@ rules:
       A JWT is decoded with signature verification disabled. PyJWT's
       `jwt.decode(token, verify=False)` (legacy) or
       `options={"verify_signature": False}` parses the token WITHOUT checking
-      the signature, so any attacker-forged token is accepted — a complete
+      the signature, so any attacker-forged token is accepted, a complete
       authentication bypass.
 
       Always verify: `jwt.decode(token, key, algorithms=["RS256"])`. If you
@@ -1097,7 +1329,7 @@ rules:
       Untrusted request input flows into the verification key or the
       `algorithms` allowlist of `jwt.decode(...)` (PyJWT / python-jose). When
       the attacker controls the key, they sign their own forged token and
-      supply the matching key, so every token "verifies" — a complete
+      supply the matching key, so every token "verifies", a complete
       authentication bypass. When the attacker controls `algorithms`, they can
       downgrade verification (e.g. to `HS256` against a public key, or to
       `none` on older libraries) and defeat the signature check (CWE-347,
@@ -1106,7 +1338,7 @@ rules:
       The verification key and the accepted algorithms must be fixed
       server-side. Pin `algorithms` to a constant allowlist
       (`algorithms=["RS256"]`) and resolve the key from trusted configuration or
-      a vetted key set keyed by a validated `kid` — never from `request.args`,
+      a vetted key set keyed by a validated `kid`, never from `request.args`,
       `request.form`, `request.json`, or `request.headers`.
     metadata:
       oauthlint-rule-id: AUTH-PY-JWT-007
@@ -1190,6 +1422,53 @@ rules:
             - pattern: '{..., "verify_aud": False, ...}'
             - pattern: '{..., "verify_iss": False, ...}'
             - pattern: '{..., "verify_nbf": False, ...}'
+  - id: auth.py.mcp.dns-rebinding-unprotected
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      This FastMCP server binds to `0.0.0.0` and serves a network transport
+      (streamable-http / SSE) without DNS-rebinding protection (CWE-346). When
+      the host is not loopback, the SDK does NOT auto-enable protection, so a
+      web page the user visits can rebind a DNS name to this server and drive
+      its tools cross-origin. (Binding to `127.0.0.1` auto-protects since 1.23.0.)
+
+      Pass explicit transport security with a Host allow-list:
+        from mcp.server.transport_security import TransportSecuritySettings
+        mcp = FastMCP(
+            "name", host="0.0.0.0",
+            transport_security=TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=["mcp.example.com"],
+                allowed_origins=["https://app.example.com"],
+            ),
+        )
+    metadata:
+      oauthlint-rule-id: AUTH-PY-MCP-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-mcp-dns-rebinding-unprotected
+      category: security
+      cwe: CWE-346
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://www.cve.org/CVERecord?id=CVE-2025-66416
+        - https://cwe.mitre.org/data/definitions/346.html
+      technology:
+        - mcp
+        - fastmcp
+        - modelcontextprotocol
+    patterns:
+      - pattern-either:
+          - pattern: $M.run(transport="streamable-http", ...)
+          - pattern: $M.run(transport="sse", ...)
+      - pattern-inside: |
+          $M = FastMCP(..., host="0.0.0.0", ...)
+          ...
+      - pattern-not-inside: |
+          $M = FastMCP(..., transport_security=$TS, ...)
+          ...
+      - pattern-not: $M.run(..., transport_security=$TS)
   - id: auth.py.mcp.missing-resource-binding
     languages:
       - python
@@ -1283,7 +1562,7 @@ rules:
     severity: ERROR
     message: |
       An argument of an MCP tool handler (`@mcp.tool()`) flows into an outbound
-      HTTP request without validation — a server-side request forgery (SSRF,
+      HTTP request without validation, a server-side request forgery (SSRF,
       CWE-918). Tool arguments are attacker-influenced: an LLM (or a malicious
       caller) can point the URL at internal services, cloud metadata
       (169.254.169.254), or localhost. BlueRock found ~36.7% of MCP servers
@@ -1340,7 +1619,7 @@ rules:
     severity: ERROR
     message: |
       This MCP server is exposed over a NETWORK transport (streamable-http /
-      SSE) but was constructed with no authentication — no `auth=` and no
+      SSE) but was constructed with no authentication: no `auth=` and no
       `token_verifier=`. Its tools are reachable by anyone who can reach the
       port (CWE-306). A Knostic scan found none of ~2,000 internet-exposed MCP
       servers required auth; unauthenticated `/mcp` endpoints are the surface
@@ -1383,6 +1662,45 @@ rules:
       - pattern-not-inside: |
           $M = $CTOR(..., token_verifier=$V, ...)
           ...
+  - id: auth.py.oauth.hardcoded-client-secret
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      An OAuth client secret is passed as a string literal to the OAuth client.
+      Committed to source control it is one search away from compromise, letting
+      an attacker impersonate your application at the authorization server and
+      exchange codes for tokens (CWE-798). AI-generated OAuth snippets inline the
+      secret to make the example run.
+
+      Read it from the environment or a secret store instead, e.g.
+      `client_secret=os.environ["OAUTH_CLIENT_SECRET"]`.
+    metadata:
+      oauthlint-rule-id: AUTH-PY-OAUTH-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://docs.authlib.org/en/latest/client/oauth2.html
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - authlib
+        - requests-oauthlib
+    pattern-either:
+      - pattern: OAuth2Session($ID, "...", ...)
+      - pattern: authlib.integrations.requests_client.OAuth2Session($ID, "...", ...)
+      - pattern: OAuth2Session(..., client_secret="...", ...)
+      - pattern: WebApplicationClient(..., client_secret="...", ...)
+      - pattern: BackendApplicationClient(..., client_secret="...", ...)
+      - pattern: $OAUTH.register(..., client_secret="...", ...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "**/conftest.py"
   - id: auth.py.oauth.insecure-token-endpoint
     languages:
       - python
@@ -1390,7 +1708,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read
+      `code_verifier` then travel unencrypted: a network attacker can read
       or rewrite them and take over the flow.
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
@@ -1458,7 +1776,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials
       grant (`grant_type=password`). The app collects the user's password
-      and replays it to the authorization server — exactly what OAuth was
+      and replays it to the authorization server, exactly what OAuth was
       designed to avoid. It cannot support federation, MFA, or step-up
       auth, and any compromise of your service exposes raw user passwords.
 
@@ -1493,7 +1811,7 @@ rules:
     severity: WARNING
     message: |
       OAuth authorization request sends a hardcoded, constant `state`
-      value. A static `state` provides ZERO CSRF protection — the whole
+      value. A static `state` provides ZERO CSRF protection: the whole
       point is an unguessable, per-request value that you store and then
       compare on the callback. A literal that ships in your source is known
       to everyone and identical on every request, so an attacker can forge
@@ -1531,7 +1849,7 @@ rules:
       verification disabled (`verify=False`). The token request carries the
       `client_secret`, the authorization `code`, and the issued access/refresh
       tokens; with verification off, an attacker who can intercept the
-      connection presents any certificate and reads or tampers with them — a
+      connection presents any certificate and reads or tampers with them, a
       classic man-in-the-middle on the most sensitive call in the flow
       (CWE-295).
 
@@ -1571,7 +1889,7 @@ rules:
       The Django `SECRET_KEY` is set to a hard-coded string literal in
       settings. This is typically the auto-generated `django-insecure-...`
       value committed by mistake. `SECRET_KEY` signs sessions, CSRF tokens
-      and password-reset tokens — anyone who reads the source or a leaked
+      and password-reset tokens. Anyone who reads the source or a leaked
       repo can forge them and bypass authentication entirely (CWE-798).
 
       Load it from the environment or a secret manager instead, e.g.
@@ -1597,8 +1915,8 @@ rules:
     severity: ERROR
     message: |
       The Flask `SECRET_KEY` (used to sign session cookies and CSRF tokens) is
-      set to a hard-coded string literal. Anyone who reads the source — or a
-      leaked repo — can forge session cookies and impersonate any user, a
+      set to a hard-coded string literal. Anyone who reads the source (or a
+      leaked repo) can forge session cookies and impersonate any user, a
       complete authentication bypass (CWE-798).
 
       Load the secret from the environment or a secret manager instead, e.g.

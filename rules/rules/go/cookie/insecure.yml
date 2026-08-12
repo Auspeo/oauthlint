@@ -18,7 +18,7 @@ rules:
     # detection scoped to an `http.Cookie{...}` (and `&http.Cookie{...}`)
     # composite literal, so an unrelated struct exposing a `Secure`/`HttpOnly`
     # bool is never matched. `$FIELD` captures the offending field name so the
-    # narrow match — and the autofix below — targets just that field.
+    # narrow match (and the autofix below) targets just that field.
     patterns:
       - pattern-inside: 'http.Cookie{...}'
       - pattern: '$FIELD: false'
@@ -27,7 +27,7 @@ rules:
           regex: ^(Secure|HttpOnly)$
     # Safe, deterministic autofix: flip the disabled flag to `true`. `$FIELD` is
     # preserved, so `Secure: false` becomes `Secure: true` and `HttpOnly: false`
-    # becomes `HttpOnly: true` — each the secure value that resolves the finding,
+    # becomes `HttpOnly: true`, each the secure value that resolves the finding,
     # with every other field in the literal left untouched.
     fix: '$FIELD: true'
     metadata:

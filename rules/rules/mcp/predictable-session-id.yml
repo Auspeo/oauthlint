@@ -6,7 +6,7 @@ rules:
     severity: WARNING
     message: |
       This MCP `StreamableHTTPServerTransport` derives its session id from a
-      predictable source — `Date.now()`, `Math.random()`, or an incrementing
+      predictable source: `Date.now()`, `Math.random()`, or an incrementing
       counter (CWE-330). Session ids are the bearer of the MCP session; if an
       attacker can guess or enumerate them, they can hijack another client's
       session and issue tool calls as that client. `Math.random()` is not a CSPRNG
@@ -14,7 +14,7 @@ rules:
 
       Use a cryptographically secure generator:
         sessionIdGenerator: () => randomUUID()   // from node:crypto
-      (Omit `sessionIdGenerator` entirely for stateless mode — that is fine.)
+      (Omit `sessionIdGenerator` entirely for stateless mode, which is fine.)
     # Scoped to the inline arrow generator's body ($BODY), then narrowed via
     # metavariable-pattern to the weak idioms only. `undefined` (stateless mode)
     # is not an arrow so is NOT matched; `() => randomUUID()` has no weak idiom

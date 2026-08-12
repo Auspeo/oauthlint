@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       Untrusted request data flows into a Flask `redirect(...)` without
-      validation — an open redirect (CWE-601). An attacker can craft a link
+      validation, an open redirect (CWE-601). An attacker can craft a link
       to your trusted domain that bounces the victim to an attacker-controlled
       site, enabling phishing and OAuth redirect/authorization-code abuse (the
       victim trusts your URL, then lands on the attacker's page).
@@ -42,7 +42,7 @@ rules:
       - pattern: request.cookies[$K]
       - pattern: request.headers[$K]
     pattern-sanitizers:
-      # `url_for(...)` builds the URL from a known endpoint — safe by construction.
+      # `url_for(...)` builds the URL from a known endpoint, safe by construction.
       - pattern: url_for(...)
       - pattern: flask.url_for(...)
       # Allow-list / same-host validators used as a guard:

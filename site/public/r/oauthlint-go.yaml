@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# go subset — 21 rules.
+# go subset — 28 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -13,6 +13,42 @@
 # Generated from the oauthlint-rules pack. Do not edit by hand.
 
 rules:
+  - id: auth.go.cookie.gin-insecure
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A Gin auth/session cookie is written with `secure` or `httpOnly` set to a
+      literal `false`. `gin.Context.SetCookie` takes them positionally:
+      `SetCookie(name, value, maxAge, path, domain, secure, httpOnly)`. With
+      `secure=false` the cookie rides over plain HTTP where a network attacker
+      can read it; with `httpOnly=false` any XSS can read it from JavaScript.
+      For OAuth/OIDC this exposes session and token cookies to theft and
+      hijacking (CWE-1004, CWE-614). LLM-generated Gin handlers frequently pass
+      `false, false` to "make it work" over http://localhost.
+
+      Set both flags to `true` on auth cookies:
+        c.SetCookie("session_id", tok, 3600, "/", "", true, true)
+    metadata:
+      oauthlint-rule-id: AUTH-GO-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cookie-gin-insecure
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://pkg.go.dev/github.com/gin-gonic/gin#Context.SetCookie
+        - https://cwe.mitre.org/data/definitions/1004.html
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - gin
+    patterns:
+      - pattern-either:
+          - pattern: $C.SetCookie($NAME, $V, $MA, $P, $D, false, $HO)
+          - pattern: $C.SetCookie($NAME, $V, $MA, $P, $D, $S, false)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^["']?.*(sess|sid|auth|token|jwt|csrf|xsrf|login|remember|access|refresh|oauth|oidc)
   - id: auth.go.cookie.insecure
     languages:
       - go
@@ -53,7 +89,7 @@ rules:
     message: |
       CORS is configured to allow every origin with the wildcard `*`. Any
       website can then make cross-origin requests to this endpoint, defeating
-      the same-origin policy (CWE-942). This is a common AI-generated mistake —
+      the same-origin policy (CWE-942). This is a common AI-generated mistake:
       `AllowAllOrigins: true`, `AllowedOrigins: []string{"*"}`, or a raw
       `Access-Control-Allow-Origin: *` header is pasted in to "make the browser
       call work" and the intended scope is never added. Combined with
@@ -83,6 +119,70 @@ rules:
       - pattern: "cors.Config{..., AllowAllOrigins: true, ...}"
       - pattern: 'cors.Options{..., AllowedOrigins: []string{..., "*", ...}, ...}'
       - pattern: $W.Header().Set("Access-Control-Allow-Origin", "*")
+  - id: auth.go.cors.echo-wildcard
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An Echo CORS middleware is configured to allow every origin with the
+      wildcard `"*"`. Echo uses its own `middleware.CORSConfig` struct, which is
+      missed by the generic `cors.Config` / `cors.Options` CORS checks. A
+      wildcard origin lets any website make cross-origin requests to this API,
+      defeating the same-origin policy (CWE-942); with `AllowCredentials: true`
+      it becomes an account-takeover primitive that leaks OAuth/OIDC tokens
+      cross-origin. LLM-generated Echo setups often paste `[]string{"*"}` to
+      "make the browser call work".
+
+      Restrict to an explicit allowlist, e.g.
+        middleware.CORSConfig{AllowOrigins: []string{"https://app.example.com"}}
+      and never combine a wildcard origin with credentials.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-echo-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://echo.labstack.com/docs/middleware/cors
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - echo
+    pattern: 'middleware.CORSConfig{..., AllowOrigins: []string{..., "*", ...}, ...}'
+  - id: auth.go.cors.fiber-wildcard
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A Fiber CORS middleware is configured with the wildcard origin `"*"`.
+      Fiber's `cors.Config.AllowOrigins` is a single comma-separated STRING (not
+      a `[]string`), so this shape is missed by the generic slice/`AllowAllOrigins`
+      CORS checks. `"*"` lets any website make cross-origin requests to this
+      API, defeating the same-origin policy (CWE-942); combined with
+      `AllowCredentials: true` it becomes an account-takeover primitive that
+      leaks OAuth/OIDC tokens cross-origin. This is a common AI-generated
+      default pasted in to "make the browser call work".
+
+      Restrict to an explicit allowlist, e.g.
+        cors.Config{AllowOrigins: "https://app.example.com"}
+      and never combine a wildcard origin with credentials.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-CORS-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-cors-fiber-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://docs.gofiber.io/api/middleware/cors
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - fiber
+    patterns:
+      - pattern: "cors.Config{..., AllowOrigins: $O, ...}"
+      - metavariable-regex:
+          metavariable: $O
+          regex: ^"(\*|[^"]*,\s*\*|\*\s*,[^"]*)"$
   - id: auth.go.crypto.bcrypt-low-cost
     languages:
       - go
@@ -158,7 +258,7 @@ rules:
       A password is being hashed with a fast, general-purpose digest from the
       Go standard library (MD5, SHA-1, SHA-256, SHA-512). These algorithms are
       designed to be fast, which makes offline brute-force and rainbow-table
-      attacks cheap — they are NOT suitable for storing passwords (CWE-916).
+      attacks cheap. They are NOT suitable for storing passwords (CWE-916).
 
       Use a dedicated, slow password-hashing function with a per-password salt
       and a tunable work factor: bcrypt
@@ -274,7 +374,7 @@ rules:
       attacker who controls the redirect target (via a query parameter, form
       field, or request header) can forward the victim to an arbitrary
       external site while the link still appears to point at your trusted
-      domain — a classic open redirect, commonly abused to bypass OAuth
+      domain, a classic open redirect, commonly abused to bypass OAuth
       `redirect_uri` checks and to mount convincing phishing.
 
       Do not pass request-derived values straight into `http.Redirect(...)`
@@ -328,7 +428,7 @@ rules:
       client secret, access key, or private key are meant to stay on the
       server; writing one to the `http.ResponseWriter` (via `Write`,
       `fmt.Fprint(f)`, `io.WriteString`, or a JSON encoder) publishes it to
-      every caller — including attackers probing your endpoints.
+      every caller, including attackers probing your endpoints.
 
       Never return a credential to the client. Send only the data the caller
       legitimately needs; if a secret must appear in a debug/diagnostic path,
@@ -377,7 +477,7 @@ rules:
       Untrusted request data flows into the URL of an outbound HTTP request.
       An attacker who controls the request target (via a query parameter, form
       field, or request header) can coerce your server into making requests to
-      arbitrary destinations — Server-Side Request Forgery (SSRF). This is
+      arbitrary destinations, Server-Side Request Forgery (SSRF). This is
       routinely abused to reach internal-only services behind your network
       perimeter and, most damagingly, the cloud instance metadata endpoint
       (e.g. http://169.254.169.254/...), letting an attacker steal short-lived
@@ -478,6 +578,74 @@ rules:
               metavariable: $VAR
               patterns:
                 - pattern-regex: (?i)(token|secret|key|password|nonce|otp|salt)
+  - id: auth.go.jwt.echojwt-hardcoded-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      The Echo JWT middleware (`labstack/echo-jwt`) is configured with a
+      hardcoded string-literal `SigningKey`. This key verifies every request
+      token; committed to source it lets anyone forge a valid JWT for any user
+      or role, a complete authentication bypass (CWE-798). An empty key
+      (`[]byte("")`) is worse still. It accepts trivially forged tokens. LLMs
+      commonly inline `[]byte("secret")` so the middleware "just works".
+
+      Load the key from configuration or a secret store:
+        e.Use(echojwt.WithConfig(echojwt.Config{
+          SigningKey: []byte(os.Getenv("JWT_SECRET")),
+        }))
+      Rotate any key already committed.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-echojwt-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/labstack/echo-jwt
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - echo
+        - echo-jwt
+    patterns:
+      - pattern: 'echojwt.Config{..., SigningKey: []byte("..."), ...}'
+      - pattern-not-regex: (?i)SigningKey:\s*\[\]byte\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)SigningKey:\s*\[\]byte\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|<)
+  - id: auth.go.jwt.fiber-hardcoded-key
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      The Fiber JWT middleware (`gofiber/contrib/jwt`) is configured with a
+      hardcoded string-literal signing key
+      (`SigningKey: jwtware.SigningKey{Key: []byte("...")}`). This key verifies
+      every request token; committed to source it lets anyone forge a valid JWT
+      for any user or role, a complete authentication bypass (CWE-798). LLMs
+      commonly inline `[]byte("secret")` so the middleware "just works".
+
+      Load the key from configuration or a secret store:
+        app.Use(jwtware.New(jwtware.Config{
+          SigningKey: jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
+        }))
+      Rotate any key already committed.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-jwt-fiber-hardcoded-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/gofiber/contrib/tree/main/jwt
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - fiber
+        - gofiber-jwt
+    patterns:
+      - pattern: 'jwtware.SigningKey{..., Key: []byte("..."), ...}'
+      - pattern-not-regex: (?i)Key:\s*\[\]byte\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)Key:\s*\[\]byte\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|<)
   - id: auth.go.jwt.hardcoded-secret
     languages:
       - go
@@ -514,7 +682,7 @@ rules:
     message: |
       A JWT is created or accepted with the `none` algorithm, which produces an
       unsigned token. Anyone can forge such a token by setting `alg: none` and
-      omitting the signature, so the server has no way to verify who issued it —
+      omitting the signature, so the server has no way to verify who issued it:
       a complete authentication bypass (CWE-347). In golang-jwt this happens
       when signing with `jwt.SigningMethodNone` or passing the
       `jwt.UnsafeAllowNoneSignatureType` sentinel to `SignedString`.
@@ -546,7 +714,7 @@ rules:
     message: |
       A JWT is decoded with `ParseUnverified`, which parses the token WITHOUT
       checking its signature. Any claims read from the result are fully
-      attacker-controlled — an attacker can forge arbitrary subjects, scopes,
+      attacker-controlled: an attacker can forge arbitrary subjects, scopes,
       or expiry and the token will still parse. Trusting these claims for
       authentication or authorization is a complete auth bypass (CWE-347).
 
@@ -668,7 +836,7 @@ rules:
       Untrusted request input flows into the verification key returned by a
       `golang-jwt` `Keyfunc` (or into the `WithValidMethods` allowlist). When
       the attacker controls the key, they sign their own forged token and
-      supply the matching key, so every token "verifies" — a complete
+      supply the matching key, so every token "verifies": a complete
       authentication bypass. When the attacker controls the accepted methods,
       they can downgrade verification and defeat the signature check (CWE-347,
       Improper Verification of Cryptographic Signature).
@@ -676,7 +844,7 @@ rules:
       The verification key and the accepted algorithms must be fixed
       server-side. Return the key from trusted configuration or a vetted key
       set keyed by a validated `kid`, and pin accepted methods to a constant
-      allowlist — never resolve them from `r.URL.Query()`, `r.FormValue`, or a
+      allowlist. Never resolve them from `r.URL.Query()`, `r.FormValue`, or a
       request header.
     metadata:
       oauthlint-rule-id: AUTH-GO-JWT-006
@@ -715,6 +883,41 @@ rules:
       - pattern: validateKey(...)
       - pattern: isAllowedAlgorithm(...)
       - pattern: validateAlgorithm(...)
+  - id: auth.go.oauth.hardcoded-client-secret
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      An `oauth2.Config` is built with a hardcoded string-literal
+      `ClientSecret`. The client secret authenticates your application to the
+      authorization server; committed to source control it is one search away
+      from compromise, letting an attacker impersonate your client and redeem
+      authorization codes for tokens (CWE-798). LLMs routinely inline the secret
+      to make an OAuth sample runnable.
+
+      Load it from the environment or a secret manager instead:
+        conf := &oauth2.Config{
+          ClientID:     os.Getenv("OAUTH_CLIENT_ID"),
+          ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"),
+        }
+      Rotate any secret already committed.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://pkg.go.dev/golang.org/x/oauth2#Config
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - oauth2
+    patterns:
+      - pattern: 'oauth2.Config{..., ClientSecret: "...", ...}'
+      - pattern-not-regex: (?i)ClientSecret:\s*["']\s*["']
+      - pattern-not-regex: (?i)ClientSecret:\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)ClientSecret:\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|client[-_]?secret|<)
   - id: auth.go.oauth.insecure-token-endpoint
     languages:
       - go
@@ -722,7 +925,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read
+      `code_verifier` then travel unencrypted. A network attacker can read
       or rewrite them and take over the flow.
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
@@ -753,7 +956,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials
       grant (`grant_type=password`). The app collects the user's password
-      and replays it to the authorization server — exactly what OAuth was
+      and replays it to the authorization server, exactly what OAuth was
       designed to avoid. It cannot support federation, MFA, or step-up
       auth, and any compromise of your service exposes raw user passwords.
 
@@ -798,7 +1001,7 @@ rules:
     severity: WARNING
     message: |
       OAuth authorization request is built with a hardcoded, constant `state`
-      value. A static `state` provides ZERO CSRF protection — the whole point
+      value. A static `state` provides ZERO CSRF protection: the whole point
       is an unguessable, per-request value that you store and then compare on
       the callback. A literal that ships in your source is known to everyone
       and identical on every request, so an attacker can forge a matching
@@ -824,6 +1027,51 @@ rules:
     patterns:
       - pattern: $C.AuthCodeURL("...", ...)
       - pattern-not: $C.AuthCodeURL("", ...)
+  - id: auth.go.session.hardcoded-secret
+    languages:
+      - go
+    severity: ERROR
+    message: |
+      A gorilla/sessions or securecookie store is initialized with a hardcoded
+      string-literal key. This key authenticates (and, for securecookie,
+      encrypts) every session cookie: anyone who reads the source or git
+      history can forge a valid session for any user, a complete
+      authentication bypass (CWE-798). This is a common AI-generated shortcut:
+      a literal key is inlined so the sample "just works" and is never
+      externalized.
+
+      Load the key(s) from configuration or a secret manager and generate them
+      with a CSPRNG, e.g.
+        store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+      Rotate any key that has already been committed to source control.
+    metadata:
+      oauthlint-rule-id: AUTH-GO-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/go-session-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/gorilla/sessions
+        - https://github.com/gorilla/securecookie
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - gorilla-sessions
+        - gorilla-securecookie
+    patterns:
+      - pattern-either:
+          - pattern: sessions.NewCookieStore(..., []byte("..."), ...)
+          - pattern: sessions.NewFilesystemStore($P, ..., []byte("..."), ...)
+          - pattern: securecookie.New([]byte("..."), ...)
+      - pattern-not-regex: (?i)\[\]byte\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)\[\]byte\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|secret-key|<)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*_test.go"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/vendor/**"
   - id: auth.go.tls.insecure-skip-verify
     languages:
       - go
@@ -861,7 +1109,7 @@ rules:
     severity: ERROR
     message: |
       A `tls.Config` is created with `MinVersion` pinned to an obsolete
-      protocol — SSL 3.0, TLS 1.0, or TLS 1.1. These versions have known
+      protocol: SSL 3.0, TLS 1.0, or TLS 1.1. These versions have known
       cryptographic weaknesses (POODLE, BEAST, downgrade attacks) and are
       deprecated by RFC 8996. Allowing them lets an attacker negotiate a
       broken cipher and intercept or tamper with OAuth/OIDC traffic,

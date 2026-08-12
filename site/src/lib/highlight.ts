@@ -5,7 +5,7 @@
  * `--shiki-dark` CSS variables. The site flips themes via `data-theme` on
  * `<html>`; the small CSS rule shipped alongside the rendered HTML (see
  * `[slug].astro`) picks the right variable per theme. No runtime highlighter
- * is shipped — everything is rendered during the Astro build.
+ * is shipped, everything is rendered during the Astro build.
  */
 import { type BundledLanguage, codeToHtml } from 'shiki';
 import type { FixtureLang } from './rules';

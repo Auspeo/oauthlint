@@ -6,7 +6,7 @@ rules:
     severity: WARNING
     message: |
       OAuth authorization request sends a hardcoded, constant `state`
-      value. A static `state` provides ZERO CSRF protection — the whole
+      value. A static `state` provides ZERO CSRF protection: the whole
       point is an unguessable, per-request value that you store and then
       compare on the callback. A literal that ships in your source is known
       to everyone and identical on every request, so an attacker can forge

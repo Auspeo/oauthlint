@@ -1,0 +1,403 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# php subset — 8 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.php.cookie.insecure-flags
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      An authentication-related cookie is set without the `Secure` and/or
+      `HttpOnly` flags (or with `SameSite=None`). `HttpOnly=false` exposes the
+      cookie to JavaScript so an XSS bug can steal the session; `Secure=false`
+      lets it travel over plain HTTP where a network attacker can read it;
+      `SameSite=None` (without an allowlist) sends it on cross-site requests
+      (CWE-1004). AI-generated snippets pass `false` for these flags to avoid a
+      "cookie not set" issue during local testing and it ships to production.
+
+      Set the security flags on session/auth cookies:
+        setcookie('session_id', $v, ['secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+        session_set_cookie_params(['lifetime' => 3600, 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-cookie-insecure-flags
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://www.php.net/manual/en/function.setcookie.php
+        - https://cwe.mitre.org/data/definitions/1004.html
+      technology:
+        - php
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: setcookie($N, $V, $E, $P, $D, $S, false)
+                  - pattern: setcookie($N, $V, $E, $P, $D, $S, 0)
+              - metavariable-regex:
+                  metavariable: $N
+                  regex: (?i)^["']?.*(sess|sid|auth|token|jwt|login|remember|csrf|xsrf)
+          - pattern: setcookie($N, $V, [..., 'httponly' => false, ...])
+          - pattern: setcookie($N, $V, [..., 'secure' => false, ...])
+          - pattern: setcookie($N, $V, [..., 'samesite' => 'None', ...])
+          - pattern: session_set_cookie_params($L, $P, $D, false, $H)
+          - pattern: session_set_cookie_params($L, $P, $D, $S, false)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.cookie.laravel-insecure-session
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A Laravel session config hard-codes an insecure cookie flag: `'secure'
+      => false`, `'http_only' => false`, or `'same_site' => 'none'`. This turns
+      off protections for the session cookie across the whole app: `secure=false`
+      lets it travel over plain HTTP, `http_only=false` exposes it to JavaScript
+      (XSS), and `same_site=none` sends it on cross-site requests (CWE-614).
+      AI-generated config sets these to `false` to silence a local-HTTP issue and
+      the insecure default ships.
+
+      Drive the flag from the environment (secure by default) instead:
+        'secure' => env('SESSION_SECURE_COOKIE', true),
+        'http_only' => true,
+        'same_site' => 'lax',
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-cookie-laravel-insecure-session
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://laravel.com/docs/session
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - laravel
+    pattern-either:
+      - pattern-regex: (?i)['"]secure['"]\s*=>\s*false
+      - pattern-regex: (?i)['"]http_only['"]\s*=>\s*false
+      - pattern-regex: (?i)['"]same_site['"]\s*=>\s*['"]none['"]
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+  - id: auth.php.cors.wildcard-with-credentials
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      This endpoint sends `Access-Control-Allow-Credentials: true` together with
+      an `Access-Control-Allow-Origin` that is either the wildcard `*` or the
+      request's own `Origin` reflected back unchecked. That combination lets any
+      website make credentialed cross-origin requests and read the response,
+      leaking the victim's session / OAuth tokens cross-origin (CWE-942), an
+      account-takeover primitive. AI-generated code pairs these two headers to
+      "make the browser call work" without an origin allowlist.
+
+      Echo the origin only after checking it against a trusted allowlist, e.g.
+        if (in_array($origin, $allowed, true)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+        }
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-cors-wildcard-with-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.mozilla.org/docs/Web/HTTP/CORS
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - php
+    patterns:
+      - pattern-either:
+          - pattern: |
+              header('Access-Control-Allow-Origin: *');
+              ...
+              header('Access-Control-Allow-Credentials: true');
+          - pattern: |
+              header('Access-Control-Allow-Credentials: true');
+              ...
+              header('Access-Control-Allow-Origin: *');
+          - pattern: |
+              header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+              ...
+              header('Access-Control-Allow-Credentials: true');
+          - pattern: |
+              header('Access-Control-Allow-Credentials: true');
+              ...
+              header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+      - pattern-not-inside: |
+          if (in_array(...)) { ... }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.flow.socialite-stateless
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A Laravel Socialite OAuth flow calls `->stateless()`, which disables the
+      `state` parameter that ties the redirect to the user's session. Without it
+      the callback cannot be bound to the request that started the flow, opening
+      the login to CSRF / authorization-code injection (CWE-352). An attacker
+      can trick a victim into completing the attacker's OAuth flow and link
+      accounts. AI-generated code reaches for `stateless()` to "fix" a session
+      error and silently removes the CSRF defense.
+
+      Keep the stateful (default) flow so Socialite validates `state`:
+        return Socialite::driver('google')->redirect();
+        $user = Socialite::driver('google')->user();
+      Only use `stateless()` for a token-based API where you validate `state`
+      yourself.
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-flow-socialite-stateless
+      category: security
+      cwe: CWE-352
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://laravel.com/docs/socialite
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - laravel-socialite
+    patterns:
+      - pattern: $X->stateless()
+      - pattern-either:
+          - pattern-inside: Socialite::driver(...)->...
+          - pattern-inside: $S->driver(...)->...
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.jwt.manual-decode-no-verify
+    languages:
+      - php
+    severity: ERROR
+    message: |
+      A JWT payload is read by hand (`json_decode(base64_decode($parts[1]))` on
+      the second dot-segment of a token) without ever verifying the signature.
+      The claims (user id, roles, scopes) are trusted straight from an attacker-
+      controllable string, so anyone can forge a token with any identity and it
+      will be accepted (CWE-347). This is a common AI-generated shortcut: the
+      model "decodes" the token to read a claim and skips verification entirely.
+
+      Verify the signature with the library instead, pinning the algorithm and a
+      key from configuration:
+        use Firebase\JWT\JWT;
+        use Firebase\JWT\Key;
+        $claims = JWT::decode($jwt, new Key($_ENV['JWT_SECRET'], 'HS256'));
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-jwt-manual-decode-no-verify
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/firebase/php-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - php
+    patterns:
+      - pattern-either:
+          - pattern: json_decode(base64_decode($SRC[1]))
+          - pattern: json_decode(base64_decode($SRC[1]), true)
+      - pattern-regex: (?i)base64_decode\s*\(\s*\$\w*(?:jwt|token|bearer|authoriz)\w*\s*\[\s*1\s*\]
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.jwt.unsecured-signer
+    languages:
+      - php
+    severity: ERROR
+    message: |
+      A JWT is configured with an unsecured / `none` signer, e.g.
+      `Configuration::forUnsecuredSigner()` or `new Signer\None()` (lcobucci/jwt),
+      or the `'none'` algorithm passed to `JWT::encode()` / `new Key(...)`
+      (firebase/php-jwt). Unsecured tokens carry no signature, so anyone can mint
+      a token with any claims and it will be accepted (CWE-347). This appears in
+      AI-generated "quick token" and debugging code that then ships.
+
+      Use a real signer with a key from configuration:
+        use Lcobucci\JWT\Configuration;
+        use Lcobucci\JWT\Signer\Hmac\Sha256;
+        use Lcobucci\JWT\Signer\Key\InMemory;
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(), InMemory::base64Encoded(getenv('JWT_KEY'))
+        );
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-jwt-unsecured-signer
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/lcobucci/jwt
+        - https://github.com/firebase/php-jwt
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - lcobucci-jwt
+        - firebase-php-jwt
+    patterns:
+      - pattern-either:
+          - pattern: Configuration::forUnsecuredSigner()
+          - pattern: new Signer\None()
+          - patterns:
+              - pattern: new Key($K, $ALG)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']none["']$
+          - patterns:
+              - pattern: JWT::encode($P, $K, $ALG)
+              - metavariable-regex:
+                  metavariable: $ALG
+                  regex: (?i)^["']none["']$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.secret.hardcoded-jwt-key
+    languages:
+      - php
+    severity: ERROR
+    message: |
+      A JWT signing key is a hard-coded string literal, passed to
+      `JWT::encode()` / `new Key()` (firebase/php-jwt) or
+      `InMemory::plainText()` / `InMemory::base64Encoded()` (lcobucci/jwt). This
+      key signs and verifies every token: committed to source control it is one
+      search away from compromise, letting an attacker forge a token for any
+      user or role (CWE-798). AI-generated samples inline the secret to make the
+      snippet "just work" and it ships unchanged.
+
+      Read the key from the environment or a secret store instead:
+        JWT::encode($payload, $_ENV['JWT_SECRET'], 'HS256');
+        new Key(getenv('JWT_SECRET'), 'HS256');
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-secret-hardcoded-jwt-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/firebase/php-jwt
+        - https://github.com/lcobucci/jwt
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - firebase-php-jwt
+        - lcobucci-jwt
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: JWT::encode($P, $K, $ALG)
+              - metavariable-regex:
+                  metavariable: $K
+                  regex: ^["'][^"']{6,}["']$
+          - patterns:
+              - pattern: new Key($K, $ALG)
+              - metavariable-regex:
+                  metavariable: $K
+                  regex: ^["'][^"']{6,}["']$
+          - patterns:
+              - pattern: InMemory::plainText($K)
+              - metavariable-regex:
+                  metavariable: $K
+                  regex: ^["'][^"']{6,}["']$
+          - patterns:
+              - pattern: InMemory::base64Encoded($K)
+              - metavariable-regex:
+                  metavariable: $K
+                  regex: ^["'][^"']{6,}["']$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+  - id: auth.php.session.insecure-ini
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A PHP session hardening flag is turned off at runtime with `ini_set()`:
+      `session.cookie_httponly`, `session.cookie_secure`, or
+      `session.use_only_cookies` set to `0` / `'0'` / `false`. This exposes the
+      session cookie to JavaScript (XSS), lets it travel over plain HTTP, or
+      allows the session id in the URL to be accepted (CWE-1004). AI-generated
+      code flips these off to work around a local setup and the weakened
+      configuration ships.
+
+      Enable them instead (or set them in php.ini):
+        ini_set('session.cookie_httponly', 1);
+        ini_set('session.cookie_secure', 1);
+        ini_set('session.use_only_cookies', 1);
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-session-insecure-ini
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.php.net/manual/en/session.security.ini.php
+        - https://cwe.mitre.org/data/definitions/1004.html
+      technology:
+        - php
+    patterns:
+      - pattern-either:
+          - pattern: ini_set('session.cookie_httponly', $V)
+          - pattern: ini_set('session.cookie_secure', $V)
+          - pattern: ini_set('session.use_only_cookies', $V)
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i)^(0|["']0["']|false)$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"

@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       Untrusted request data flows into an outbound HTTP request without
-      validation — a Server-Side Request Forgery (SSRF, CWE-918). An attacker
+      validation, a Server-Side Request Forgery (SSRF, CWE-918). An attacker
       who controls the target URL can make your server reach internal-only
       services (admin panels, databases, other microservices behind your
       firewall) or the cloud metadata endpoint (e.g. http://169.254.169.254/),

@@ -1,10 +1,10 @@
 # oauthlint-mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server for [OAuthLint](https://oauthlint.dev). It lets AI coding tools (Claude Code, Cursor, Windsurf and any other MCP client) check the OAuth, OIDC, JWT, session, CORS — and MCP server-auth — code they generate, in the loop, before it ever reaches your project. (Yes: it catches the auth mistakes in the very MCP servers these tools write.)
+A [Model Context Protocol](https://modelcontextprotocol.io) server for [OAuthLint](https://oauthlint.dev). It lets AI coding tools (Claude Code, Cursor, Windsurf and any other MCP client) check the OAuth, OIDC, JWT, session, CORS (and MCP server-auth) code they generate, in the loop, before it ever reaches your project. (Yes: it catches the auth mistakes in the very MCP servers these tools write.)
 
 OAuthLint exists because AI coding tools reproduce a small, predictable set of auth mistakes: decoding a JWT without verifying it, accepting the `none` algorithm, setting cookies without `Secure` or `HttpOnly`, reflecting any CORS origin, dropping PKCE, and so on. This server gives the model a way to catch those mistakes itself.
 
-> **Two different "MCP" things — don't confuse them.** *This package* is **OAuthLint's MCP server**: a delivery channel that lets an AI tool run OAuthLint over MCP. Separately, OAuthLint ships an **MCP server-auth rule pack** (in `oauthlint-rules`) that *scans the MCP servers you write* for OAuth 2.1 mistakes (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF). One speaks MCP; the other lints MCP.
+> **Two different "MCP" things, and it is worth not confusing them.** *This package* is **OAuthLint's MCP server**: a delivery channel that lets an AI tool run OAuthLint over MCP. Separately, OAuthLint ships an **MCP server-auth rule pack** (in `oauthlint-rules`) that *scans the MCP servers you write* for OAuth 2.1 mistakes (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF). One speaks MCP; the other lints MCP.
 
 ## What it does
 

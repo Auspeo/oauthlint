@@ -8,7 +8,7 @@ rules:
       This MCP `StreamableHTTPServerTransport` is created without DNS-rebinding
       protection (CWE-346). `enableDnsRebindingProtection` defaults to `false`
       in the TypeScript SDK, so a malicious web page the user visits can rebind
-      a DNS name to the loopback address and POST to the local MCP server —
+      a DNS name to the loopback address and POST to the local MCP server,
       driving its tools cross-origin from the browser. This is CVE-2025-66416.
 
       Enable it and pin the Host/Origin allow-lists:

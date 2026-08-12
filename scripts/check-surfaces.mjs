@@ -46,7 +46,7 @@ const COVERAGE_SURFACES = [
 ];
 
 // Coverage terms that must appear on every surface above. Extend on each new pack.
-const MUST_MENTION = ['MCP'];
+const MUST_MENTION = ['MCP', 'PHP', 'Ruby', 'Kotlin'];
 
 const problems = [];
 const passes = [];

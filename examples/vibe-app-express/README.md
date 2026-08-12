@@ -1,4 +1,4 @@
-# vibe-app-express — DELIBERATELY VULNERABLE
+# vibe-app-express: DELIBERATELY VULNERABLE
 
 This Express app is a **DEMONSTRATION TARGET** for OAuthLint.
 

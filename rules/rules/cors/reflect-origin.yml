@@ -13,7 +13,7 @@ rules:
       the browser will attach the victim's cookies to the attacker-controlled
       request.
 
-      This is distinct from a literal `*` wildcard — here the origin is
+      This is distinct from a literal `*` wildcard. Here the origin is
       reflected dynamically, which silently defeats the same-origin policy
       while looking "scoped" in code review.
 
@@ -44,7 +44,7 @@ rules:
       # every origin (cb(null, true) regardless of the origin argument).
       - pattern: 'cors({ ..., origin: ($O, $CB) => $CB(null, true), ... })'
       # A block-body callback that returns `cb(null, true)` is only dangerous
-      # when it does so UNCONDITIONALLY — i.e. it ignores its origin argument.
+      # when it does so UNCONDITIONALLY, i.e. it ignores its origin argument.
       # A callback that inspects `$O` inside an `if` (e.g. `if (allow.has(origin))
       # return cb(null, true)`) is the allowlist pattern this rule recommends, so
       # the `pattern-not` below suppresses it. Without that guard the rule flagged

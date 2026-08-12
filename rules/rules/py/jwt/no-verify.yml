@@ -7,7 +7,7 @@ rules:
       A JWT is decoded with signature verification disabled. PyJWT's
       `jwt.decode(token, verify=False)` (legacy) or
       `options={"verify_signature": False}` parses the token WITHOUT checking
-      the signature, so any attacker-forged token is accepted — a complete
+      the signature, so any attacker-forged token is accepted, a complete
       authentication bypass.
 
       Always verify: `jwt.decode(token, key, algorithms=["RS256"])`. If you

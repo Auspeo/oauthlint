@@ -7,7 +7,7 @@ rules:
       A broken hash algorithm (MD5 or SHA-1) is being instantiated via JCA
       `MessageDigest.getInstance(...)`. MD5 and SHA-1 are cryptographically
       broken: practical collision attacks exist, so they must NOT be used for
-      any security purpose — integrity checks, content/token fingerprints,
+      any security purpose: integrity checks, content/token fingerprints,
       digital signatures, HMAC keys, or deduplication that a trust decision
       depends on (CWE-328 / CWE-327).
 

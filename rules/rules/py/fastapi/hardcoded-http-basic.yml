@@ -6,7 +6,7 @@ rules:
     message: |
       A FastAPI HTTP Basic auth dependency compares the request's username or
       password against a hard-coded string literal. The credential is baked into
-      the source, so anyone who reads the code — or a leaked repo — has a working
+      the source, so anyone who reads the code (or a leaked repo) has a working
       login, and the secret cannot be rotated without a redeploy (CWE-798). This
       is a common AI-generated mistake: FastAPI's own HTTP Basic example uses the
       literals `"stanleyjobson"` / `"swordfish"`, and assistants copy that shape
@@ -18,7 +18,7 @@ rules:
       store with per-user salted password hashes for anything beyond a single
       service account.
     # Fires only INSIDE a function whose signature takes an `HTTPBasicCredentials`
-    # parameter (the FastAPI HTTP Basic dependency shape — both the
+    # parameter (the FastAPI HTTP Basic dependency shape, both the
     # `Annotated[HTTPBasicCredentials, Depends(...)]` and the
     # `credentials: HTTPBasicCredentials = Depends(...)` forms). The sink is a
     # comparison of `.username`/`.password` against a STRING or BYTES literal

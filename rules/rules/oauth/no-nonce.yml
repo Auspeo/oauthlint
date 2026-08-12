@@ -7,7 +7,7 @@ rules:
     message: |
       OIDC authorization request (scope contains `openid`) is being built
       WITHOUT a `nonce` parameter. The nonce binds the id_token to this
-      specific authorization request — without it, an attacker can replay or
+      specific authorization request. Without it, an attacker can replay or
       substitute a stolen/forged id_token (OIDC Core §3.1.2.1).
 
       Generate a cryptographically random `nonce`, store it in the
@@ -28,7 +28,7 @@ rules:
           # `response_type=` span and never subtract, so match the whole URL.
           - pattern-not-regex: |-
               ['"]https?://[^'"\s]+\?[^'"]*nonce=[^'"]*['"]
-      # Programmatic URLSearchParams build (AST object match — robust to key
+      # Programmatic URLSearchParams build (AST object match, robust to key
       # order and object length). Fires when response_type is present and the
       # scope value contains `openid`, but nonce is not (covers both
       # `nonce: x` and the `nonce` shorthand). The scope test is an AST

@@ -4,8 +4,8 @@ rules:
       - php
     severity: ERROR
     message: |
-      A JWT payload is read by hand — `json_decode(base64_decode($parts[1]))` on
-      the second dot-segment of a token — without ever verifying the signature.
+      A JWT payload is read by hand (`json_decode(base64_decode($parts[1]))` on
+      the second dot-segment of a token) without ever verifying the signature.
       The claims (user id, roles, scopes) are trusted straight from an attacker-
       controllable string, so anyone can forge a token with any identity and it
       will be accepted (CWE-347). This is a common AI-generated shortcut: the
@@ -16,7 +16,7 @@ rules:
         use Firebase\JWT\JWT;
         use Firebase\JWT\Key;
         $claims = JWT::decode($jwt, new Key($_ENV['JWT_SECRET'], 'HS256'));
-    # Structurally requires decoding the payload segment (index [1]) — the header
+    # Structurally requires decoding the payload segment (index [1]). The header
     # (`$parts[0]`) and real verification (`JWT::decode($jwt, new Key(...))`) are
     # excluded. The pattern-regex requires the exploded source variable to be
     # named like a token (jwt/token/bearer/authoriz*), so generic base64 of an

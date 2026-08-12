@@ -19,7 +19,7 @@ rules:
       `code_challenge_method=S256` on the authorize call, and POST the
       `code_verifier` on the token call.
     pattern-either:
-      # Inline authorize URL — any provider's authorize endpoint carrying an
+      # Inline authorize URL: any provider's authorize endpoint carrying an
       # authorization-code request (client_id + response_type=code) with no
       # code_challenge. The path is not hardcoded (Google uses /o/oauth2/v2/auth,
       # Auth0/Okta /authorize, GitHub /oauth/authorize, …).
@@ -30,7 +30,7 @@ rules:
               client_id=
           - pattern-not-regex: |-
               code_challenge
-      # Programmatic URLSearchParams build (AST object match — robust to key
+      # Programmatic URLSearchParams build (AST object match, robust to key
       # order and object length, unlike a char-window regex).
       - patterns:
           - pattern: 'new URLSearchParams({..., client_id: $C, ...})'

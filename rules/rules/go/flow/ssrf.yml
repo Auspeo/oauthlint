@@ -7,7 +7,7 @@ rules:
       Untrusted request data flows into the URL of an outbound HTTP request.
       An attacker who controls the request target (via a query parameter, form
       field, or request header) can coerce your server into making requests to
-      arbitrary destinations — Server-Side Request Forgery (SSRF). This is
+      arbitrary destinations, Server-Side Request Forgery (SSRF). This is
       routinely abused to reach internal-only services behind your network
       perimeter and, most damagingly, the cloud instance metadata endpoint
       (e.g. http://169.254.169.254/...), letting an attacker steal short-lived
@@ -42,7 +42,7 @@ rules:
       # parse-then-host-checked: a value used inside an `if`-guard that looks the
       # parsed host up in an allow-list map is treated as vetted, mirroring the
       # Python rule's `if is_allowed_url(...):` guard. A bare `url.Parse(...)` is
-      # deliberately NOT listed — it returns an attacker-controlled struct and
+      # deliberately NOT listed. It returns an attacker-controlled struct and
       # does not validate anything, so parse-then-use still fires.
       - patterns:
           - pattern: $V

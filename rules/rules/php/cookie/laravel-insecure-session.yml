@@ -4,7 +4,7 @@ rules:
       - php
     severity: WARNING
     message: |
-      A Laravel session config hard-codes an insecure cookie flag — `'secure'
+      A Laravel session config hard-codes an insecure cookie flag: `'secure'
       => false`, `'http_only' => false`, or `'same_site' => 'none'`. This turns
       off protections for the session cookie across the whole app: `secure=false`
       lets it travel over plain HTTP, `http_only=false` exposes it to JavaScript
@@ -17,15 +17,15 @@ rules:
         'http_only' => true,
         'same_site' => 'lax',
     # Intended to scope to config/session.php; paths.include is NOT set so the
-    # rule can be self-tested against a fixture named vulnerable.php — the literal
+    # rule can be self-tested against a fixture named vulnerable.php. The literal
     # array keys are Laravel-session-specific enough to stay low-FP on their own.
     # Only literal `false` / `'none'` fires; the `env('SESSION_SECURE_COOKIE',
     # false)` form is structurally a function call, not a literal, so it is
     # excluded (the env default is a convention, not the effective value).
     # A bare `'key' => value` is not a parseable PHP pattern, so these config
     # literals are matched with pattern-regex (which also reports the exact line).
-    # `false` must sit immediately after `=>`, so `'secure' => env(..., false)` —
-    # a function call whose default arg is false — never matches.
+    # `false` must sit immediately after `=>`, so `'secure' => env(..., false)`
+    # (a function call whose default arg is false) never matches.
     pattern-either:
       - pattern-regex: (?i)['"]secure['"]\s*=>\s*false
       - pattern-regex: (?i)['"]http_only['"]\s*=>\s*false

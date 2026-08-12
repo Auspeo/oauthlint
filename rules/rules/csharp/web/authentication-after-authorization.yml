@@ -8,7 +8,7 @@ rules:
       `UseAuthentication()`. ASP.NET Core requires authentication to run first so
       that `HttpContext.User` is populated before authorization evaluates policies;
       in the reverse order authorization sees an unauthenticated, anonymous user,
-      which either blocks legitimate users or — with a permissive fallback policy —
+      which either blocks legitimate users or, with a permissive fallback policy,
       lets requests through unauthenticated (CWE-696). This is a common
       AI-generated ordering mistake when wiring up `Program.cs`.
 

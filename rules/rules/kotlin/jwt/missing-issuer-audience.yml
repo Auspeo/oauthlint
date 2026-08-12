@@ -7,7 +7,7 @@ rules:
       This JWT verifier checks the signature but never asserts the token's
       intended recipient: the Auth0 `JWT.require(alg)...build()` chain pins no
       `.withIssuer(...)` and no `.withAudience(...)`. A valid signature only proves
-      the token was minted by whoever holds the key — not that it was issued by the
+      the token was minted by whoever holds the key, not that it was issued by the
       expected authority or meant for THIS service. A token your provider issued
       for a different audience, or one minted by any party that shares the key,
       will still verify, enabling token replay across services (CWE-345). This is a

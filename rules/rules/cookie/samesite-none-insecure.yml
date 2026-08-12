@@ -31,7 +31,7 @@ rules:
       `SameSite=None` *requires* `Secure`: modern browsers reject a
       `SameSite=None` cookie that is not also `Secure`, so the cookie is
       silently dropped. Worse, if anything does accept it, the cookie is a
-      cross-site cookie travelling over plaintext — it can be sent over plain
+      cross-site cookie travelling over plaintext. It can be sent over plain
       HTTP and offers no CSRF protection at all.
 
       Fix: add `secure: true`, and only use `SameSite=None` when you genuinely
@@ -41,7 +41,7 @@ rules:
       # An options object that sets sameSite: 'none' (any casing) but does NOT
       # also set secure: true. The `pattern-not` requires the ABSENCE of
       # `secure: true`, which covers both "secure omitted entirely" and the
-      # explicit `secure: false` case — neither satisfies the negation.
+      # explicit `secure: false` case: neither satisfies the negation.
       - patterns:
           - pattern-either:
               - pattern: "{..., sameSite: 'none', ...}"
@@ -55,7 +55,7 @@ rules:
       # before OR after SameSite=None) rather than the narrow `SameSite=None`
       # span. The negative lookahead `(?!...secure)` is anchored at the opening
       # quote, so it fails the match if a `secure` attribute appears anywhere
-      # inside the literal — leaving only SameSite=None strings that lack it.
+      # inside the literal, leaving only SameSite=None strings that lack it.
       - pattern-regex: '(?i)(["''`])(?![^"''`\n]*\bsecure\b)[^"''`\n]*\bsamesite\s*=\s*none\b[^"''`\n]*\1'
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-005

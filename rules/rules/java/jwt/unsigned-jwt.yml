@@ -6,7 +6,7 @@ rules:
     message: |
       This JWT is created or parsed without a signature, so its contents are
       neither authenticated nor tamper-proof (CWE-347). An unsecured ("alg=none")
-      token can be forged by anyone — changing the claims (e.g. the subject or
+      token can be forged by anyone. Changing the claims (e.g. the subject or
       roles) costs nothing because there is no signature to verify. This is a
       common AI-generated mistake: the "plaintext"/"unsecured" JWT API is reached
       for during prototyping and never swapped for a signed token.
