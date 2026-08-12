@@ -140,7 +140,7 @@ No `package.json` change needed. Run the published CLI on demand with `npx`:
 npx oauthlint@latest scan ./src --fail-on HIGH
 ```
 
-> No engine to install: the CLI downloads and checksum-verifies a pinned Opengrep on first run (cache it between builds to skip the one-time download), and uses an installed `opengrep`/`semgrep` if one is on `PATH`. For a turnkey, Docker-based job with SARIF upload, prefer the [GitHub Action](/docs/github-action).
+> No engine to install: the CLI downloads and checksum-verifies a small pinned scan engine on first run (cache it between builds to skip the one-time download), and uses an installed `opengrep`/`semgrep` if one is on `PATH`. For a turnkey, Docker-based job with SARIF upload, prefer the [GitHub Action](/docs/github-action).
 
 ## AI coding editors (Cursor, Windsurf, and others)
 

@@ -37,7 +37,7 @@ The hook needs one thing on the machine running the commit:
 
 - **Node.js (≥ 20).** OAuthLint is published as the `oauthlint` npm package. The hook is declared `language: node`, so pre-commit creates an isolated Node environment, installs the pinned `oauthlint` package into it (via `additional_dependencies`), and runs its `oauthlint` bin. You don't add `oauthlint` to your project's `package.json`. But pre-commit still needs a Node toolchain available to build that environment.
 
-The scan engine takes care of itself: on the first commit the CLI downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is already on `PATH`. If the engine cannot be obtained (offline on the very first run with nothing installed), the scan exits `127` and your commit fails with a clear message rather than passing silently.
+The scan engine takes care of itself: on the first commit the CLI downloads and checksum-verifies a small pinned scan engine (~41 MB, one time, cached), reusing an installed `opengrep` or `semgrep` if one is already on `PATH`. If the engine cannot be obtained (offline on the very first run with nothing installed), the scan exits `127` and your commit fails with a clear message rather than passing silently.
 
 > If your team can't guarantee Node on every contributor's machine, gate in CI with the [GitHub Action](/docs/github-action) instead. It's Docker-based and needs no local toolchain.
 
