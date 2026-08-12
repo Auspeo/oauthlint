@@ -64,9 +64,15 @@ for (const f of COUNT_SURFACES) {
   const n = Number(m[1]);
   seen.add(n);
   if (n === expected) passes.push(`${f}: ${n}+ rules`);
-  else problems.push(`${f}: says ${n}+ rules, but the pack has ${realCount} (should say ${expected}+)`);
+  else
+    problems.push(
+      `${f}: says ${n}+ rules, but the pack has ${realCount} (should say ${expected}+)`,
+    );
 }
-if (seen.size > 1) problems.push(`Rule count disagrees across surfaces: ${[...seen].map((n) => `${n}+`).join(', ')}`);
+if (seen.size > 1)
+  problems.push(
+    `Rule count disagrees across surfaces: ${[...seen].map((n) => `${n}+`).join(', ')}`,
+  );
 
 // 2) Coverage terms present everywhere.
 for (const f of COVERAGE_SURFACES) {
@@ -86,10 +92,14 @@ const annSrc = read('site/src/data/announcement.ts');
 const annVer = annSrc.match(/version:\s*['"]([^'"]+)['"]/)?.[1];
 if (!annVer) problems.push('site/src/data/announcement.ts: no announcement version found');
 else if (annVer !== expectedAnnounce)
-  problems.push(`site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`);
+  problems.push(
+    `site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`,
+  );
 else passes.push(`announcement bar: ${annVer} (matches release)`);
 
-console.log(`Rule pack: ${realCount} rules (surfaces should read "${expected}+"). Coverage terms required everywhere: ${MUST_MENTION.join(', ')}.`);
+console.log(
+  `Rule pack: ${realCount} rules (surfaces should read "${expected}+"). Coverage terms required everywhere: ${MUST_MENTION.join(', ')}.`,
+);
 if (problems.length === 0) {
   console.log(`\n✅ ${passes.length} checks passed — all surfaces are consistent.`);
   process.exit(0);

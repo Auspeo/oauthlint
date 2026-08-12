@@ -24,7 +24,7 @@
     "check:surfaces": "node scripts/check-surfaces.mjs"
   },
   "lint-staged": {
-    "*.{ts,js,json,jsonc}": ["biome check --write --no-errors-on-unmatched"],
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}": ["biome check --write --no-errors-on-unmatched"],
     "*.{yml,yaml,md}": ["biome format --write --no-errors-on-unmatched"]
   },
   "devDependencies": {
