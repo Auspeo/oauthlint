@@ -13,6 +13,39 @@ The repo publishes two npm packages plus two marketplace artifacts:
 > `workspace:*`; `pnpm publish` / `pnpm changeset publish` rewrites that to the
 > real version (`0.1.0`). Raw `npm publish` would ship the `workspace:*` literal.
 
+## Every-ship checklist (do NOT skip a surface)
+
+Every time a feature ships, all of these must be updated and consistent. Two parts:
+an **automated gate** that mechanically catches drift, and a **manual runbook** for the
+things a script can't check. The order below is the release order.
+
+### The automated gate
+
+    pnpm build
+    pnpm check:surfaces      # fails if any surface disagrees on rule count or coverage
+
+`scripts/check-surfaces.mjs` (also a CI job, "Surface consistency") asserts that the rule
+count and the coverage terms (currently `MCP`; add `PHP`, `Ruby`, ... as packs land, in the
+script's `MUST_MENTION`) are present and identical across the root/CLI/VS Code/JetBrains/Action
+READMEs, `vscode/package.json`, the site hero, and `Base.astro`. Green here means no surface
+"forgot" the new feature or the new number. Run it (or push a PR) before every release.
+
+### Surface-by-surface (what to update each ship)
+
+| Surface | What to update | Verified by |
+|---|---|---|
+| **Rule pack** | new rules under `rules/rules/<cat>/` + `py/<cat>/`, each with a fixture pair | `pnpm --filter oauthlint-rules test:run` |
+| **Root README** | coverage tagline, "N+ rules" figure, `### Shipped` list, component table | check:surfaces |
+| **CLI README** (`cli/`) | tagline + rule-count line; document any new command | check:surfaces |
+| **VS Code** (`vscode/`) | `README.md` tagline + count, `package.json` `description` + `keywords`, `CHANGELOG.md` entry, **bump `version`** | check:surfaces |
+| **JetBrains** (`jetbrains/`) | `plugin.xml` `<description>` **and** a non-empty `<change-notes>`, `gradle.properties` **bump `pluginVersion` AND `rulesVersion` to match `rules/package.json`** (rulesVersion is the runtime cache key; stale = new rules never load on upgrade) | manual |
+| **GitHub Action** (`action/`) | README tagline; **bump `oauthlint@X.Y.Z` pin in `action/Dockerfile`** after npm publish | action-smoke CI |
+| **MCP server** (`mcp/`) | README if its scope changed; version bumps ride changesets | — |
+| **Site** (`site/`) | hero + meta/OG/keywords live in `html/index.html`, `pages/index.astro`, `layouts/Base.astro`; **regenerate `site/public/og.png`** when the headline coverage changes (it's the social share banner) | check:surfaces + eyeball og.png |
+| **GitHub repo About** | `gh repo edit Auspeo/oauthlint --description "..." --add-topic <t>` | manual |
+| **GitHub release** | ONE release on the **CLI tag** `oauthlint@X.Y.Z`, title `OAuthLint X.Y.Z`, `--latest`, canonical structure (see the release-notes convention). NOT on `vX.Y.Z`, NOT per-package. | manual |
+| **Launch copy** (if launching) | `~/Downloads/oauthlint-launch/*` — reconcile the rule count + add the new coverage before posting | manual |
+
 ## One-time prerequisites
 
 - [ ] npm account/org that owns `oauthlint` + `oauthlint-rules`; `npm login` locally (or set `NPM_TOKEN` in CI).
