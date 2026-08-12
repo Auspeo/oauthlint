@@ -1,0 +1,45 @@
+rules:
+  - id: auth.kotlin.android.token-in-sharedprefs
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      An auth token / secret is written to plain `SharedPreferences`
+      (`prefs.edit().putString("auth_token", ...)`). SharedPreferences is an
+      unencrypted XML file in the app's private storage: on a rooted device, via
+      a device backup, or through any local-file exposure it is read in the clear,
+      leaking the credential (CWE-312). AI-generated Android samples reach for
+      plain SharedPreferences because it is the "hello world" of persistence and
+      never switch to encrypted storage.
+
+      Store credentials in `EncryptedSharedPreferences` (androidx.security.crypto)
+      backed by the Android Keystore instead:
+        val prefs = EncryptedSharedPreferences.create(
+            context, "secure_prefs", masterKey,
+            AES256_SIV, AES256_GCM)
+        prefs.edit().putString("auth_token", token).apply()
+    # Fires only when the KEY names a credential. A `$P` obtained from
+    # EncryptedSharedPreferences.create(...) in the same scope is excluded, so
+    # the encrypted path never trips the rule.
+    patterns:
+      - pattern-either:
+          - pattern: $P.edit().putString($KEY, $VAL)
+          - pattern: $P.edit { putString($KEY, $VAL) }
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: '(?i).*(token|secret|auth|jwt|password|credential|client_secret|authorize|oauth|api[_-]?key).*'
+      - pattern-not-inside: |
+          val $P = EncryptedSharedPreferences.create(...)
+          ...
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-token-in-sharedprefs
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - android
+      references:
+        - https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences
+        - https://cwe.mitre.org/data/definitions/312.html

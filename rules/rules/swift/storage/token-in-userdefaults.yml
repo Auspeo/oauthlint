@@ -1,0 +1,72 @@
+rules:
+  - id: auth.swift.storage.token-in-userdefaults
+    languages:
+      - swift
+    severity: ERROR
+    message: |
+      A token, secret, or credential is written to `UserDefaults`. UserDefaults
+      is an unencrypted plist on disk (readable from an unlocked device backup,
+      a jailbroken device, or the simulator container) and is never an
+      appropriate place for authentication material (CWE-312). AI-generated iOS
+      code frequently reaches for `UserDefaults.standard.set(...)` because it is
+      the simplest key/value store, silently persisting access/refresh tokens in
+      the clear. App-group suites (`UserDefaults(suiteName:)`) are just as
+      exposed.
+
+      Store secrets in the Keychain instead (via Security framework or a wrapper
+      such as KeychainAccess), e.g. `keychain.set(token, key: "authToken")`, and
+      keep UserDefaults for non-sensitive preferences only.
+    # The key OR the value name must look like a secret. Both the shared
+    # `UserDefaults.standard` accessor and app-group `UserDefaults(suiteName:)`
+    # instances (with or without force-unwrap) are covered.
+    pattern-either:
+      - patterns:
+          - pattern: 'UserDefaults.$UD.set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: 'UserDefaults.$UD.set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: 'UserDefaults(...).set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: 'UserDefaults(...).set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: 'UserDefaults(...)!.set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: 'UserDefaults(...)!.set($V, forKey: $K)'
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-STORAGE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-storage-token-in-userdefaults
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - ios
+      references:
+        - https://developer.apple.com/documentation/security/keychain_services
+        - https://cwe.mitre.org/data/definitions/312.html

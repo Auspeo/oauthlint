@@ -1,0 +1,34 @@
+rules:
+  - id: auth.kotlin.android.cleartext-auth-url
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An authentication / OAuth endpoint is called over cleartext `http://`. Any
+      token, authorization code, or credential exchanged with that endpoint
+      crosses the network unencrypted and is trivially captured on a hostile
+      Wi-Fi or by an on-path attacker (CWE-319). AI-generated samples default to
+      `http://` because it "works" against a local test server and the scheme is
+      never upgraded for production hosts.
+
+      Use `https://` for every auth endpoint:
+        val tokenUrl = "https://accounts.example.com/oauth/token"
+      Cleartext to a local loopback host (localhost / 127.0.0.1 / 10.0.2.2) during
+      development is not flagged.
+    # A cleartext URL literal whose host/path names an auth endpoint. `https://`
+    # never contains the `http://` prefix; loopback dev hosts are excluded.
+    patterns:
+      - pattern-regex: '(?i)"http://[^"\s]*(oauth|token|authorize|signin|/auth|/login)'
+      - pattern-not-regex: '"http://(localhost|127\.0\.0\.1|10\.0\.2\.2)'
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-cleartext-auth-url
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - android
+      references:
+        - https://developer.android.com/privacy-and-security/security-config
+        - https://cwe.mitre.org/data/definitions/319.html

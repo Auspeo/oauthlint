@@ -1,0 +1,38 @@
+rules:
+  - id: auth.swift.flow.non-ephemeral-webauth
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      An `ASWebAuthenticationSession` explicitly sets
+      `prefersEphemeralWebBrowserSession = false`. With a non-ephemeral session
+      the OAuth login reuses the shared Safari cookie jar, so a previously
+      signed-in account is silently re-selected and the user cannot easily
+      switch or fully sign out — a session-confusion / lingering-credential risk
+      (CWE-522). AI-generated auth flows toggle this off to "remember" the user
+      without considering the shared-cookie consequences.
+
+      Set `prefersEphemeralWebBrowserSession = true` so each authorization runs
+      in a private, cookie-isolated session and no credentials persist across
+      logins.
+    pattern: '$S.prefersEphemeralWebBrowserSession = false'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-flow-non-ephemeral-webauth
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - ios
+      references:
+        - https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession/prefersephemeralwebbrowsersession
+        - https://cwe.mitre.org/data/definitions/522.html
