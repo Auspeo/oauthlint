@@ -3,9 +3,10 @@
  * check-surfaces.mjs — release guardrail.
  *
  * Every user-facing surface (READMEs, marketplace manifests, the site hero) must
- * agree with each other and with reality on two things that constantly drift:
- *   1. the rule count ("N+ rules"), and
- *   2. the coverage terms that must appear everywhere (e.g. "MCP").
+ * agree with each other and with reality on three things that constantly drift:
+ *   1. the rule count ("N+ rules"),
+ *   2. the coverage terms that must appear everywhere (e.g. "MCP"), and
+ *   3. the site announcement bar pointing at the CURRENT release, not a stale one.
  *
  * The source of truth for the count is the rule pack itself (loadAllRules). Run
  * locally with `node scripts/check-surfaces.mjs` and in CI after `pnpm build`.
@@ -75,6 +76,18 @@ for (const f of COVERAGE_SURFACES) {
     else problems.push(`${f}: does not mention "${term}"`);
   }
 }
+
+// 3) The site announcement bar must point at the CURRENT release, not a stale one.
+//    (It advertises only the latest feature, so it moves every release — the check
+//    is version-freshness, not a fixed coverage term.)
+const cliVersion = JSON.parse(read('cli/package.json')).version; // e.g. 0.12.0
+const expectedAnnounce = `v${cliVersion.split('.').slice(0, 2).join('.')}`; // v0.12
+const annSrc = read('site/src/data/announcement.ts');
+const annVer = annSrc.match(/version:\s*['"]([^'"]+)['"]/)?.[1];
+if (!annVer) problems.push('site/src/data/announcement.ts: no announcement version found');
+else if (annVer !== expectedAnnounce)
+  problems.push(`site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`);
+else passes.push(`announcement bar: ${annVer} (matches release)`);
 
 console.log(`Rule pack: ${realCount} rules (surfaces should read "${expected}+"). Coverage terms required everywhere: ${MUST_MENTION.join(', ')}.`);
 if (problems.length === 0) {

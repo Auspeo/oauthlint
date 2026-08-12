@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# javascript subset — 76 rules.
+# javascript subset — 80 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -2344,6 +2344,190 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.mcp.missing-resource-binding
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      This MCP server enforces bearer auth via `requireBearerAuth(...)` but
+      passes no `resourceMetadataUrl`. Per the MCP spec, an OAuth 2.1 resource
+      server MUST advertise its Protected Resource Metadata (RFC 9728): without
+      `resourceMetadataUrl`, the 401 `WWW-Authenticate` response carries no
+      `resource_metadata`, so MCP clients cannot discover the authorization
+      server, and there is no anchor for RFC 8707 audience binding (CWE-345).
+
+      Provide it (and mount `mcpAuthMetadataRouter`):
+        requireBearerAuth({
+          verifier,
+          resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
+        })
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-missing-resource-binding
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://datatracker.ietf.org/doc/html/rfc8707
+        - https://datatracker.ietf.org/doc/html/rfc9728
+      technology:
+        - mcp
+        - modelcontextprotocol
+    patterns:
+      - pattern: requireBearerAuth({...})
+      - pattern-not: "requireBearerAuth({..., resourceMetadataUrl: $X, ...})"
+  - id: auth.mcp.token-passthrough
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An MCP server forwards the INCOMING caller token to an upstream API
+      (token pass-through). The token the MCP client presented was issued for
+      THIS server as its audience (RFC 8707); replaying it against a different
+      resource server is a confused-deputy vulnerability (CWE-863) — the exact
+      class behind CVE-2026-13341. The MCP authorization spec forbids it: a
+      resource server MUST NOT accept or transit a token that was not issued
+      for it.
+
+      Never send `req.auth.token` / `ctx.http.authInfo.token` / the raw
+      `Authorization` header upstream. Perform a token exchange (RFC 8693) or
+      use a separately-obtained credential minted for the upstream audience,
+      and send THAT token:
+        const up = await exchangeToken(authInfo.token, { audience: UPSTREAM });
+        fetch(UPSTREAM, { headers: { Authorization: `Bearer ${up}` } });
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-token-passthrough
+      category: security
+      cwe: CWE-863
+      owasp: API5:2023
+      llm-prevalence: HIGH
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://datatracker.ietf.org/doc/html/rfc8693
+        - https://datatracker.ietf.org/doc/html/rfc8707
+      technology:
+        - modelcontextprotocol
+        - mcp
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.auth.token
+      - pattern: $X.authInfo.token
+      - pattern: authInfo.token
+      - pattern: $REQ.headers.authorization
+      - pattern: $REQ.headers['authorization']
+      - pattern: $REQ.headers.Authorization
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: "fetch($URL, {..., headers: {..., Authorization: $SINK, ...}, ...})"
+              - pattern: 'fetch($URL, {..., headers: {..., "Authorization": $SINK, ...}, ...})'
+              - pattern: "axios($URL, {..., headers: {..., Authorization: $SINK, ...}, ...})"
+              - pattern: "axios.$M($URL, {..., headers: {..., Authorization: $SINK, ...}, ...})"
+              - pattern: 'axios($URL, {..., headers: {..., "Authorization": $SINK, ...}, ...})'
+          - focus-metavariable: $SINK
+    pattern-sanitizers:
+      - pattern: exchangeToken(...)
+      - pattern: exchangeAuthorizationCode(...)
+      - pattern: exchangeRefreshToken(...)
+      - pattern: $P.exchangeToken(...)
+  - id: auth.mcp.tool-handler-ssrf
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      An argument of an MCP tool handler (`server.registerTool` / `server.tool`)
+      flows into an outbound HTTP request without validation — a server-side
+      request forgery (SSRF, CWE-918). Tool arguments are attacker-influenced:
+      an LLM or a malicious caller can point the URL at internal services, cloud
+      metadata (169.254.169.254), or localhost. BlueRock found ~36.7% of MCP
+      servers SSRF-prone.
+
+      Validate the target before fetching: resolve and allow-list the host,
+      reject private/link-local ranges, and disable redirects. Never pass a raw
+      tool argument straight into `fetch`/`axios`.
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-tool-handler-ssrf
+      category: security
+      cwe: CWE-918
+      owasp: API7:2023
+      llm-prevalence: HIGH
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://cwe.mitre.org/data/definitions/918.html
+      technology:
+        - mcp
+        - modelcontextprotocol
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $S.registerTool($NAME, $SCHEMA, async ($ARGS) => { ... })
+              - pattern: $S.registerTool($NAME, $SCHEMA, ($ARGS) => { ... })
+              - pattern: $S.tool($NAME, $SCHEMA, async ($ARGS) => { ... })
+              - pattern: $S.tool($NAME, $SCHEMA, ($ARGS) => { ... })
+          - focus-metavariable: $ARGS
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($SINK, ...)
+              - pattern: fetch($SINK)
+              - pattern: axios($SINK, ...)
+              - pattern: axios.$M($SINK, ...)
+              - pattern: axios($SINK)
+          - focus-metavariable: $SINK
+  - id: auth.mcp.unauthenticated-server
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      This MCP transport is mounted on an Express route with NO auth middleware
+      — the tools are reachable unauthenticated (CWE-306). The route passes only
+      (path, handler): there is no `requireBearerAuth(...)` in the chain, so any
+      caller can drive the MCP server. A Knostic scan found none of ~2,000
+      internet-exposed MCP servers required auth.
+
+      Put `requireBearerAuth(...)` before the transport handler:
+        const auth = requireBearerAuth({ verifier, resourceMetadataUrl });
+        app.post('/mcp', auth, async (req, res) => { await transport.handleRequest(req, res, req.body); });
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-unauthenticated-server
+      category: security
+      cwe: CWE-306
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://healthsystemcio.com/2026/07/28/mcp-server-exposure-health-isac/
+      technology:
+        - mcp
+        - modelcontextprotocol
+    pattern-either:
+      - patterns:
+          - pattern: $T.handleRequest(...)
+          - pattern-either:
+              - pattern-inside: $APP.get($PATH, $HANDLER)
+              - pattern-inside: $APP.post($PATH, $HANDLER)
+              - pattern-inside: $APP.put($PATH, $HANDLER)
+              - pattern-inside: $APP.delete($PATH, $HANDLER)
+              - pattern-inside: $APP.patch($PATH, $HANDLER)
+              - pattern-inside: $APP.all($PATH, $HANDLER)
+          - pattern-not-inside: $APP.$V($PATH, requireBearerAuth(...), $HANDLER)
+      - pattern-either:
+          - pattern: $APP.get($PATH, toNodeHandler(...))
+          - pattern: $APP.post($PATH, toNodeHandler(...))
+          - pattern: $APP.all($PATH, toNodeHandler(...))
+          - pattern: $APP.get($PATH, createMcpHandler(...))
+          - pattern: $APP.post($PATH, createMcpHandler(...))
+          - pattern: $APP.all($PATH, createMcpHandler(...))
   - id: auth.nestjs.cors-wildcard-credentials
     languages:
       - javascript
