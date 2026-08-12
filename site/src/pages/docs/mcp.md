@@ -11,7 +11,7 @@ The OAuthLint MCP server lets AI coding tools check the auth code they generate,
 
 It runs as a [Model Context Protocol](https://modelcontextprotocol.io) server over the stdio transport, the standard wiring for a local server launched by Claude Code, Claude Desktop, Cursor, Windsurf and other MCP clients.
 
-> **Availability:** `oauthlint-mcp` publishes to npm with the next OAuthLint release. The `npx oauthlint-mcp` setup below is how you will wire it in once it lands. Until then, you can run it from source: see [Run from source](#run-from-source).
+> **Availability:** `oauthlint-mcp` is on npm. The `npx oauthlint-mcp` setup below is all you need; MCP clients launch it for you, so there is no install step. You can also [run it from source](#run-from-source).
 
 ## What you get
 
