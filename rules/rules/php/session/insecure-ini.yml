@@ -1,0 +1,45 @@
+rules:
+  - id: auth.php.session.insecure-ini
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A PHP session hardening flag is turned off at runtime with `ini_set()` —
+      `session.cookie_httponly`, `session.cookie_secure`, or
+      `session.use_only_cookies` set to `0` / `'0'` / `false`. This exposes the
+      session cookie to JavaScript (XSS), lets it travel over plain HTTP, or
+      allows the session id in the URL to be accepted (CWE-1004). AI-generated
+      code flips these off to work around a local setup and the weakened
+      configuration ships.
+
+      Enable them instead (or set them in php.ini):
+        ini_set('session.cookie_httponly', 1);
+        ini_set('session.cookie_secure', 1);
+        ini_set('session.use_only_cookies', 1);
+    # Near-zero FP: only these three session ini keys with a disabling value
+    # (0 / '0' / false) fire.
+    patterns:
+      - pattern-either:
+          - pattern: ini_set('session.cookie_httponly', $V)
+          - pattern: ini_set('session.cookie_secure', $V)
+          - pattern: ini_set('session.use_only_cookies', $V)
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i)^(0|["']0["']|false)$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-session-insecure-ini
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - php
+      references:
+        - https://www.php.net/manual/en/session.security.ini.php
+        - https://cwe.mitre.org/data/definitions/1004.html

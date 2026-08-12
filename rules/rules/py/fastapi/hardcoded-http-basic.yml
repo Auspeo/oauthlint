@@ -1,0 +1,73 @@
+rules:
+  - id: auth.py.fastapi.hardcoded-http-basic
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      A FastAPI HTTP Basic auth dependency compares the request's username or
+      password against a hard-coded string literal. The credential is baked into
+      the source, so anyone who reads the code — or a leaked repo — has a working
+      login, and the secret cannot be rotated without a redeploy (CWE-798). This
+      is a common AI-generated mistake: FastAPI's own HTTP Basic example uses the
+      literals `"stanleyjobson"` / `"swordfish"`, and assistants copy that shape
+      straight into production auth.
+
+      Compare against a secret loaded from the environment or a secret manager
+      instead, e.g. `secrets.compare_digest(credentials.password.encode("utf8"),
+      os.environ["ADMIN_PASSWORD"].encode("utf8"))`, and prefer a real user
+      store with per-user salted password hashes for anything beyond a single
+      service account.
+    # Fires only INSIDE a function whose signature takes an `HTTPBasicCredentials`
+    # parameter (the FastAPI HTTP Basic dependency shape — both the
+    # `Annotated[HTTPBasicCredentials, Depends(...)]` and the
+    # `credentials: HTTPBasicCredentials = Depends(...)` forms). The sink is a
+    # comparison of `.username`/`.password` against a STRING or BYTES literal
+    # (`==`, `secrets.compare_digest`, or `hmac.compare_digest`, with or without
+    # a `.encode(...)`). Comparing against `os.environ[...]`, a settings value,
+    # or any variable does not match, so a correctly externalised secret never
+    # fires.
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              def $FN(..., $CRED: HTTPBasicCredentials = ..., ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $CRED: HTTPBasicCredentials = ..., ...):
+                  ...
+          - pattern-inside: |
+              def $FN(..., $CRED: Annotated[HTTPBasicCredentials, ...], ...):
+                  ...
+          - pattern-inside: |
+              async def $FN(..., $CRED: Annotated[HTTPBasicCredentials, ...], ...):
+                  ...
+      - pattern-either:
+          - pattern: $C.username == "..."
+          - pattern: $C.password == "..."
+          - pattern: '"..." == $C.username'
+          - pattern: '"..." == $C.password'
+          - pattern: $C.username == b"..."
+          - pattern: $C.password == b"..."
+          - pattern: secrets.compare_digest($C.username, "...")
+          - pattern: secrets.compare_digest($C.password, "...")
+          - pattern: secrets.compare_digest($C.username, b"...")
+          - pattern: secrets.compare_digest($C.password, b"...")
+          - pattern: secrets.compare_digest($C.username.encode(...), b"...")
+          - pattern: secrets.compare_digest($C.password.encode(...), b"...")
+          - pattern: secrets.compare_digest($C.username.encode(...), "...")
+          - pattern: secrets.compare_digest($C.password.encode(...), "...")
+          - pattern: hmac.compare_digest($C.username, "...")
+          - pattern: hmac.compare_digest($C.password, "...")
+          - pattern: hmac.compare_digest($C.username.encode(...), b"...")
+          - pattern: hmac.compare_digest($C.password.encode(...), b"...")
+    metadata:
+      oauthlint-rule-id: AUTH-PY-FASTAPI-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-fastapi-hardcoded-http-basic
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      technology:
+        - fastapi
+      references:
+        - https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
+        - https://cwe.mitre.org/data/definitions/798.html

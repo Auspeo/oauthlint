@@ -1,0 +1,42 @@
+rules:
+  - id: auth.ruby.jwt.missing-algorithm-allowlist
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      `JWT.decode` is called with verification enabled (`true`) but no
+      `algorithm:` / `algorithms:` option, so the library trusts whatever `alg`
+      the token header names. An attacker can switch the algorithm, e.g. present
+      an `HS256` token signed with your RSA *public* key as if it were the HMAC
+      secret, and the signature check passes (algorithm-confusion, CWE-347).
+
+      Always pin the accepted algorithm(s):
+        JWT.decode(token, key, true, { algorithm: 'HS256' })
+        JWT.decode(token, public_key, true, { algorithms: ['RS256'] })
+      ruby-jwt's own docs mark this allow-list as mandatory for safe decoding.
+    # Strict arity: match the exact 3-argument form `JWT.decode(t, k, true)`.
+    # A 4th options argument (where the algorithm allow-list would live) makes
+    # this pattern not apply, so a correctly-pinned call never fires. The
+    # `true` literal in the verify slot is required, which also excludes the
+    # `false` (verification off) and `nil` (no-key) forms handled elsewhere.
+    patterns:
+      - pattern: JWT.decode($T, $K, true)
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-jwt-missing-algorithm-allowlist
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - ruby-jwt
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/

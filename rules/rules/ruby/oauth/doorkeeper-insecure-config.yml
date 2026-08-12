@@ -1,0 +1,44 @@
+rules:
+  - id: auth.ruby.oauth.doorkeeper-insecure-config
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      A Doorkeeper (OAuth provider) initializer weakens a core protection:
+      `force_ssl_in_redirect_uri false` allows plaintext `http://` redirect
+      URIs (authorization codes/tokens travel in cleartext and are open to
+      interception/redirect tampering, CWE-601); `allow_blank_redirect_uri
+      true` accepts clients with no registered redirect URI; and an
+      unconditional `skip_authorization do true end` auto-approves EVERY client
+      with no user consent. These are frequent LLM shortcuts to get a local
+      OAuth flow working.
+
+      Keep `force_ssl_in_redirect_uri` on (default) so redirect URIs must be
+      HTTPS, require every client to register a redirect URI, and make
+      `skip_authorization` conditional on a trusted first-party client rather
+      than returning a bare `true`, e.g.
+      `skip_authorization { |resource_owner, client| client.application.trusted? }`.
+    pattern-either:
+      - pattern: 'force_ssl_in_redirect_uri false'
+      - pattern: 'allow_blank_redirect_uri true'
+      - patterns:
+          - pattern: |
+              skip_authorization do
+                true
+              end
+          - pattern-not: |
+              skip_authorization do |$A, $B|
+                ...
+              end
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-doorkeeper-insecure-config
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - doorkeeper
+      references:
+        - https://doorkeeper.gitbook.io/guides/ruby-on-rails/skip-authorization
+        - https://cwe.mitre.org/data/definitions/601.html

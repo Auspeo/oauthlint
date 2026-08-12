@@ -1,0 +1,33 @@
+rules:
+  - id: auth.ruby.oauth.omniauth-allows-get
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      OmniAuth is configured to accept GET requests on the request phase
+      (`allowed_request_methods` includes `:get`, or `silence_get_warning`
+      is set to `true`). A GET auth-initiation URL can be triggered by any
+      cross-site `<img>`/link, which lets an attacker start a login/account-
+      link flow without the user's intent — a CSRF vector OmniAuth explicitly
+      warns about (CWE-352). LLM-generated fixes often add `:get` (or silence
+      the warning) to make a plain link work.
+
+      Keep the request phase POST-only: `OmniAuth.config.allowed_request_methods
+      = [:post]`, and initiate login with a real form/button that POSTs to
+      `/auth/:provider` (or use the request-forgery-protection middleware).
+      Do not silence the GET warning.
+    pattern-either:
+      - pattern: 'OmniAuth.config.allowed_request_methods = [..., :get, ...]'
+      - pattern: 'OmniAuth.config.silence_get_warning = true'
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-oauth-omniauth-allows-get
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - omniauth
+      references:
+        - https://github.com/omniauth/omniauth/wiki/Resolving-CVE-2015-9284
+        - https://cwe.mitre.org/data/definitions/352.html

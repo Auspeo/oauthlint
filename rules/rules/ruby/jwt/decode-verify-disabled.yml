@@ -1,0 +1,40 @@
+rules:
+  - id: auth.ruby.jwt.decode-verify-disabled
+    languages:
+      - ruby
+    severity: ERROR
+    message: |
+      `JWT.decode` is called with its third positional argument set to `false`,
+      which disables signature verification entirely. The library will happily
+      return the claims of any token, including one an attacker forged, so any
+      authorization decision made on the decoded `sub` / `role` / `scope` is
+      trivially bypassed (CWE-347). This is a common AI-generated mistake: the
+      assistant "just wants the payload" and turns verification off to make the
+      call succeed.
+
+      Verify the signature and pin the algorithm instead:
+        JWT.decode(token, key, true, { algorithm: 'HS256' })
+      For asymmetric tokens pass the public key and an `algorithms:` allow-list.
+    patterns:
+      - pattern-either:
+          - pattern: JWT.decode($T, $K, false)
+          - pattern: JWT.decode($T, $K, false, ...)
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-jwt-decode-verify-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - ruby-jwt
+      references:
+        - https://github.com/jwt/ruby-jwt
+        - https://cwe.mitre.org/data/definitions/347.html

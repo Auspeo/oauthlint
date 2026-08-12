@@ -1,0 +1,56 @@
+rules:
+  - id: auth.php.cookie.insecure-flags
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      An authentication-related cookie is set without the `Secure` and/or
+      `HttpOnly` flags (or with `SameSite=None`). `HttpOnly=false` exposes the
+      cookie to JavaScript so an XSS bug can steal the session; `Secure=false`
+      lets it travel over plain HTTP where a network attacker can read it;
+      `SameSite=None` (without an allowlist) sends it on cross-site requests
+      (CWE-1004). AI-generated snippets pass `false` for these flags to avoid a
+      "cookie not set" issue during local testing and it ships to production.
+
+      Set the security flags on session/auth cookies:
+        setcookie('session_id', $v, ['secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+        session_set_cookie_params(['lifetime' => 3600, 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']);
+    # (a) positional setcookie(): arg7 (httponly) literal false/0 on an auth-ish
+    # cookie name; (b) array form with 'httponly'=>false / 'secure'=>false /
+    # 'samesite'=>'None'; (c) positional session_set_cookie_params() with
+    # secure (arg4) or httponly (arg5) false. The name regex uses a `.*` prefix
+    # because metavariable-regex is anchored and the literal includes its quote.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: setcookie($N, $V, $E, $P, $D, $S, false)
+                  - pattern: setcookie($N, $V, $E, $P, $D, $S, 0)
+              - metavariable-regex:
+                  metavariable: $N
+                  regex: (?i)^["']?.*(sess|sid|auth|token|jwt|login|remember|csrf|xsrf)
+          - pattern: "setcookie($N, $V, [..., 'httponly' => false, ...])"
+          - pattern: "setcookie($N, $V, [..., 'secure' => false, ...])"
+          - pattern: "setcookie($N, $V, [..., 'samesite' => 'None', ...])"
+          - pattern: session_set_cookie_params($L, $P, $D, false, $H)
+          - pattern: session_set_cookie_params($L, $P, $D, $S, false)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-cookie-insecure-flags
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - php
+      references:
+        - https://www.php.net/manual/en/function.setcookie.php
+        - https://cwe.mitre.org/data/definitions/1004.html

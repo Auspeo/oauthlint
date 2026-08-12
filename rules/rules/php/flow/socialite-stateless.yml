@@ -1,0 +1,48 @@
+rules:
+  - id: auth.php.flow.socialite-stateless
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A Laravel Socialite OAuth flow calls `->stateless()`, which disables the
+      `state` parameter that ties the redirect to the user's session. Without it
+      the callback cannot be bound to the request that started the flow, opening
+      the login to CSRF / authorization-code injection (CWE-352) — an attacker
+      can trick a victim into completing the attacker's OAuth flow and link
+      accounts. AI-generated code reaches for `stateless()` to "fix" a session
+      error and silently removes the CSRF defense.
+
+      Keep the stateful (default) flow so Socialite validates `state`:
+        return Socialite::driver('google')->redirect();
+        $user = Socialite::driver('google')->user();
+      Only use `stateless()` for a token-based API where you validate `state`
+      yourself.
+    # Anchored on a `->stateless()` call inside a `Socialite::driver(...)` /
+    # `$x->driver(...)` fluent chain, so an unrelated `stateless()` method on some
+    # other object does not fire. Intermediate chain calls (scopes(), etc.) are
+    # allowed via the `->...` tail.
+    patterns:
+      - pattern: $X->stateless()
+      - pattern-either:
+          - pattern-inside: Socialite::driver(...)->...
+          - pattern-inside: $S->driver(...)->...
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "**/demo/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-flow-socialite-stateless
+      category: security
+      cwe: CWE-352
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - laravel-socialite
+      references:
+        - https://laravel.com/docs/socialite
+        - https://cwe.mitre.org/data/definitions/352.html

@@ -1,0 +1,43 @@
+rules:
+  - id: auth.ruby.session.skip-verify-authenticity-token
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      A Rails controller disables CSRF protection with
+      `skip_before_action :verify_authenticity_token`. This turns off the
+      authenticity-token check for the actions it covers, so a malicious page
+      can drive a logged-in user's browser into submitting state-changing
+      requests (CWE-352). LLM-generated controllers reach for this line to
+      "fix" a 422 InvalidAuthenticityToken error instead of sending the token.
+
+      If the controller serves browser forms, keep CSRF on and send the token.
+      If it is a genuine token-authenticated API or webhook endpoint (no cookie
+      session), that is legitimate — but prove the request some other way:
+      verify a signature/HMAC or a bearer token on every action, and scope this
+      skip narrowly with `only:` rather than across the whole controller.
+    # Fire on the verify_authenticity_token symbol whether or not the call
+    # carries only:/if:/except: arguments. A different skipped callback
+    # (e.g. :require_login) is a different symbol and never matches.
+    pattern-either:
+      - pattern: 'skip_before_action :verify_authenticity_token'
+      - pattern: 'skip_before_action :verify_authenticity_token, ...'
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-SESSION-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-session-skip-verify-authenticity-token
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      technology:
+        - rails
+      references:
+        - https://guides.rubyonrails.org/security.html#cross-site-request-forgery-csrf
+        - https://cwe.mitre.org/data/definitions/352.html

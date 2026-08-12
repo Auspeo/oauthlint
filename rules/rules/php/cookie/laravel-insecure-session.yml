@@ -1,0 +1,49 @@
+rules:
+  - id: auth.php.cookie.laravel-insecure-session
+    languages:
+      - php
+    severity: WARNING
+    message: |
+      A Laravel session config hard-codes an insecure cookie flag — `'secure'
+      => false`, `'http_only' => false`, or `'same_site' => 'none'`. This turns
+      off protections for the session cookie across the whole app: `secure=false`
+      lets it travel over plain HTTP, `http_only=false` exposes it to JavaScript
+      (XSS), and `same_site=none` sends it on cross-site requests (CWE-614).
+      AI-generated config sets these to `false` to silence a local-HTTP issue and
+      the insecure default ships.
+
+      Drive the flag from the environment (secure by default) instead:
+        'secure' => env('SESSION_SECURE_COOKIE', true),
+        'http_only' => true,
+        'same_site' => 'lax',
+    # Intended to scope to config/session.php; paths.include is NOT set so the
+    # rule can be self-tested against a fixture named vulnerable.php — the literal
+    # array keys are Laravel-session-specific enough to stay low-FP on their own.
+    # Only literal `false` / `'none'` fires; the `env('SESSION_SECURE_COOKIE',
+    # false)` form is structurally a function call, not a literal, so it is
+    # excluded (the env default is a convention, not the effective value).
+    # A bare `'key' => value` is not a parseable PHP pattern, so these config
+    # literals are matched with pattern-regex (which also reports the exact line).
+    # `false` must sit immediately after `=>`, so `'secure' => env(..., false)` —
+    # a function call whose default arg is false — never matches.
+    pattern-either:
+      - pattern-regex: (?i)['"]secure['"]\s*=>\s*false
+      - pattern-regex: (?i)['"]http_only['"]\s*=>\s*false
+      - pattern-regex: (?i)['"]same_site['"]\s*=>\s*['"]none['"]
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.php"
+        - "**/vendor/**"
+    metadata:
+      oauthlint-rule-id: AUTH-PHP-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/php-cookie-laravel-insecure-session
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - laravel
+      references:
+        - https://laravel.com/docs/session
+        - https://cwe.mitre.org/data/definitions/614.html

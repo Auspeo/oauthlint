@@ -1,0 +1,44 @@
+rules:
+  - id: auth.ruby.cookie.insecure-session-store
+    languages:
+      - ruby
+    severity: WARNING
+    message: |
+      The Rails cookie session store is configured with `secure: false` or
+      `httponly: false`. `secure: false` lets the session cookie ride over
+      plaintext HTTP where a network attacker can capture it; `httponly: false`
+      exposes it to `document.cookie`, so any XSS turns into full session theft
+      (CWE-614). LLM-generated configs flip these off to make sessions work over
+      local HTTP and never restore them.
+
+      Drop these overrides. Rails already defaults `httponly` to true, and gate
+      `secure` on the environment instead of disabling it, e.g.
+      `session_store :cookie_store, secure: Rails.env.production?`. Never hard-
+      code `secure: false` / `httponly: false` in code that reaches production.
+    # Only a literal `false` on secure:/httponly: fires. An absent option
+    # (Rails' safe default) or a value like `Rails.env.production?` / `true`
+    # is not a literal false and never matches.
+    pattern-either:
+      - pattern: 'session_store :cookie_store, ..., secure: false, ...'
+      - pattern: 'session_store :cookie_store, ..., httponly: false, ...'
+      - pattern: '$APP.session_store :cookie_store, ..., secure: false, ...'
+      - pattern: '$APP.session_store :cookie_store, ..., httponly: false, ...'
+    paths:
+      exclude:
+        - "**/spec/**"
+        - "**/test/**"
+        - "**/*_spec.rb"
+        - "**/*_test.rb"
+        - "**/features/**"
+    metadata:
+      oauthlint-rule-id: AUTH-RUBY-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/ruby-cookie-insecure-session-store
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - rails
+      references:
+        - https://guides.rubyonrails.org/security.html#session-storage
+        - https://cwe.mitre.org/data/definitions/614.html
