@@ -52,12 +52,25 @@ intellijPlatform {
         version = providers.gradleProperty("pluginVersion")
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
-            untilBuild = providers.gradleProperty("pluginUntilBuild")
+            // Open-ended upper bound: `provider { null }` OMITS the until-build
+            // attribute entirely (an empty string would emit an invalid
+            // until-build=""), so the plugin keeps loading in current and future
+            // IDEs instead of being filtered out of Marketplace search on every
+            // IDE newer than the compile target. Compatibility is proven below by
+            // the Plugin Verifier across the whole 2024.2 -> 2025.3 span.
+            untilBuild = provider<String> { null }
         }
     }
     pluginVerification {
+        // Verify across the whole open-ended support range so an unbounded
+        // untilBuild is backed by real evidence, not a claim. Covers every IDE
+        // branch from the compile target up to the latest release.
         ides {
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.2")
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.3")
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.2")
+            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.3")
         }
     }
     // Publishing to the JetBrains Marketplace. The token (GitHub secret

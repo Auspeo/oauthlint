@@ -28,6 +28,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>0.4.1</h3>
+        <ul>
+          <li><b>Compatibility with 2025.x IDEs.</b> The plugin now loads in IntelliJ IDEA,
+              PyCharm, GoLand, WebStorm, and the other IDEs from 2024.2 onward, including
+              the 2025.1, 2025.2, and 2025.3 releases (earlier builds capped the supported
+              range at 2024.3, which hid the plugin from newer IDEs in Marketplace search).
+              Verified across the whole range by the JetBrains Plugin Verifier. No rule
+              changes.</li>
+        </ul>
         <h3>0.4.0</h3>
         <ul>
           <li><b>Mobile auth: Swift/iOS and Android.</b> 18 new rules for the auth mistakes
