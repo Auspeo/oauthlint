@@ -21,13 +21,23 @@
 
         <p>Supported languages: ten in all, from JavaScript and Python to Go,
         C#, and Kotlin, activated automatically wherever the
-        matching language support is present. The 250+ rule pack adds framework-aware
+        matching language support is present. The 270+ rule pack adds framework-aware
         coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor,
         Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper) alongside the MCP
         server-auth pack.</p>
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>0.4.0</h3>
+        <ul>
+          <li><b>Mobile auth: Swift/iOS and Android.</b> 18 new rules for the auth mistakes
+              AI assistants ship in mobile apps: tokens in UserDefaults or SharedPreferences
+              instead of the Keychain/keystore, cleartext traffic, OAuth in embedded WebViews,
+              hardcoded secrets, and more. Covers Swift (iOS, Vapor) and Android (Kotlin plus
+              manifest and config XML).</li>
+          <li>270+ rules total; inline diagnostics now cover Swift and Android XML too. The
+              extraction cache key was bumped so the new rules load on upgrade.</li>
+        </ul>
         <h3>0.3.0</h3>
         <ul>
           <li><b>New languages: PHP, Ruby, and Kotlin.</b> The pack now spans ten languages

@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.13',
-  text: 'v0.13 is out: 250+ rules now spanning PHP, Ruby and Kotlin, plus framework packs for ASP.NET Core, Gin, Hono, FastAPI and better-auth.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.13.0',
+  version: 'v0.14',
+  text: 'v0.14 is out: a mobile auth pack for Swift/iOS and Android, catching insecure token storage, cleartext traffic, and OAuth in embedded WebViews.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.14.0',
 };
 
 /**

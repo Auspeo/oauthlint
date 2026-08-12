@@ -28,6 +28,8 @@ const SHIKI_LANG: Record<FixtureLang, BundledLanguage> = {
   php: 'php',
   ruby: 'ruby',
   kotlin: 'kotlin',
+  swift: 'swift',
+  xml: 'xml',
 };
 
 /**

@@ -126,6 +126,10 @@ const LANG_DISPLAY = {
   php: 'PHP',
   ruby: 'Ruby',
   kotlin: 'Kotlin',
+  swift: 'Swift',
+  // Note: the Android XML config rules declare `languages: [xml]`. XML is a
+  // config-file target, not a marketed language, so it is intentionally absent
+  // here: it is excluded from the language-name and per-language-bundle checks.
 };
 const packLangs = [...new Set(loaded.flatMap((x) => x.rule.languages))]
   .filter((l) => LANG_DISPLAY[l])

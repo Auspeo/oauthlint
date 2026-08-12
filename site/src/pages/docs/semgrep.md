@@ -33,6 +33,7 @@ If you only care about one language, use the matching subset so Semgrep loads fe
 | PHP | `https://oauthlint.dev/r/oauthlint-php.yaml` |
 | Ruby | `https://oauthlint.dev/r/oauthlint-ruby.yaml` |
 | Kotlin | `https://oauthlint.dev/r/oauthlint-kotlin.yaml` |
+| Swift | `https://oauthlint.dev/r/oauthlint-swift.yaml` |
 
 ```bash
 # Python-only example
