@@ -7,7 +7,7 @@ rules:
       A reqwest client is built with `danger_accept_invalid_certs(true)`, which
       turns off TLS certificate validation. Any attacker who can intercept the
       connection can present any certificate and read or tamper with the
-      traffic — a man-in-the-middle hole. For OAuth/OIDC this leaks
+      traffic, a man-in-the-middle hole. For OAuth/OIDC this leaks
       authorization codes, access tokens, and client secrets in transit.
 
       Never accept invalid certificates. Leave validation on (the default). To
@@ -18,7 +18,7 @@ rules:
     pattern: $B.danger_accept_invalid_certs(true)
     # Safe, deterministic autofix: flip the boolean literal to `false`, which is
     # the secure default and fully resolves the finding. `$B` (the builder
-    # expression) is preserved verbatim, so the surrounding chain is untouched —
+    # expression) is preserved verbatim, so the surrounding chain is untouched:
     # only `true` -> `false` changes.
     fix: $B.danger_accept_invalid_certs(false)
     metadata:

@@ -6,14 +6,14 @@ rules:
     message: |
       Untrusted request input flows into the JWT verification key. When the
       attacker controls the key, they sign their own forged token and supply the
-      matching key, so every token "verifies" — a complete authentication bypass
+      matching key, so every token "verifies", a complete authentication bypass
       (CWE-347, Improper Verification of Cryptographic Signature).
 
       The verification key must be fixed server-side. Resolve it from trusted
-      configuration, a keystore, or a vetted key set keyed by a validated `kid`
-      — never from `request.getParameter(...)` / `request.getHeader(...)` or a
+      configuration, a keystore, or a vetted key set keyed by a validated `kid`,
+      never from `request.getParameter(...)` / `request.getHeader(...)` or a
       `@RequestParam` / `@RequestHeader` value.
-    # Taint mode with the sink FOCUSED on the key argument — never the token. The
+    # Taint mode with the sink FOCUSED on the key argument, never the token. The
     # token is supposed to come from the request, so focusing on it would
     # false-positive on every correct call; focusing on the key fires only when
     # the attacker controls verification itself. Sources are the servlet request

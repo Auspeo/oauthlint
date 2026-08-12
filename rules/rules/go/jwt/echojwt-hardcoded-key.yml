@@ -8,7 +8,7 @@ rules:
       hardcoded string-literal `SigningKey`. This key verifies every request
       token; committed to source it lets anyone forge a valid JWT for any user
       or role, a complete authentication bypass (CWE-798). An empty key
-      (`[]byte("")`) is worse still — it accepts trivially forged tokens. LLMs
+      (`[]byte("")`) is worse still. It accepts trivially forged tokens. LLMs
       commonly inline `[]byte("secret")` so the middleware "just works".
 
       Load the key from configuration or a secret store:

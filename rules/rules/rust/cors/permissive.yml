@@ -8,7 +8,7 @@ rules:
       `CorsLayer::permissive()` / `CorsLayer::very_permissive()` (tower-http),
       and `CorsLayer::new().allow_origin(Any)` all allow requests from any
       origin. Combined with credentialed requests this lets any website read
-      authenticated responses — including OAuth/OIDC tokens, session data, and
+      authenticated responses, including OAuth/OIDC tokens, session data, and
       user info exposed by your API.
 
       Restrict CORS to an explicit allowlist of trusted origins instead, e.g.

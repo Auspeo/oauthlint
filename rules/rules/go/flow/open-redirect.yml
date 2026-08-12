@@ -8,7 +8,7 @@ rules:
       attacker who controls the redirect target (via a query parameter, form
       field, or request header) can forward the victim to an arbitrary
       external site while the link still appears to point at your trusted
-      domain — a classic open redirect, commonly abused to bypass OAuth
+      domain, a classic open redirect, commonly abused to bypass OAuth
       `redirect_uri` checks and to mount convincing phishing.
 
       Do not pass request-derived values straight into `http.Redirect(...)`
@@ -40,7 +40,7 @@ rules:
       # parse-then-host-checked: a value used inside an `if`-guard that looks the
       # parsed host up in an allow-list map is treated as vetted, mirroring the
       # Python rule's `if is_safe_url(...):` guard. A bare `url.Parse(...)` is
-      # deliberately NOT listed — it returns an attacker-controlled struct and
+      # deliberately NOT listed. It returns an attacker-controlled struct and
       # does not validate anything, so parse-then-reflect still fires.
       - patterns:
           - pattern: $V

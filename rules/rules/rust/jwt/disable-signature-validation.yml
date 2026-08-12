@@ -5,8 +5,8 @@ rules:
     severity: ERROR
     message: |
       `Validation::insecure_disable_signature_validation()` turns off JWT
-      signature verification. Once disabled, `decode` accepts any token —
-      including ones forged or tampered with by an attacker — because the
+      signature verification. Once disabled, `decode` accepts any token
+      (including ones forged or tampered with by an attacker) because the
       cryptographic signature is never checked. For OAuth/OIDC this lets an
       attacker mint arbitrary access tokens and identities.
 

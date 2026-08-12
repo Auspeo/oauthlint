@@ -6,7 +6,7 @@ rules:
     message: |
       A JWT is created or accepted with the `none` algorithm, which produces an
       unsigned token. Anyone can forge such a token by setting `alg: none` and
-      omitting the signature, so the server has no way to verify who issued it —
+      omitting the signature, so the server has no way to verify who issued it:
       a complete authentication bypass (CWE-347). In golang-jwt this happens
       when signing with `jwt.SigningMethodNone` or passing the
       `jwt.UnsafeAllowNoneSignatureType` sentinel to `SignedString`.

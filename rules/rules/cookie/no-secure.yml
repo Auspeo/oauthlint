@@ -24,7 +24,7 @@ rules:
                 - pattern-not: '{..., secure: true, ...}'
                 - pattern-not: '{..., secure: $X, ...}'
                 - pattern: '{...}'
-      # Secure explicitly disabled — the exact bug, must fire (the `secure: $X`
+      # Secure explicitly disabled: the exact bug, must fire (the `secure: $X`
       # suppression above would otherwise treat `secure: false` as compliant).
       - patterns:
           - pattern: $RES.cookie($NAME, $VAL, $OPTS)
@@ -40,7 +40,7 @@ rules:
               metavariable: $NAME
               regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
     # No autofix. A single rule-level `fix:` cannot be made safe here: this rule
-    # matches three shapes — an options object missing `secure`, the 2-arg form
+    # matches three shapes: an options object missing `secure`, the 2-arg form
     # with no options object at all, and an explicit `secure: false`. A spread
     # template like `{ ...$OPTS, secure: true }` corrupts the 2-arg form (`$OPTS`
     # is unbound, so Semgrep emits the literal text `$OPTS`) and leaves an

@@ -17,7 +17,7 @@ rules:
     # Scoped to the `jsonwebtoken` library by matching the common alias
     # `jwt` (the literal identifier 99% of users pick). Generic `X.verify(...)`
     # calls on unrelated libs (jose internals, custom signers) no longer
-    # fire — this was the dominant FP class in real-world validation.
+    # fire. This was the dominant FP class in real-world validation.
     pattern-either:
       - patterns:
           - pattern: 'jwt.verify($TOKEN, $SECRET, $OPTS)'

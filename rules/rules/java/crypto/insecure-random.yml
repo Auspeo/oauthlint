@@ -9,7 +9,7 @@ rules:
       `Math.random()` are predictable: their output is seeded from system time
       and the internal state can be recovered from a few observed values, so an
       attacker can reconstruct the "random" secret (CWE-330). This is a common
-      AI-generated mistake — `new Random().nextInt(...)` gets pasted in to
+      AI-generated mistake: `new Random().nextInt(...)` gets pasted in to
       produce a token because it looks random enough.
 
       Use `java.security.SecureRandom` instead. For example,

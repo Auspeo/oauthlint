@@ -16,7 +16,7 @@ rules:
     # Covers the legacy fluent form
     # `sessionManagement().sessionFixation().none()` and the Spring Security 6
     # lambda DSL `sessionManagement(s -> s.sessionFixation(f -> f.none()))`.
-    # Targets only `none()` — never `changeSessionId()` or `migrateSession()`.
+    # Targets only `none()`, never `changeSessionId()` or `migrateSession()`.
     pattern-either:
       - pattern: $S.sessionFixation().none()
       - pattern: $S.sessionFixation($F -> $F.none())

@@ -11,7 +11,7 @@ interface Props {
 
 const fm = Astro.props.frontmatter ?? {};
 const section = Astro.props.section ?? fm.section ?? '';
-const title = `${Astro.props.title ?? fm.title ?? 'Docs'} — OAuthLint`;
+const title = `${Astro.props.title ?? fm.title ?? 'Docs'} · OAuthLint`;
 const description = Astro.props.description ?? fm.description;
 
 // Grouped so the sidebar reads as an information architecture, not a flat dump.
@@ -161,7 +161,7 @@ const NAV = [
     }
   }
 
-  /* Prose — shared with the Validation page styling. */
+  /* Prose, shared with the Validation page styling. */
   .prose {
     min-width: 0;
     color: var(--ol-text-secondary);

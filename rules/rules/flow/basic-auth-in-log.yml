@@ -10,14 +10,14 @@ rules:
       for the request, and the `Proxy-Authorization` header carries
       base64-encoded `user:password` just like `Authorization` does. Logs are
       written to files, shipped to aggregators (Datadog, Splunk, CloudWatch) and
-      read by people and systems that should never see live credentials — the
+      read by people and systems that should never see live credentials. The
       base64 is trivially reversible, so a logged Basic header or a logged
       `creds.pass` is a plaintext password leak (CWE-532).
 
       Never log the raw credential. Redact or mask it before logging, log a
       non-sensitive identifier instead (the username alone, a user id), or drop
       the field entirely.
-    # Taint mode so indirection is caught — `const creds = auth(req);
+    # Taint mode so indirection is caught: `const creds = auth(req);
     # logger.info(creds.pass)` flags, not just an inline log.
     #
     # SCOPE / non-duplication: auth.flow.oauth-credential-in-log already covers
@@ -54,10 +54,10 @@ rules:
     pattern-sanitizers:
       # The username is not a secret: reading `.name` / `.username` off the
       # decoded Basic credentials clears the taint, so logging only the username
-      # (`creds.name`) does not fire — only the password / raw header does.
+      # (`creds.name`) does not fire: only the password / raw header does.
       - pattern: $C.name
       - pattern: $C.username
-      # Redaction / masking helpers, or a truncating slice/substring — the value
+      # Redaction / masking helpers, or a truncating slice/substring: the value
       # that reaches the log is no longer the live credential.
       - pattern: redact(...)
       - pattern: mask(...)
@@ -66,7 +66,7 @@ rules:
       - pattern: $S.substring(...)
       - pattern: $S.substr(...)
     pattern-sinks:
-      # console.log/info/debug/warn/error(...) — any tainted argument fires.
+      # console.log/info/debug/warn/error(...): any tainted argument fires.
       - patterns:
           - pattern-either:
               - pattern: console.log(...)
@@ -74,7 +74,7 @@ rules:
               - pattern: console.debug(...)
               - pattern: console.warn(...)
               - pattern: console.error(...)
-      # logger.<level>(...) — a log-named receiver with a log-level method.
+      # logger.<level>(...): a log-named receiver with a log-level method.
       - patterns:
           - pattern: $LOG.$LEVEL(...)
           - metavariable-regex:

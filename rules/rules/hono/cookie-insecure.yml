@@ -37,7 +37,7 @@ rules:
                 - pattern-not: '{..., secure: true, ...}'
                 - pattern-not: '{..., secure: $X, ...}'
                 - pattern: '{...}'
-      # `secure` explicitly disabled — the exact bug, must fire.
+      # `secure` explicitly disabled, the exact bug, must fire.
       - patterns:
           - pattern: setCookie($C, $NAME, $VAL, $OPTS)
           - metavariable-regex:
@@ -46,7 +46,7 @@ rules:
           - metavariable-pattern:
               metavariable: $OPTS
               pattern: '{..., secure: false, ...}'
-      # `httpOnly` explicitly disabled — the exact bug, must fire.
+      # `httpOnly` explicitly disabled, the exact bug, must fire.
       - patterns:
           - pattern: setCookie($C, $NAME, $VAL, $OPTS)
           - metavariable-regex:

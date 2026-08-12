@@ -5,11 +5,11 @@ rules:
     severity: WARNING
     message: |
       Spring Security's `X-Frame-Options` header is disabled. This header is
-      the browser's clickjacking defense — with it off, an attacker can embed
+      the browser's clickjacking defense. With it off, an attacker can embed
       the application in a hidden `<iframe>` on a malicious page and trick a
       logged-in victim into clicking UI elements they cannot see (CWE-1021).
 
-      Keep `X-Frame-Options` set to DENY or SAMEORIGIN — e.g.
+      Keep `X-Frame-Options` set to DENY or SAMEORIGIN, e.g.
       `frameOptions(f -> f.sameOrigin())` or `frameOptions(f -> f.deny())`. If
       you need to allow framing from a specific set of origins, use a Content
       Security Policy `frame-ancestors` directive instead of disabling the

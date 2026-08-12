@@ -6,8 +6,8 @@ rules:
     severity: ERROR
     message: |
       OAuth 2.0 authorization request is being built WITHOUT a `state`
-      parameter. This opens you to CSRF attacks during the OAuth dance —
-      an attacker can trick the victim into logging in as the attacker.
+      parameter. This opens you to CSRF attacks during the OAuth dance.
+      An attacker can trick the victim into logging in as the attacker.
 
       Always generate a cryptographically random `state`, store it in a
       session/cookie, and validate it on the callback. PKCE alone is not a
@@ -19,11 +19,11 @@ rules:
       # file-level false negative where a `state=` elsewhere in the file (a
       # comment, a different correct call) would suppress a genuinely
       # state-less URL. The path is not hardcoded (Google uses
-      # /o/oauth2/v2/auth, etc.). Single/double quotes only — a dynamic
+      # /o/oauth2/v2/auth, etc.). Single/double quotes only. A dynamic
       # template-literal URL (backticks) is excluded.
       - pattern-regex: |-
           ['"]https?://(?=[^'"]*[?&]client_id=)(?=[^'"]*[?&]response_type=)(?![^'"]*[?&]state=)[^'"]+['"]
-      # Programmatic URLSearchParams build (AST object match — robust to key
+      # Programmatic URLSearchParams build (AST object match, robust to key
       # order and length). Fires when client_id + response_type are present but
       # state is not (covers both `state: x` and the `state` shorthand).
       - patterns:

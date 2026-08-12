@@ -21,7 +21,7 @@ rules:
     # initializer, covering the common token idioms:
     #   Math.random().toString(36).slice(2) / .substring(2) / Math.floor(Math.random()*1e9)
     # The name regex is case-insensitive (catches resetToken, csrfToken, …) and
-    # uses specific security words only — bare `code`/`sid` were removed because
+    # uses specific security words only. Bare `code`/`sid` were removed because
     # they matched barcode/zipcode/aside and produced false positives.
     pattern-either:
       - patterns:

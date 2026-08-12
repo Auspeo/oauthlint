@@ -16,7 +16,7 @@ rules:
       `req.cookies` / `req.headers` value. Validate the destination against an
       explicit allow-list of hosts or route names, or only allow relative paths
       you control (reject anything containing a scheme or `//`).
-    # Taint mode so indirection is caught — `const dest = req.body.url;
+    # Taint mode so indirection is caught: `const dest = req.body.url;
     # res.redirect(dest)` flags, not just the direct `res.redirect(req.query.x)`
     # form. Passing the value through an allow-list / validation call
     # (isAllowedUrl, allowlist.includes, Set.has) clears the taint, so a
@@ -85,7 +85,7 @@ rules:
           # `$RES.redirect(...)` / `$RES.location(...)` also match a bare,
           # receiver-less `redirect(...)` / `location(...)` call. Those are the
           # framework navigation primitives exported by Next.js
-          # (`next/navigation`), SvelteKit and Remix — they send the user to a
+          # (`next/navigation`), SvelteKit and Remix. They send the user to a
           # server-constructed application URL, not the Express `res.redirect`
           # open-redirect sink this rule targets. Requiring an explicit receiver
           # removes that over-match (the dominant FP class seen on next-auth)

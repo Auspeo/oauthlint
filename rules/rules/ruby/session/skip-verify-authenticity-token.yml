@@ -13,7 +13,7 @@ rules:
 
       If the controller serves browser forms, keep CSRF on and send the token.
       If it is a genuine token-authenticated API or webhook endpoint (no cookie
-      session), that is legitimate — but prove the request some other way:
+      session), that is legitimate, but prove the request some other way:
       verify a signature/HMAC or a bearer token on every action, and scope this
       skip narrowly with `only:` rather than across the whole controller.
     # Fire on the verify_authenticity_token symbol whether or not the call

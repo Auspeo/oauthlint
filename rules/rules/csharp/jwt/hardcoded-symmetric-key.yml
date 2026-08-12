@@ -11,9 +11,9 @@ rules:
       (CWE-798). This is a common AI-generated mistake: a literal secret is
       inlined to make the sample "just work" and never externalized.
 
-      Load the key from configuration or a secret store instead — e.g.
+      Load the key from configuration or a secret store instead (e.g.
       `Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])` or a value read
-      from Azure Key Vault / environment — and rotate the leaked secret out of
+      from Azure Key Vault / environment) and rotate the leaked secret out of
       source control.
     # Only a literal string inside GetBytes(...) fires. A regex allow-list drops
     # obvious placeholders/doc stubs and `${ENV}` templates; `config[...]` and

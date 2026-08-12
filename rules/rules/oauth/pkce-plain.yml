@@ -18,7 +18,7 @@ rules:
       # string carrying the plain method. Matched literally so S256 never hits.
       - pattern-regex: |-
           code_challenge_method=plain\b
-      # Object literal: { code_challenge_method: 'plain' } (AST match — robust
+      # Object literal: { code_challenge_method: 'plain' } (AST match, robust
       # to key order and object length).
       - pattern: "{..., code_challenge_method: 'plain', ...}"
       - pattern: '{..., code_challenge_method: "plain", ...}'

@@ -6,14 +6,14 @@ rules:
     message: |
       Spring Security grants `permitAll()` to a sensitive management path. Spring
       Boot Actuator and similar diagnostic endpoints expose health, environment,
-      configuration, thread dumps, and heap dumps — opening them to anonymous
+      configuration, thread dumps, and heap dumps. Opening them to anonymous
       access leaks secrets and internal state and can enable remote code
       execution (CWE-862, broken access control). This is a common AI-generated
       mistake: the management path is opened to "fix" a probe or scrape and the
       intended authentication is never added.
 
-      Require authentication for management endpoints — e.g.
-      `requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")` — and
+      Require authentication for management endpoints (e.g.
+      `requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")`) and
       expose only `/actuator/health` (and `/info`) publicly if you must.
     # Flag permitAll() on a matcher whose path literal targets a management /
     # diagnostics surface (actuator, jolokia, heap/thread dumps, internal).

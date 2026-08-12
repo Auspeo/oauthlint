@@ -17,7 +17,7 @@ const {
   title,
   description = 'A static-analysis linter for the OAuth, OIDC, JWT, MCP, session and CORS anti-patterns AI coding tools generate by default. Hand-curated rules, zero false positives on clean auth libraries. Open source, MIT.',
   ogImage = '/og.png',
-  ogImageAlt = 'OAuthLint — a static-analysis linter for the auth bugs AI coding tools ship by default.',
+  ogImageAlt = 'OAuthLint: a static-analysis linter for the auth bugs AI coding tools ship by default.',
   ogType = 'website',
   jsonLd: extraJsonLdProp,
 } = Astro.props;
@@ -60,11 +60,11 @@ const jsonLd = {
       operatingSystem: 'Cross-platform',
       url: site,
       description:
-        'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/MCP/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java and Rust, with a dedicated MCP server-auth rule pack.',
+        'Open-source Semgrep-based linter that catches the OAuth/OIDC/JWT/MCP/session/CORS anti-patterns AI coding tools generate. CLI + GitHub Action + VS Code, across JS/TS, Python, Go, Java, Rust, C#/.NET, PHP, Ruby and Kotlin, with a dedicated MCP server-auth rule pack.',
       license: 'https://opensource.org/licenses/MIT',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       keywords:
-        'AI auth bugs, JWT lint, OAuth security linter, AI code security, OAuth OIDC static analysis, JWT security, session security, CORS misconfiguration, Semgrep auth rules, MCP security, MCP auth linter, Model Context Protocol security',
+        'AI auth bugs, JWT lint, OAuth security linter, AI code security, OAuth OIDC static analysis, JWT security, session security, CORS misconfiguration, Semgrep auth rules, MCP security, MCP auth linter, Model Context Protocol security, PHP auth linter, Ruby auth linter, Kotlin auth linter',
       publisher: { '@id': `${site}#org` },
     },
   ],
@@ -298,7 +298,7 @@ const jsonLd = {
     </script>
 
     <!-- Hero terminal scan demo: types the command, spins, then streams the
-         findings — looping while it's in view. Ported from the original docs
+         findings, looping while it's in view. Ported from the original docs
          ScanDemo. Lives in the layout because the hero is a set:html partial
          whose own scripts don't run. Pauses off-screen; under reduced motion (or
          no IntersectionObserver) it just shows the finished output. -->

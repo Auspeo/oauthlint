@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.12',
-  text: 'v0.12 is out: OAuthLint now lints MCP servers — token pass-through, RFC 8707 audience binding, unauthenticated transports and tool-handler SSRF.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.12.0',
+  version: 'v0.13',
+  text: 'v0.13 is out: 250+ rules now spanning PHP, Ruby and Kotlin, plus framework packs for ASP.NET Core, Gin, Hono, FastAPI and better-auth.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.13.0',
 };
 
 /**

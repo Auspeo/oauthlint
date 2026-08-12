@@ -8,7 +8,7 @@ rules:
       verification disabled (`verify=False`). The token request carries the
       `client_secret`, the authorization `code`, and the issued access/refresh
       tokens; with verification off, an attacker who can intercept the
-      connection presents any certificate and reads or tampers with them — a
+      connection presents any certificate and reads or tampers with them, a
       classic man-in-the-middle on the most sensitive call in the flow
       (CWE-295).
 

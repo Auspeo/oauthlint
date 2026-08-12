@@ -25,12 +25,12 @@ rules:
     # to require that NO `origins=...` is present, so an explicit allow-list such
     # as `origins=["https://app.example.com"]` is never flagged.
     pattern-either:
-      # Explicit wildcard origin + credentials — CORS(...) call.
+      # Explicit wildcard origin + credentials: CORS(...) call.
       - pattern: CORS(..., origins="*", ..., supports_credentials=True, ...)
       - pattern: CORS(..., supports_credentials=True, ..., origins="*", ...)
       - pattern: CORS(..., origins=["*"], ..., supports_credentials=True, ...)
       - pattern: CORS(..., supports_credentials=True, ..., origins=["*"], ...)
-      # Explicit wildcard origin + credentials — @cross_origin(...) decorator.
+      # Explicit wildcard origin + credentials: @cross_origin(...) decorator.
       - pattern: '@cross_origin(..., origins="*", ..., supports_credentials=True, ...)'
       - pattern: '@cross_origin(..., supports_credentials=True, ..., origins="*", ...)'
       - pattern: '@cross_origin(..., origins=["*"], ..., supports_credentials=True, ...)'

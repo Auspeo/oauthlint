@@ -6,7 +6,7 @@ rules:
     severity: WARNING
     message: |
       An OAuth `access_token` (or `refresh_token` / `id_token`) is placed in a
-      URL query string. URLs leak: the full URL — token included — is recorded
+      URL query string. URLs leak: the full URL (token included) is recorded
       in server and reverse-proxy access logs, saved in browser history, and
       sent in the `Referer` header to every third-party CDN, analytics, and ad
       script loaded by the destination page. A token in a URL is a leaked token.

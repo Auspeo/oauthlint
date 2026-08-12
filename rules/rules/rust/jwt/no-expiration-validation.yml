@@ -18,7 +18,7 @@ rules:
     # field's absence (default true) are not flagged. The struct-literal form
     # `Validation { validate_exp: false, .. }` is a known false negative:
     # Semgrep's Rust frontend cannot match a field inside a struct literal with
-    # a rest (`..`), and a text regex would false-positive on comments — so we
+    # a rest (`..`), and a text regex would false-positive on comments, so we
     # keep this AST-only for precision.
     pattern: $V.validate_exp = false
     metadata:

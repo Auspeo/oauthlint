@@ -11,7 +11,7 @@ rules:
 
       Set `{ httpOnly: true }` on every authentication cookie. If a
       front-end framework genuinely needs to read it from JS, that is a
-      design problem — server-side state is the right answer.
+      design problem. Server-side state is the right answer.
     pattern-either:
       - patterns:
           - pattern: $RES.cookie($NAME, $VAL, $OPTS)
@@ -24,7 +24,7 @@ rules:
                 - pattern-not: '{..., httpOnly: true, ...}'
                 - pattern-not: '{..., httpOnly: $X, ...}'
                 - pattern: '{...}'
-      # HttpOnly explicitly disabled — the exact bug, must fire.
+      # HttpOnly explicitly disabled: the exact bug, must fire.
       - patterns:
           - pattern: $RES.cookie($NAME, $VAL, $OPTS)
           - metavariable-regex:

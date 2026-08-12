@@ -19,7 +19,7 @@ rules:
     # not flagged. Path matching is a regex, so `/api/login`, `/v1/auth`,
     # `/auth/signin` etc. are all covered.
     # NOTE: app-level rate limiting (`app.use(rateLimit())`) is invisible to a
-    # purely syntactic rule — hence INFO severity.
+    # purely syntactic rule, hence INFO severity.
     patterns:
       - pattern: '$APP.post($PATH, $HANDLER)'
       - metavariable-regex:

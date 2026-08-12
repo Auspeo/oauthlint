@@ -6,7 +6,7 @@ rules:
     message: |
       A JWT setup sets `RequireExpirationTime = false` on
       `TokenValidationParameters`. Tokens without an `exp` claim are then accepted,
-      so a leaked or stolen token stays valid forever — it can never expire or be
+      so a leaked or stolen token stays valid forever: it can never expire or be
       timed out (CWE-613). This is a common AI-generated shortcut to accept tokens
       that happen to omit `exp`.
 

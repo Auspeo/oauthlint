@@ -8,7 +8,7 @@ rules:
       `hmac`, `signature`, `mac`, `digest`) is being compared with `==` /
       `!=`. Rust's `PartialEq` for slices and strings short-circuits on the
       first differing byte, so the comparison time leaks the length of the
-      matching prefix — a classic timing-attack vector (CWE-208).
+      matching prefix, a classic timing-attack vector (CWE-208).
 
       Use a constant-time comparison instead: `subtle::ConstantTimeEq`
       (`a.ct_eq(b).into()`) or the `constant_time_eq` crate

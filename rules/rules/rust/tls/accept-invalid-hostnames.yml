@@ -7,7 +7,7 @@ rules:
       A reqwest client is built with `danger_accept_invalid_hostnames(true)`,
       which turns off TLS hostname verification. The certificate chain is still
       checked, but a certificate valid for any other domain is accepted for this
-      connection — so an attacker holding a valid certificate for a host they
+      connection, so an attacker holding a valid certificate for a host they
       control can intercept the connection and read or tamper with the traffic,
       a man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
       access tokens, and client secrets in transit.
@@ -20,7 +20,7 @@ rules:
     pattern: $B.danger_accept_invalid_hostnames(true)
     # Safe, deterministic autofix: flip the boolean literal to `false`, which is
     # the secure default and fully resolves the finding. `$B` (the builder
-    # expression) is preserved verbatim, so the surrounding chain is untouched —
+    # expression) is preserved verbatim, so the surrounding chain is untouched:
     # only `true` -> `false` changes.
     fix: $B.danger_accept_invalid_hostnames(false)
     metadata:

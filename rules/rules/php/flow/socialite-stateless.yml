@@ -7,7 +7,7 @@ rules:
       A Laravel Socialite OAuth flow calls `->stateless()`, which disables the
       `state` parameter that ties the redirect to the user's session. Without it
       the callback cannot be bound to the request that started the flow, opening
-      the login to CSRF / authorization-code injection (CWE-352) — an attacker
+      the login to CSRF / authorization-code injection (CWE-352). An attacker
       can trick a victim into completing the attacker's OAuth flow and link
       accounts. AI-generated code reaches for `stateless()` to "fix" a session
       error and silently removes the CSRF defense.

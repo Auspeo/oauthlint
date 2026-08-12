@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# rust subset — 18 rules.
+# rust subset — 19 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -53,7 +53,7 @@ rules:
       `CorsLayer::permissive()` / `CorsLayer::very_permissive()` (tower-http),
       and `CorsLayer::new().allow_origin(Any)` all allow requests from any
       origin. Combined with credentialed requests this lets any website read
-      authenticated responses — including OAuth/OIDC tokens, session data, and
+      authenticated responses, including OAuth/OIDC tokens, session data, and
       user info exposed by your API.
 
       Restrict CORS to an explicit allowlist of trusted origins instead, e.g.
@@ -274,7 +274,7 @@ rules:
       `hmac`, `signature`, `mac`, `digest`) is being compared with `==` /
       `!=`. Rust's `PartialEq` for slices and strings short-circuits on the
       first differing byte, so the comparison time leaks the length of the
-      matching prefix — a classic timing-attack vector (CWE-208).
+      matching prefix, a classic timing-attack vector (CWE-208).
 
       Use a constant-time comparison instead: `subtle::ConstantTimeEq`
       (`a.ct_eq(b).into()`) or the `constant_time_eq` crate
@@ -377,8 +377,8 @@ rules:
     severity: ERROR
     message: |
       `Validation::insecure_disable_signature_validation()` turns off JWT
-      signature verification. Once disabled, `decode` accepts any token —
-      including ones forged or tampered with by an attacker — because the
+      signature verification. Once disabled, `decode` accepts any token
+      (including ones forged or tampered with by an attacker) because the
       cryptographic signature is never checked. For OAuth/OIDC this lets an
       attacker mint arbitrary access tokens and identities.
 
@@ -537,6 +537,46 @@ rules:
           let mut $V = ...;
           ...
           decode($TOKEN, $KEY, &$V)
+  - id: auth.rust.oauth.hardcoded-client-secret
+    languages:
+      - rust
+    severity: ERROR
+    message: |
+      An OAuth `client_secret` is hardcoded as a string literal and passed to
+      the `oauth2` crate's `ClientSecret::new(...)`. The client secret
+      authenticates your application to the authorization server; committed to
+      source control it is one `grep`/git-history search away from compromise,
+      letting an attacker impersonate your client, mint tokens, and exchange
+      authorization codes (CWE-798). AI-generated snippets inline the secret to
+      make the sample "just work" and it ships unchanged.
+
+      Load the secret at runtime from the environment or a secret manager:
+        let secret = std::env::var("OAUTH_CLIENT_SECRET")?;
+        let client = BasicClient::new(client_id)
+            .set_client_secret(ClientSecret::new(secret));
+      Never commit client secrets to source control.
+    metadata:
+      oauthlint-rule-id: AUTH-RUST-OAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/rust-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://docs.rs/oauth2/latest/oauth2/struct.ClientSecret.html
+        - https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - oauth2
+    pattern-either:
+      - pattern: ClientSecret::new("...".to_string())
+      - pattern: ClientSecret::new("...".to_owned())
+      - pattern: ClientSecret::new("...".into())
+      - pattern: ClientSecret::new(String::from("..."))
+      - pattern: oauth2::ClientSecret::new("...".to_string())
+      - pattern: oauth2::ClientSecret::new("...".to_owned())
+      - pattern: oauth2::ClientSecret::new("...".into())
+      - pattern: oauth2::ClientSecret::new(String::from("..."))
   - id: auth.rust.oauth.insecure-token-endpoint
     languages:
       - rust
@@ -544,7 +584,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read
+      `code_verifier` then travel unencrypted. A network attacker can read
       or rewrite them and take over the flow.
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
@@ -575,7 +615,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials
       grant (`grant_type=password`). The app collects the user's password
-      and replays it to the authorization server — exactly what OAuth was
+      and replays it to the authorization server, exactly what OAuth was
       designed to avoid. It cannot support federation, MFA, or step-up
       auth, and any compromise of your service exposes raw user passwords.
 
@@ -620,7 +660,7 @@ rules:
     message: |
       OAuth authorization request is built with a hardcoded, constant `state`
       value (`CsrfToken::new("literal")`). A static `state` provides ZERO CSRF
-      protection — the whole point is an unguessable, per-request value that
+      protection: the whole point is an unguessable, per-request value that
       you store and then compare on the callback. A literal that ships in your
       source is known to everyone and identical on every request, so an
       attacker can forge a matching callback.
@@ -667,7 +707,7 @@ rules:
       A reqwest client is built with `danger_accept_invalid_certs(true)`, which
       turns off TLS certificate validation. Any attacker who can intercept the
       connection can present any certificate and read or tamper with the
-      traffic — a man-in-the-middle hole. For OAuth/OIDC this leaks
+      traffic, a man-in-the-middle hole. For OAuth/OIDC this leaks
       authorization codes, access tokens, and client secrets in transit.
 
       Never accept invalid certificates. Leave validation on (the default). To
@@ -695,7 +735,7 @@ rules:
       A reqwest client is built with `danger_accept_invalid_hostnames(true)`,
       which turns off TLS hostname verification. The certificate chain is still
       checked, but a certificate valid for any other domain is accepted for this
-      connection — so an attacker holding a valid certificate for a host they
+      connection, so an attacker holding a valid certificate for a host they
       control can intercept the connection and read or tamper with the traffic,
       a man-in-the-middle hole. For OAuth/OIDC this leaks authorization codes,
       access tokens, and client secrets in transit.

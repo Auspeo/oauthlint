@@ -6,7 +6,7 @@ rules:
     message: |
       Spring Security authorizes every request without authentication via
       `anyRequest().permitAll()`. Because `anyRequest()` is the catch-all
-      matcher, this makes the entire application publicly accessible — any
+      matcher, this makes the entire application publicly accessible. Any
       endpoint, including state-changing and sensitive ones, can be reached
       without a logged-in user (CWE-862, broken access control). This is a
       common AI-generated Spring mistake: the default-allow line is pasted in

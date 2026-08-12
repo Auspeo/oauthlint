@@ -7,13 +7,13 @@ rules:
     message: |
       `jwt.verify(...)` is called without an explicit `algorithms` allowlist.
       Without pinning the accepted algorithms, a token signed with an
-      unexpected algorithm — or even `alg: none` on older versions — can be
+      unexpected algorithm (or even `alg: none` on older versions) can be
       accepted, opening the door to algorithm-confusion attacks.
 
       Always pass the algorithm(s) you actually expect, e.g.
       `{ algorithms: ['RS256'] }`.
     # Scoped to the `jsonwebtoken` library by matching the common alias
-    # `jwt`. Only `jwt.verify(...)` is flagged — `jwt.sign(...)`,
+    # `jwt`. Only `jwt.verify(...)` is flagged: `jwt.sign(...)`,
     # `jwt.decode(...)` and `jose.jwtVerify(...)` are intentionally ignored.
     pattern-either:
       - pattern: 'jwt.verify($T, $SECRET)'

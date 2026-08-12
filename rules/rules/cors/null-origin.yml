@@ -9,7 +9,7 @@ rules:
       iframes, documents loaded from `file://`, and certain cross-origin
       redirects send `Origin: null`. Adding the string `'null'` to your
       CORS policy therefore grants cross-origin access to ANY such context
-      — including an attacker's sandboxed iframe — which defeats the
+      (including an attacker's sandboxed iframe), which defeats the
       same-origin policy. Combined with credentials this becomes a
       CSRF / data-exfiltration primitive.
 

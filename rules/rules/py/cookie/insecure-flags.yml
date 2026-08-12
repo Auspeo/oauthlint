@@ -7,7 +7,7 @@ rules:
       A session/auth cookie is issued with a security attribute explicitly
       disabled. `secure=False` lets the cookie travel over plain HTTP (it can be
       sniffed on the wire), and `httponly=False` exposes it to JavaScript so an
-      XSS payload can read and exfiltrate it — either way the session token is
+      XSS payload can read and exfiltrate it. Either way the session token is
       at risk of theft (CWE-614, OWASP A05:2021). The same applies to Django's
       `SESSION_COOKIE_SECURE = False`, `CSRF_COOKIE_SECURE = False`, and
       `SESSION_COOKIE_HTTPONLY = False` settings.

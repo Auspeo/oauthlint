@@ -15,9 +15,9 @@ rules:
       (e.g. `algorithms: ['RS256']`) and pass the public key only when
       verifying asymmetric tokens.
 
-      RFC 7518 §3.1 — the "alg" header must be matched to the key type.
+      RFC 7518 §3.1: the "alg" header must be matched to the key type.
     # Algorithm confusion = verifying with an HMAC algorithm (HS*) while the key
-    # is an asymmetric PUBLIC key — the attacker signs with HS* using the public
+    # is an asymmetric PUBLIC key. The attacker signs with HS* using the public
     # key as the shared secret. We match either an inline PEM literal OR a key
     # bound to a public-key-named variable (the common real-world shape), in
     # both cases combined with an HS* algorithm.

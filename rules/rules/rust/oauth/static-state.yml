@@ -6,7 +6,7 @@ rules:
     message: |
       OAuth authorization request is built with a hardcoded, constant `state`
       value (`CsrfToken::new("literal")`). A static `state` provides ZERO CSRF
-      protection — the whole point is an unguessable, per-request value that
+      protection: the whole point is an unguessable, per-request value that
       you store and then compare on the callback. A literal that ships in your
       source is known to everyone and identical on every request, so an
       attacker can forge a matching callback.
@@ -25,7 +25,7 @@ rules:
           - pattern: CsrfToken::new("...".to_owned())
           - pattern: CsrfToken::new("...".into())
           - pattern: CsrfToken::new(String::from("..."))
-      # Unit tests routinely pass a fixed `state` to assert on the URL — that is
+      # Unit tests routinely pass a fixed `state` to assert on the URL. That is
       # the test asserting determinism, not an app shipping a constant CSRF
       # token. The `#[cfg(test)] mod tests { ... }` block is the canonical Rust
       # idiom (e.g. oauth2-rs' own crate tests), so suppress matches inside it.

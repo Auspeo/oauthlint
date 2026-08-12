@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       An argument of an MCP tool handler (`@mcp.tool()`) flows into an outbound
-      HTTP request without validation — a server-side request forgery (SSRF,
+      HTTP request without validation, a server-side request forgery (SSRF,
       CWE-918). Tool arguments are attacker-influenced: an LLM (or a malicious
       caller) can point the URL at internal services, cloud metadata
       (169.254.169.254), or localhost. BlueRock found ~36.7% of MCP servers
@@ -15,7 +15,7 @@ rules:
       reject private/link-local ranges, and disable redirects. Never pass a raw
       tool argument straight into `httpx`/`requests`.
     # Taint from the tool handler's own parameter to an outbound request. This is
-    # distinct from generic SSRF (source = HTTP request data) — here the source is
+    # distinct from generic SSRF (source = HTTP request data). Here the source is
     # the MCP tool argument itself.
     mode: taint
     pattern-sources:

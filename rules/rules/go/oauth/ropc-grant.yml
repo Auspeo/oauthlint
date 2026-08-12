@@ -6,7 +6,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials
       grant (`grant_type=password`). The app collects the user's password
-      and replays it to the authorization server — exactly what OAuth was
+      and replays it to the authorization server, exactly what OAuth was
       designed to avoid. It cannot support federation, MFA, or step-up
       auth, and any compromise of your service exposes raw user passwords.
 
@@ -18,7 +18,7 @@ rules:
       `Exchange` instead.
     pattern-either:
       # golang.org/x/oauth2: Config.PasswordCredentialsToken(ctx, user, pass)
-      # is the ROPC helper — its only purpose is the password grant.
+      # is the ROPC helper: its only purpose is the password grant.
       - pattern: $C.PasswordCredentialsToken(...)
       # url.Values builders: v.Set("grant_type", "password") /
       # v.Add("grant_type", "password"). The value is bounded so

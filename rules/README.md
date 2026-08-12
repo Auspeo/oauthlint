@@ -4,6 +4,11 @@ A focused Semgrep rule library targeting the OAuth/OIDC/JWT/MCP anti-patterns th
 AI coding tools (Cursor, Claude Code, Copilot, Gemini Code Assist) produce on a
 recurring basis.
 
+The full pack ships 250+ rules across JavaScript/TypeScript, Python, Go, Rust,
+Java, C#/.NET, PHP, Ruby, and Kotlin, with framework-aware coverage (ASP.NET Core,
+Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor, Laravel/Socialite,
+Rails/Devise/OmniAuth/Doorkeeper) and a dedicated MCP server-auth pack.
+
 This package contains:
 
 - the YAML rules (Semgrep format) in `rules/`
@@ -22,11 +27,11 @@ const manifest = await buildManifest();  // summary for the CLI
 To scan code, use the [`oauthlint`](../cli) binary, which invokes Semgrep under
 the hood, passing this package as the `--config` argument.
 
-## Rule catalogue (30 rules)
+## Rule catalogue (JS/TS core, 30 rules)
 
 `LLM` = how often AI coding tools introduce the anti-pattern (prevalence).
 
-### JWT — RFC 7519 / 7515 / 7518
+### JWT (RFC 7519 / 7515 / 7518)
 
 | ID | Severity | LLM | CWE | Description |
 |----|----------|-----|-----|-------------|
@@ -39,7 +44,7 @@ the hood, passing this package as the `--config` argument.
 | `auth.jwt.localstorage` | WARNING | HIGH | CWE-922 | Auth token written to `localStorage` |
 | `auth.jwt.no-issuer` | INFO | LOW | CWE-345 | JWT verified without checking the `iss` (issuer) claim |
 
-### OAuth 2.0 — RFC 6749 / 7636 / 8252 / 9700
+### OAuth 2.0 (RFC 6749 / 7636 / 8252 / 9700)
 
 | ID | Severity | LLM | CWE | Description |
 |----|----------|-----|-----|-------------|
@@ -53,7 +58,7 @@ the hood, passing this package as the `--config` argument.
 | `auth.oauth.long-token-lifetime` | WARNING | MEDIUM | CWE-613 | Over-long `expires_in` / token lifetime |
 | `auth.oauth.broad-scope` | INFO | HIGH | CWE-272 | Over-broad scope requested (`admin`, `*`) |
 
-### Cookies — RFC 6265
+### Cookies (RFC 6265)
 
 | ID | Severity | LLM | CWE | Description |
 |----|----------|-----|-----|-------------|
@@ -93,4 +98,4 @@ the hood, passing this package as the `--config` argument.
 
 ## License
 
-MIT — see [LICENSE](../LICENSE).
+MIT. See [LICENSE](../LICENSE).

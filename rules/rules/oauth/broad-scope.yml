@@ -15,7 +15,7 @@ rules:
       `https://mail.google.com/`, and scope down to `read:user` when you
       only need a profile.
     # An over-broad scope must be a STANDALONE token (bounded by the quote, a
-    # space, or a comma — OAuth scopes are space-delimited). Structured
+    # space, or a comma, since OAuth scopes are space-delimited). Structured
     # sub-scopes such as `admin:read`, `repo:status`, `public_repo`,
     # `channels:admin`, `calendar.all` are narrower and intentionally NOT
     # flagged (they previously matched via `\b` and produced false positives).

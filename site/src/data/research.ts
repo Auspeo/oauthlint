@@ -1,5 +1,5 @@
 /**
- * OAuthLint research report — single source of truth for every figure on
+ * OAuthLint research report, single source of truth for every figure on
  * `/research`. The page renders ENTIRELY from this object; no statistic is
  * hardcoded in the markup, so the numbers can be finalised here in one place
  * before publishing without touching the page.
@@ -11,7 +11,7 @@
  * category: public repositories self-identifying as AI-generated / vibe-coded
  * applications.
  *
- * Provisional values below — overwrite with the final measured numbers before
+ * Provisional values below, overwrite with the final measured numbers before
  * shipping. The page renders whatever is here faithfully.
  */
 
@@ -21,7 +21,7 @@ export interface ResearchPattern {
   label: string;
   /** CWE identifier, linked via `cweUrl()`. */
   cwe: string;
-  /** Rule slug — links to `/rules/<ruleSlug>` (the "why + how to fix" page). */
+  /** Rule slug, links to `/rules/<ruleSlug>` (the "why + how to fix" page). */
   ruleSlug: string;
   /** Raw count of findings for this pattern across the corpus. */
   findings: number;

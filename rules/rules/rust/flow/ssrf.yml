@@ -20,8 +20,8 @@ rules:
     # Taint mode so indirection (let u = params.url; reqwest::get(u)) is caught,
     # not just the inline form. The source is narrowed to function PARAMETERS
     # (the shape an axum/actix handler takes its request data in) so an
-    # arbitrary local `let url = "https://constant"` is not treated as untrusted
-    # — only data arriving as a handler/function parameter is. The taint is
+    # arbitrary local `let url = "https://constant"` is not treated as untrusted.
+    # Only data arriving as a handler/function parameter is. The taint is
     # cleared by an allow-list / host-validation if-guard, mirroring the Python
     # and Go SSRF rules.
     mode: taint

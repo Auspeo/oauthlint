@@ -11,7 +11,7 @@ rules:
       (CWE-287). This is a common AI-generated change made to work around a
       provider quirk and never reverted.
 
-      Leave PKCE enabled — it is the modern default (`UsePkce = true`) and is
+      Leave PKCE enabled: it is the modern default (`UsePkce = true`) and is
       required for public clients. Fix the underlying provider configuration
       rather than disabling the proof key.
     # Matches the explicit `UsePkce = false` disable, whether set as an object

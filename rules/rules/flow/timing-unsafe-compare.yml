@@ -34,12 +34,12 @@ rules:
       `csrf`, `hmac`) is being compared with `===` / `!==` /
       `string1 == string2`. JavaScript's equality operators short-circuit
       on the first differing byte, which leaks the matching prefix
-      length over the wire — a classic timing-attack vector.
+      length over the wire, a classic timing-attack vector.
 
       Use `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` (both
       buffers must be the same length, so hash first if needed). For
       password verification, use `argon2.verify`, `bcrypt.compare`, or
-      `scrypt` — they handle constant-time comparison for you.
+      `scrypt`. They handle constant-time comparison for you.
     # We want to catch `secretVar === userInput` but NOT the dozens of
     # legitimate non-secret comparisons that just happen to involve a
     # variable whose name ends with one of our secret-looking suffixes:
@@ -47,7 +47,7 @@ rules:
     #   signature !== ''                   (presence check)
     #   parts.length === 3                 (shape check)
     #   token.length === expectedLength    (length check)
-    # The pattern-not clauses below carve those out — they were the
+    # The pattern-not clauses below carve those out. They were the
     # entirety of the FP class we saw on jose / next-auth in validation.
     pattern-either:
       - patterns:
@@ -86,7 +86,7 @@ rules:
           # timing target: a literal baked into source is already public,
           # so there is no secret to leak byte-by-byte. This covers demo
           # passwords (`pw !== "password"`), feature flags
-          # (`idToken === false`) and status checks — the dominant FP
+          # (`idToken === false`) and status checks, the dominant FP
           # class on next-auth in real-world validation. `"..."` matches
           # any string literal (including the empty string).
           - pattern-not: '$X === "..."'
@@ -156,7 +156,7 @@ rules:
           # timing target: a literal baked into source is already public,
           # so there is no secret to leak byte-by-byte. This covers demo
           # passwords (`pw !== "password"`), feature flags
-          # (`idToken === false`) and status checks — the dominant FP
+          # (`idToken === false`) and status checks, the dominant FP
           # class on next-auth in real-world validation. `"..."` matches
           # any string literal (including the empty string).
           - pattern-not: '$X === "..."'

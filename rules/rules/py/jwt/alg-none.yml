@@ -6,7 +6,7 @@ rules:
     message: |
       A JWT is decoded or signed with the `none` algorithm. The `none`
       algorithm means the token is NOT cryptographically signed, so any
-      attacker can forge a token with arbitrary claims and have it accepted —
+      attacker can forge a token with arbitrary claims and have it accepted,
       a complete authentication bypass (CVE-class JWT alg=none vulnerability).
 
       Never allow `none`. Pin a strong signing algorithm explicitly:

@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# javascript subset — 80 rules.
+# javascript subset — 89 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -13,6 +13,183 @@
 # Generated from the oauthlint-rules pack. Do not edit by hand.
 
 rules:
+  - id: auth.betterauth.disabled-csrf
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      better-auth's CSRF / origin protection is explicitly disabled.
+
+      In `advanced`, `disableCSRFCheck: true` turns off ALL of better-auth's
+      CSRF protection (origin-header validation and Fetch-Metadata checks), and
+      `disableOriginCheck: true` drops the origin-header validation on its own.
+      Either one lets a malicious site drive state-changing authentication
+      requests against a logged-in user's session (CWE-352).
+
+      Remove the flag and keep the checks on. If a specific trusted front-end
+      needs to reach the auth API cross-origin, add its exact origin to
+      `trustedOrigins` instead of disabling the check globally.
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-disabled-csrf
+      category: security
+      cwe: CWE-352
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.better-auth.com/docs/reference/security
+        - https://cwe.mitre.org/data/definitions/352.html
+      technology:
+        - better-auth
+    patterns:
+      - pattern-inside: betterAuth({...})
+      - pattern-either:
+          - pattern: "disableCSRFCheck: true"
+          - pattern: "disableOriginCheck: true"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+  - id: auth.betterauth.hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      The better-auth `secret` is set to a hard-coded string literal.
+
+      This value signs and encrypts every session cookie, CSRF token, and
+      verification token better-auth issues. Committed to git it is one search
+      away from compromise, letting an attacker forge sessions for any user.
+
+      Read it from the environment instead: `secret: process.env.BETTER_AUTH_SECRET`
+      (better-auth also falls back to the `BETTER_AUTH_SECRET` / `AUTH_SECRET`
+      env vars automatically if you omit the option). Add the variable to
+      `.env.example` with a placeholder and rotate any secret that has shipped.
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://www.better-auth.com/docs/reference/options
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - better-auth
+    patterns:
+      - pattern: 'secret: "..."'
+      - pattern-inside: betterAuth({...})
+      - pattern-not-regex: (?i)secret\s*:\s*['"]\$\{?[A-Za-z_]+\}?['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"]<[^'"]*>['"]
+      - pattern-not-regex: (?i)secret\s*:\s*['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+  - id: auth.betterauth.insecure-cookie
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      better-auth is configured to issue insecure session cookies.
+
+      Under `advanced`, `useSecureCookies: false` forces the session cookie to
+      be sent without the `Secure` flag (so it travels over plain HTTP and can
+      be sniffed), and `secure: false` / `httpOnly: false` in
+      `defaultCookieAttributes` (or a per-cookie `attributes` block) strips the
+      protections that keep the cookie off HTTP and out of `document.cookie`.
+
+      Leave better-auth's secure defaults in place, or set `useSecureCookies:
+      true` and keep `secure`/`httpOnly` at `true`. If you need insecure cookies
+      for local HTTP dev, gate the value on `process.env.NODE_ENV !==
+      'production'` rather than hard-coding `false`.
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-insecure-cookie
+      category: security
+      cwe: CWE-614
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.better-auth.com/docs/concepts/cookies
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - better-auth
+    patterns:
+      - pattern-inside: betterAuth({...})
+      - pattern-inside: "advanced: {...}"
+      - pattern-either:
+          - pattern: "useSecureCookies: false"
+          - pattern: "secure: false"
+          - pattern: "httpOnly: false"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/dev/**"
+  - id: auth.betterauth.trusted-origins-wildcard
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      A fully-permissive wildcard appears in better-auth's `trustedOrigins`.
+
+      `trustedOrigins` is better-auth's origin allow-list for CSRF and callback
+      protection. An entry of `"*"`, `"**"`, or a protocol-only wildcard like
+      `"https://*"` / `"*://*"` matches EVERY host, so any website can drive
+      authenticated cross-origin requests and receive OAuth callbacks. This
+      defeats the origin check entirely (CWE-942 / CWE-352).
+
+      List the exact origins you trust instead:
+      `trustedOrigins: ["https://app.example.com"]`. A scoped subdomain wildcard
+      (`"https://*.example.com"`) is fine; a bare or protocol-only `*` is not.
+    metadata:
+      oauthlint-rule-id: AUTH-BETTERAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/betterauth-trusted-origins-wildcard
+      category: security
+      cwe: CWE-942
+      owasp: A05:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://www.better-auth.com/docs/reference/security
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - better-auth
+    patterns:
+      - pattern-inside: betterAuth({...})
+      - pattern: "trustedOrigins: [..., $O, ...]"
+      - metavariable-regex:
+          metavariable: $O
+          regex: ^["'](\*{1,2}|(?:https?|\*)://\*{1,2})["']$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
   - id: auth.cookie.long-lived
     languages:
       - javascript
@@ -66,7 +243,7 @@ rules:
 
       Set `{ httpOnly: true }` on every authentication cookie. If a
       front-end framework genuinely needs to read it from JS, that is a
-      design problem — server-side state is the right answer.
+      design problem. Server-side state is the right answer.
     metadata:
       oauthlint-rule-id: AUTH-COOKIE-002
       oauthlint-doc-url: https://oauthlint.dev/rules/cookie-no-httponly
@@ -112,7 +289,7 @@ rules:
     message: |
       A session/auth cookie is being set WITHOUT the `SameSite`
       attribute. Modern browsers default to `Lax`, but explicit is
-      better — and APIs that legitimately need cross-site usage should
+      better, and APIs that legitimately need cross-site usage should
       consciously opt into `None` (with `Secure`), not silently inherit
       whatever the browser does today.
 
@@ -216,7 +393,7 @@ rules:
       `SameSite=None` *requires* `Secure`: modern browsers reject a
       `SameSite=None` cookie that is not also `Secure`, so the cookie is
       silently dropped. Worse, if anything does accept it, the cookie is a
-      cross-site cookie travelling over plaintext — it can be sent over plain
+      cross-site cookie travelling over plaintext. It can be sent over plain
       HTTP and offers no CSRF protection at all.
 
       Fix: add `secure: true`, and only use `SameSite=None` when you genuinely
@@ -269,7 +446,7 @@ rules:
       iframes, documents loaded from `file://`, and certain cross-origin
       redirects send `Origin: null`. Adding the string `'null'` to your
       CORS policy therefore grants cross-origin access to ANY such context
-      — including an attacker's sandboxed iframe — which defeats the
+      (including an attacker's sandboxed iframe), which defeats the
       same-origin policy. Combined with credentials this becomes a
       CSRF / data-exfiltration primitive.
 
@@ -320,7 +497,7 @@ rules:
       the browser will attach the victim's cookies to the attacker-controlled
       request.
 
-      This is distinct from a literal `*` wildcard — here the origin is
+      This is distinct from a literal `*` wildcard. Here the origin is
       reflected dynamically, which silently defeats the same-origin policy
       while looking "scoped" in code review.
 
@@ -380,7 +557,7 @@ rules:
     message: |
       CORS is configured with `Access-Control-Allow-Origin: *` and
       `Access-Control-Allow-Credentials: true` at the same time. The
-      spec forbids this combination — browsers will block it — but
+      spec forbids this combination (browsers will block it), but
       developers regularly try to "fix" the resulting error by switching
       to `origin: true` (which echoes the requesting origin back),
       effectively turning the policy into "allow credentials from
@@ -859,7 +1036,7 @@ rules:
       for the request, and the `Proxy-Authorization` header carries
       base64-encoded `user:password` just like `Authorization` does. Logs are
       written to files, shipped to aggregators (Datadog, Splunk, CloudWatch) and
-      read by people and systems that should never see live credentials — the
+      read by people and systems that should never see live credentials. The
       base64 is trivially reversible, so a logged Basic header or a logged
       `creds.pass` is a plaintext password leak (CWE-532).
 
@@ -933,7 +1110,7 @@ rules:
       A secret credential is placed in a URL query string. URLs leak into
       server access logs, reverse-proxy logs, browser history, and the
       `Referer` header (sent to every third-party CDN, analytics, and ad
-      script on the destination page) — so any of `password`, `client_secret`,
+      script on the destination page), so any of `password`, `client_secret`,
       `api_key`, `apikey`, or `secret` in the query is a leaked credential.
 
       Send credentials in the POST request body or in the `Authorization`
@@ -1202,12 +1379,12 @@ rules:
     message: |
       A password validation schema is enforcing a minimum length of less
       than 8 characters. NIST SP 800-63B recommends ≥ 8 characters for
-      user-chosen passwords (with NO mandatory complexity rules — length
+      user-chosen passwords (with NO mandatory complexity rules: length
       is the dominant strength factor). OWASP ASVS V2.1.1 requires ≥ 12
       for high-assurance applications.
 
       Common LLM-generated mistake: `password: z.string().min(6)` because
-      "6 looks reasonable" — it isn't. Bump the floor to 8 minimum, 12
+      "6 looks reasonable". It isn't. Bump the floor to 8 minimum, 12
       preferred.
     metadata:
       oauthlint-rule-id: AUTH-FLOW-005
@@ -1250,7 +1427,7 @@ rules:
       Never use plain SHA-256, MD5, or any unsalted hash for passwords.
 
       OWASP ASVS V2.4 mandates an adaptive, salted hash. Every modern stack
-      ships one — there is no reason to roll your own.
+      ships one. There is no reason to roll your own.
     metadata:
       oauthlint-rule-id: AUTH-FLOW-001
       oauthlint-doc-url: https://oauthlint.dev/rules/password-plaintext
@@ -1422,7 +1599,7 @@ rules:
       A server-side secret read from `process.env` flows into an HTTP
       response body. Whatever you put in `res.send` / `res.json` / `res.end`
       ships straight to the client, so returning a credential here publishes
-      it to every caller — it ends up in the browser, in proxies, and in any
+      it to every caller. It ends up in the browser, in proxies, and in any
       logged response (CWE-200, Sensitive Information Exposure).
 
       Never send a server secret to the client. Return only the data the
@@ -1579,12 +1756,12 @@ rules:
       `csrf`, `hmac`) is being compared with `===` / `!==` /
       `string1 == string2`. JavaScript's equality operators short-circuit
       on the first differing byte, which leaks the matching prefix
-      length over the wire — a classic timing-attack vector.
+      length over the wire, a classic timing-attack vector.
 
       Use `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` (both
       buffers must be the same length, so hash first if needed). For
       password verification, use `argon2.verify`, `bcrypt.compare`, or
-      `scrypt` — they handle constant-time comparison for you.
+      `scrypt`. They handle constant-time comparison for you.
     metadata:
       oauthlint-rule-id: AUTH-FLOW-004
       oauthlint-doc-url: https://oauthlint.dev/rules/flow-timing-unsafe-compare
@@ -1842,6 +2019,159 @@ rules:
           - metavariable-regex:
               metavariable: $ALGO
               regex: ^(["'])(?i)(md5|sha1|sha-1|sha224|sha256|sha-256|sha384|sha512|sha-512)\1$
+  - id: auth.hono.cookie-insecure
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A session/auth cookie is set with Hono's `setCookie(c, name, value, ...)`
+      helper WITHOUT the `Secure` flag, or with `secure`/`httpOnly` explicitly
+      disabled. Missing `Secure` lets the browser send the cookie over plain
+      HTTP where a network attacker can capture it (CWE-614); `httpOnly: false`
+      exposes it to `document.cookie`, so any XSS on the origin can steal the
+      session (CWE-1004).
+
+      Harden every auth cookie:
+        setCookie(c, 'session', value, {
+          httpOnly: true, secure: true, sameSite: 'Lax'
+        })
+      If you genuinely need insecure cookies in dev, gate the value on the
+      environment rather than hard-coding `secure: false`.
+    metadata:
+      oauthlint-rule-id: AUTH-HONO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/hono-cookie-insecure
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://hono.dev/docs/helpers/cookie
+        - https://datatracker.ietf.org/doc/html/rfc6265#section-4.1.2.5
+        - https://cwe.mitre.org/data/definitions/1004.html
+      technology:
+        - hono
+    pattern-either:
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: "{..., secure: true, ...}"
+                - pattern-not: "{..., secure: $X, ...}"
+                - pattern: "{...}"
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: "{..., secure: false, ...}"
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL, $OPTS)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+          - metavariable-pattern:
+              metavariable: $OPTS
+              pattern: "{..., httpOnly: false, ...}"
+      - patterns:
+          - pattern: setCookie($C, $NAME, $VAL)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: ^(['"])(?:[a-zA-Z0-9_-]*(?:session|sid|sess|auth|token|jwt|refresh|access)[a-zA-Z0-9_-]*)\1$
+  - id: auth.hono.cors-reflect-credentials
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Hono's `cors()` middleware is given an `origin` function that reflects the
+      caller's origin straight back (`origin: (origin) => origin`) together with
+      `credentials: true`. This echoes ANY requesting origin into
+      `Access-Control-Allow-Origin` while allowing cookies and `Authorization`
+      headers, effectively "allow credentialed cross-site requests from
+      anywhere", a CSRF / account-takeover primitive (CWE-942).
+
+      Validate the origin against an allow-list before returning it, or pass an
+      explicit list:
+        cors({ origin: ['https://app.example.com'], credentials: true })
+        cors({ origin: (o) => (allowed.includes(o) ? o : null), credentials: true })
+      If the API is public and needs no cookies/auth headers, drop
+      `credentials` (defaults to false).
+
+      (A literal `origin: '*'` with credentials is covered by
+      auth.cors.wildcard-with-credentials; this rule targets the Hono
+      reflect-the-origin function form, which that rule does not match.)
+    metadata:
+      oauthlint-rule-id: AUTH-HONO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/hono-cors-reflect-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://hono.dev/docs/middleware/builtin/cors
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - hono
+    patterns:
+      - pattern-either:
+          - pattern: "cors({ ..., origin: ($O) => $O, ..., credentials: true, ... })"
+          - pattern: "cors({ ..., credentials: true, ..., origin: ($O) => $O, ... })"
+          - pattern: "cors({ ..., origin: ($O, $C) => $O, ..., credentials: true, ... })"
+          - pattern: "cors({ ..., credentials: true, ..., origin: ($O, $C) => $O, ... })"
+  - id: auth.hono.jwt-hardcoded-secret
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      Hono's `jwt()` middleware from `hono/jwt` is configured with a hard-coded
+      `secret` string literal. That key signs and verifies every session token:
+      committed to git it is one search away from compromise, and anyone who
+      reads it can forge a valid token for any user (CWE-798).
+
+      Load the secret from the environment / Workers binding instead and add a
+      placeholder to `.env.example`:
+        app.use('/auth/*', jwt({ secret: c.env.JWT_SECRET }))
+        app.use('/auth/*', jwt({ secret: process.env.JWT_SECRET }))
+      Use at least 32 characters for HMAC algorithms, and rotate the leaked
+      value out of source control.
+
+      (The `sign()`/`verify()` helpers with a literal secret are covered by
+      auth.jwt.weak-secret; this rule targets the Hono middleware config, which
+      that rule does not see.)
+    metadata:
+      oauthlint-rule-id: AUTH-HONO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/hono-jwt-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://hono.dev/docs/middleware/builtin/jwt
+        - https://hono.dev/docs/helpers/jwt
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - hono
+    patterns:
+      - pattern-inside: |
+          import { ..., jwt, ... } from 'hono/jwt'
+          ...
+      - pattern: "jwt({ ..., secret: $S, ... })"
+      - metavariable-pattern:
+          metavariable: $S
+          patterns:
+            - pattern-regex: ^['"].*['"]$
+            - pattern-not-regex: (?i)^['"]\$\{?[A-Za-z_]+\}?['"]$
+            - pattern-not-regex: (?i)^['"]<[^'"]*>['"]$
+            - pattern-not-regex: (?i)^['"](?:your[-_]|my[-_]|example|placeholder|xxx+|todo|fixme|test|dummy|fake|sample|changeme|change[-_]?me|redacted|replace)
   - id: auth.jwt.alg-none
     languages:
       - javascript
@@ -1899,7 +2229,7 @@ rules:
       (e.g. `algorithms: ['RS256']`) and pass the public key only when
       verifying asymmetric tokens.
 
-      RFC 7518 §3.1 — the "alg" header must be matched to the key type.
+      RFC 7518 §3.1: the "alg" header must be matched to the key type.
     metadata:
       oauthlint-rule-id: AUTH-JWT-007
       oauthlint-doc-url: https://oauthlint.dev/rules/jwt-algorithm-confusion
@@ -1948,7 +2278,7 @@ rules:
       - typescript
     severity: WARNING
     message: |
-      `jwt.decode()` from `jsonwebtoken` only parses the token — it does NOT
+      `jwt.decode()` from `jsonwebtoken` only parses the token. It does NOT
       verify the signature. Trusting any claim returned by `decode()` (e.g.
       `sub`, `role`, `scope`) lets an attacker forge a token and bypass
       authentication entirely.
@@ -2059,12 +2389,12 @@ rules:
     message: |
       A JWT (or other auth token) is being written to `localStorage`. Any
       XSS that lands on the page can exfiltrate the token via
-      `localStorage.getItem(...)` — and unlike `HttpOnly` cookies, there
+      `localStorage.getItem(...)`, and unlike `HttpOnly` cookies, there
       is no browser-side mitigation.
 
       Store auth tokens in an `HttpOnly; Secure; SameSite=Strict` cookie
       set by the server, or in memory only. `sessionStorage` is no safer
-      against XSS — it's the same attacker capability.
+      against XSS. It's the same attacker capability.
 
       OWASP ASVS V3.4: tokens must not be stored where untrusted scripts
       can read them.
@@ -2090,7 +2420,7 @@ rules:
     message: |
       `jwt.verify(...)` is called without an explicit `algorithms` allowlist.
       Without pinning the accepted algorithms, a token signed with an
-      unexpected algorithm — or even `alg: none` on older versions — can be
+      unexpected algorithm (or even `alg: none` on older versions) can be
       accepted, opening the door to algorithm-confusion attacks.
 
       Always pass the algorithm(s) you actually expect, e.g.
@@ -2241,7 +2571,7 @@ rules:
       Untrusted request input flows into the verification key or the
       `algorithms` allowlist of `jwt.verify(...)`. When the attacker controls
       the key, they sign their own forged token and supply the matching key,
-      so every token "verifies" — a complete authentication bypass. When the
+      so every token "verifies": a complete authentication bypass. When the
       attacker controls `algorithms`, they can downgrade verification (e.g. to
       `HS256` against a public key, or to `none` on older libraries) and defeat
       the signature check (CWE-347, Improper Verification of Cryptographic
@@ -2250,7 +2580,7 @@ rules:
       The verification key and the accepted algorithms must be fixed
       server-side. Pin `algorithms` to a constant allowlist
       (`{ algorithms: ['RS256'] }`) and resolve the key from trusted
-      configuration or a vetted key set keyed by a validated `kid` — never from
+      configuration or a vetted key set keyed by a validated `kid`, never from
       `req.query` / `req.body` / `req.params` / `req.headers`.
     metadata:
       oauthlint-rule-id: AUTH-JWT-012
@@ -2344,6 +2674,42 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.mcp.dns-rebinding-unprotected
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: |
+      This MCP `StreamableHTTPServerTransport` is created without DNS-rebinding
+      protection (CWE-346). `enableDnsRebindingProtection` defaults to `false`
+      in the TypeScript SDK, so a malicious web page the user visits can rebind
+      a DNS name to the loopback address and POST to the local MCP server,
+      driving its tools cross-origin from the browser. This is CVE-2025-66416.
+
+      Enable it and pin the Host/Origin allow-lists:
+        new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          enableDnsRebindingProtection: true,
+          allowedHosts: ['127.0.0.1:3000'],
+          allowedOrigins: ['https://app.example.com'],
+        })
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-dns-rebinding-unprotected
+      category: security
+      cwe: CWE-346
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://www.cve.org/CVERecord?id=CVE-2025-66416
+        - https://cwe.mitre.org/data/definitions/346.html
+      technology:
+        - mcp
+        - modelcontextprotocol
+    patterns:
+      - pattern: new StreamableHTTPServerTransport({...})
+      - pattern-not: "new StreamableHTTPServerTransport({..., enableDnsRebindingProtection: true, ...})"
   - id: auth.mcp.missing-resource-binding
     languages:
       - javascript
@@ -2379,6 +2745,45 @@ rules:
     patterns:
       - pattern: requireBearerAuth({...})
       - pattern-not: "requireBearerAuth({..., resourceMetadataUrl: $X, ...})"
+  - id: auth.mcp.predictable-session-id
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      This MCP `StreamableHTTPServerTransport` derives its session id from a
+      predictable source: `Date.now()`, `Math.random()`, or an incrementing
+      counter (CWE-330). Session ids are the bearer of the MCP session; if an
+      attacker can guess or enumerate them, they can hijack another client's
+      session and issue tool calls as that client. `Math.random()` is not a CSPRNG
+      and time/counter values are trivially predictable.
+
+      Use a cryptographically secure generator:
+        sessionIdGenerator: () => randomUUID()   // from node:crypto
+      (Omit `sessionIdGenerator` entirely for stateless mode, which is fine.)
+    metadata:
+      oauthlint-rule-id: AUTH-MCP-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/mcp-predictable-session-id
+      category: security
+      cwe: CWE-330
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://cwe.mitre.org/data/definitions/330.html
+      technology:
+        - mcp
+        - modelcontextprotocol
+    patterns:
+      - pattern: "new StreamableHTTPServerTransport({..., sessionIdGenerator: () => $BODY, ...})"
+      - metavariable-pattern:
+          metavariable: $BODY
+          patterns:
+            - pattern-either:
+                - pattern: Date.now()
+                - pattern: Math.random()
+                - pattern: $C++
+                - pattern: ++$C
   - id: auth.mcp.token-passthrough
     languages:
       - javascript
@@ -2388,7 +2793,7 @@ rules:
       An MCP server forwards the INCOMING caller token to an upstream API
       (token pass-through). The token the MCP client presented was issued for
       THIS server as its audience (RFC 8707); replaying it against a different
-      resource server is a confused-deputy vulnerability (CWE-863) — the exact
+      resource server is a confused-deputy vulnerability (CWE-863), the exact
       class behind CVE-2026-13341. The MCP authorization spec forbids it: a
       resource server MUST NOT accept or transit a token that was not issued
       for it.
@@ -2442,7 +2847,7 @@ rules:
     severity: ERROR
     message: |
       An argument of an MCP tool handler (`server.registerTool` / `server.tool`)
-      flows into an outbound HTTP request without validation — a server-side
+      flows into an outbound HTTP request without validation, a server-side
       request forgery (SSRF, CWE-918). Tool arguments are attacker-influenced:
       an LLM or a malicious caller can point the URL at internal services, cloud
       metadata (169.254.169.254), or localhost. BlueRock found ~36.7% of MCP
@@ -2488,8 +2893,8 @@ rules:
       - typescript
     severity: ERROR
     message: |
-      This MCP transport is mounted on an Express route with NO auth middleware
-      — the tools are reachable unauthenticated (CWE-306). The route passes only
+      This MCP transport is mounted on an Express route with NO auth middleware.
+      The tools are reachable unauthenticated (CWE-306). The route passes only
       (path, handler): there is no `requireBearerAuth(...)` in the chain, so any
       caller can drive the MCP server. A Knostic scan found none of ~2,000
       internet-exposed MCP servers required auth.
@@ -3008,7 +3413,7 @@ rules:
     severity: WARNING
     message: |
       An OAuth `access_token` (or `refresh_token` / `id_token`) is placed in a
-      URL query string. URLs leak: the full URL — token included — is recorded
+      URL query string. URLs leak: the full URL (token included) is recorded
       in server and reverse-proxy access logs, saved in browser history, and
       sent in the `Referer` header to every third-party CDN, analytics, and ad
       script loaded by the destination page. A token in a URL is a leaked token.
@@ -3129,7 +3534,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read
+      `code_verifier` then travel unencrypted. A network attacker can read
       or rewrite them and take over the flow.
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
@@ -3211,7 +3616,7 @@ rules:
     message: |
       OIDC authorization request (scope contains `openid`) is being built
       WITHOUT a `nonce` parameter. The nonce binds the id_token to this
-      specific authorization request — without it, an attacker can replay or
+      specific authorization request. Without it, an attacker can replay or
       substitute a stolen/forged id_token (OIDC Core §3.1.2.1).
 
       Generate a cryptographically random `nonce`, store it in the
@@ -3289,8 +3694,8 @@ rules:
     severity: ERROR
     message: |
       OAuth 2.0 authorization request is being built WITHOUT a `state`
-      parameter. This opens you to CSRF attacks during the OAuth dance —
-      an attacker can trick the victim into logging in as the attacker.
+      parameter. This opens you to CSRF attacks during the OAuth dance.
+      An attacker can trick the victim into logging in as the attacker.
 
       Always generate a cryptographically random `state`, store it in a
       session/cookie, and validate it on the callback. PKCE alone is not a
@@ -3451,7 +3856,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials
       grant (`grant_type=password`). The app collects the user's password
-      and replays it to the authorization server — exactly what OAuth was
+      and replays it to the authorization server, exactly what OAuth was
       designed to avoid. It cannot support federation, MFA, or step-up
       auth, and any compromise of your service exposes raw user passwords.
 
@@ -3484,7 +3889,7 @@ rules:
     severity: WARNING
     message: |
       OAuth authorization request sends a hardcoded, constant `state`
-      value. A static `state` provides ZERO CSRF protection — the whole
+      value. A static `state` provides ZERO CSRF protection: the whole
       point is an unguessable, per-request value that you store and then
       compare on the callback. A literal that ships in your source is known
       to everyone and identical on every request, so an attacker can forge
@@ -3660,8 +4065,8 @@ rules:
     severity: ERROR
     message: |
       A hard-coded credential matching a well-known provider's key format
-      was found in the source. These keys are designed to be revocable —
-      once one ships to git, the only safe action is to rotate it, even
+      was found in the source. These keys are designed to be revocable.
+      Once one ships to git, the only safe action is to rotate it, even
       if the repo is private.
 
       Move the value to an environment variable, a secret manager (AWS
@@ -3712,7 +4117,7 @@ rules:
         - SvelteKit / generic:      PUBLIC_*
         - Vite:                     VITE_*  (via import.meta.env)
 
-      Anything carried by such a variable ships to every visitor — a secret,
+      Anything carried by such a variable ships to every visitor. A secret,
       token, password, or private key placed here is published, not protected.
 
       Keep the secret in a server-only variable (no public prefix) and read it

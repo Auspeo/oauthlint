@@ -7,7 +7,7 @@ rules:
       Untrusted request input flows into the verification key or the
       `algorithms` allowlist of `jwt.decode(...)` (PyJWT / python-jose). When
       the attacker controls the key, they sign their own forged token and
-      supply the matching key, so every token "verifies" — a complete
+      supply the matching key, so every token "verifies", a complete
       authentication bypass. When the attacker controls `algorithms`, they can
       downgrade verification (e.g. to `HS256` against a public key, or to
       `none` on older libraries) and defeat the signature check (CWE-347,
@@ -16,9 +16,9 @@ rules:
       The verification key and the accepted algorithms must be fixed
       server-side. Pin `algorithms` to a constant allowlist
       (`algorithms=["RS256"]`) and resolve the key from trusted configuration or
-      a vetted key set keyed by a validated `kid` — never from `request.args`,
+      a vetted key set keyed by a validated `kid`, never from `request.args`,
       `request.form`, `request.json`, or `request.headers`.
-    # Taint mode with the sink FOCUSED on the key / algorithms argument — never
+    # Taint mode with the sink FOCUSED on the key / algorithms argument, never
     # the token. The token is supposed to come from the request, so focusing on
     # it would false-positive on every correct call; focusing on the key and the
     # `algorithms` value fires only when the attacker controls verification

@@ -5,7 +5,7 @@ rules:
     severity: ERROR
     message: |
       A Gin auth/session cookie is written with `secure` or `httpOnly` set to a
-      literal `false`. `gin.Context.SetCookie` takes them positionally —
+      literal `false`. `gin.Context.SetCookie` takes them positionally:
       `SetCookie(name, value, maxAge, path, domain, secure, httpOnly)`. With
       `secure=false` the cookie rides over plain HTTP where a network attacker
       can read it; with `httpOnly=false` any XSS can read it from JavaScript.

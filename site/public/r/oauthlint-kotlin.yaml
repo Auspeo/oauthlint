@@ -1,0 +1,235 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# kotlin subset — 6 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.kotlin.cookie.insecure-session
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      A Ktor session cookie is configured without `cookie.secure = true`, so the
+      browser will send it over plain HTTP as well as HTTPS. On any unencrypted
+      request the session identifier is exposed to network eavesdroppers and can
+      be captured and replayed to hijack the session (CWE-614, Sensitive Cookie
+      Without 'Secure' Attribute). This is a common AI-generated mistake: the
+      `cookie<Session>(...) { }` block sets `path`/`maxAge` but omits the security
+      flags.
+
+      Mark the cookie secure (and add signing/encryption) inside the block:
+        `cookie.secure = true`
+        `cookie.httpOnly = true`
+        `transform(SessionTransportTransformerEncrypt(encryptKey, signKey))`
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-cookie-insecure-session
+      category: security
+      cwe: CWE-614
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://ktor.io/docs/server-sessions.html
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - ktor
+    patterns:
+      - pattern: |
+          cookie<$T>($NAME) {
+            ...
+          }
+      - pattern-not: |
+          cookie<$T>($NAME) {
+            ...
+            cookie.secure = true
+            ...
+          }
+  - id: auth.kotlin.cors.anyhost-credentials
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A Ktor CORS configuration combines `anyHost()` with
+      `allowCredentials = true`. This tells the browser to send cookies and
+      Authorization headers on cross-origin requests from ANY origin and to expose
+      the authenticated response back to that origin, so any malicious website a
+      logged-in user visits can call this API with their credentials and read the
+      result (CWE-942, Permissive Cross-domain Policy). This is a common
+      AI-generated mistake: `anyHost()` is used to "make CORS work" while
+      credentials are also enabled.
+
+      Never pair `anyHost()` with credentials. Allow only the specific origins
+      that need credentialed access:
+        `allowHost("app.example.com", schemes = listOf("https"))`
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-cors-anyhost-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://ktor.io/docs/server-cors.html
+        - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - ktor
+    patterns:
+      - pattern-inside: |
+          install(CORS) {
+            ...
+          }
+      - pattern-inside: |
+          install(CORS) {
+            ...
+            allowCredentials = true
+            ...
+          }
+      - pattern: anyHost()
+  - id: auth.kotlin.jwt.algorithm-none
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A JWT signer or verifier is built with `Algorithm.none()`, the unsecured
+      algorithm that produces (and accepts) tokens with no signature. An
+      `alg=none` token can be forged by anyone. Changing the subject, roles, or
+      expiry costs nothing because there is no signature to verify (CWE-347). This
+      is a common AI-generated mistake: the "no signature" algorithm is reached
+      for during prototyping or a Ktor demo and never swapped for a real key.
+
+      Sign and verify with a real algorithm and a key from configuration:
+      `Algorithm.HMAC256(System.getenv("JWT_SECRET"))` or an RSA/EC key, e.g.
+      `JWT.require(Algorithm.HMAC256(secret)).build().verify(token)`.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-jwt-algorithm-none
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/auth0/java-jwt
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-2.1
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - java-jwt
+        - ktor
+    pattern-either:
+      - pattern: com.auth0.jwt.algorithms.Algorithm.none()
+      - pattern: Algorithm.none()
+  - id: auth.kotlin.jwt.decode-without-verify
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      A JWT is decoded but its signature is never verified. Auth0 java-jwt's
+      `JWT.decode(token)` only base64-decodes the token (it does NOT check the
+      signature), so any claim it exposes (subject, roles, expiry) is fully
+      attacker-controlled (CWE-345). This is a common AI-generated mistake:
+      `JWT.decode(...)` is reached for to "read the claims" and its result is
+      trusted as if it had been verified.
+
+      Verify the signature before reading any claim. With Auth0 java-jwt build a
+      verifier and call it:
+        `JWT.require(Algorithm.HMAC256(secret)).withIssuer(iss).withAudience(aud).build().verify(token)`
+      The `DecodedJWT` returned by `verify(...)` is the only trustworthy one.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-jwt-decode-without-verify
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/auth0/java-jwt#decode-a-token
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-3.1
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - java-jwt
+    pattern-either:
+      - pattern: com.auth0.jwt.JWT.decode($T)
+      - pattern: JWT.decode($T)
+  - id: auth.kotlin.jwt.missing-issuer-audience
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      This JWT verifier checks the signature but never asserts the token's
+      intended recipient: the Auth0 `JWT.require(alg)...build()` chain pins no
+      `.withIssuer(...)` and no `.withAudience(...)`. A valid signature only proves
+      the token was minted by whoever holds the key, not that it was issued by the
+      expected authority or meant for THIS service. A token your provider issued
+      for a different audience, or one minted by any party that shares the key,
+      will still verify, enabling token replay across services (CWE-345). This is a
+      common AI-generated mistake in Ktor `jwt { verifier(...) }` setups: the
+      sample verifies the signature and stops there.
+
+      Pin the recipient before `.build()`: chain
+      `.withIssuer("https://your-idp")` and `.withAudience("your-api")` on the
+      `JWT.require(...)` builder.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-jwt-missing-issuer-audience
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://ktor.io/docs/server-jwt.html
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - java-jwt
+        - ktor
+    pattern-regex: JWT\.require\((?:(?!\.build\(\)|\.withIssuer\(|\.withAudience\(|\.withAnyOfAudience\()[\s\S])*?\.build\(\)
+  - id: auth.kotlin.secret.hardcoded-jwt-secret
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A JWT signing key is built from a hard-coded string literal
+      (`Algorithm.HMAC256("...")`). This key both signs and verifies every token:
+      committed to source control it is one search away from compromise, letting
+      an attacker forge tokens for any user or role (CWE-798). This is a common
+      AI-generated mistake: a literal secret is inlined to make the Ktor/java-jwt
+      sample "just work" and is never externalized.
+
+      Load the key from configuration or a secret store instead, e.g.
+      `Algorithm.HMAC256(System.getenv("JWT_SECRET"))` or
+      `Algorithm.HMAC256(environment.config.property("jwt.secret").getString())`,
+      and rotate any secret that has already been checked in.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-secret-hardcoded-jwt-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://github.com/auth0/java-jwt
+        - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - java-jwt
+        - ktor
+    patterns:
+      - pattern-either:
+          - pattern: com.auth0.jwt.algorithms.Algorithm.HMAC256("...")
+          - pattern: com.auth0.jwt.algorithms.Algorithm.HMAC384("...")
+          - pattern: com.auth0.jwt.algorithms.Algorithm.HMAC512("...")
+          - pattern: Algorithm.HMAC256("...")
+          - pattern: Algorithm.HMAC384("...")
+          - pattern: Algorithm.HMAC512("...")
+      - pattern-not-regex: (?i)HMAC(?:256|384|512)\(\s*"\\?\$\{?[A-Za-z_]+\}?"
+      - pattern-not-regex: (?i)HMAC(?:256|384|512)\(\s*"<[^"]*>"
+      - pattern-not-regex: (?i)HMAC(?:256|384|512)\(\s*"(?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)

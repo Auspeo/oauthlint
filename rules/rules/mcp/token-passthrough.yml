@@ -8,7 +8,7 @@ rules:
       An MCP server forwards the INCOMING caller token to an upstream API
       (token pass-through). The token the MCP client presented was issued for
       THIS server as its audience (RFC 8707); replaying it against a different
-      resource server is a confused-deputy vulnerability (CWE-863) — the exact
+      resource server is a confused-deputy vulnerability (CWE-863), the exact
       class behind CVE-2026-13341. The MCP authorization spec forbids it: a
       resource server MUST NOT accept or transit a token that was not issued
       for it.
@@ -31,8 +31,8 @@ rules:
       - pattern: "$REQ.headers['authorization']"
       - pattern: $REQ.headers.Authorization
     pattern-sanitizers:
-      # A token exchange returns a NEW token minted for the upstream audience —
-      # the inbound token no longer flows to the sink.
+      # A token exchange returns a NEW token minted for the upstream audience.
+      # The inbound token no longer flows to the sink.
       - pattern: exchangeToken(...)
       - pattern: exchangeAuthorizationCode(...)
       - pattern: exchangeRefreshToken(...)

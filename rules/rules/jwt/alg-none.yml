@@ -14,7 +14,7 @@ rules:
 
       RFC 7518 §3.6 explicitly warns: "Implementations SHOULD NOT support the
       'none' algorithm in deployed systems."
-    # Scoped to `jsonwebtoken` (alias `jwt`) — generic $X.verify
+    # Scoped to `jsonwebtoken` (alias `jwt`). Generic $X.verify
     # produced FPs on jose internals and re-exported test helpers.
     pattern-either:
       - pattern: 'jwt.verify($TOKEN, $SECRET, { ..., algorithms: [..., "none", ...], ... })'

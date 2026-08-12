@@ -14,8 +14,8 @@ rules:
       `exp` claim explicitly.
     # Scoped to the `jsonwebtoken` library by matching the common alias
     # `jwt`. Generic `X.sign(...)` calls on unrelated libs (jose
-    # internals, custom signers, ECDSA primitives) no longer fire —
-    # this was the dominant FP class in real-world validation.
+    # internals, custom signers, ECDSA primitives) no longer fire.
+    # This was the dominant FP class in real-world validation.
     pattern-either:
       - patterns:
           - pattern: 'jwt.sign($PAYLOAD, $SECRET)'

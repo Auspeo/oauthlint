@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# java subset — 24 rules.
+# java subset — 26 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -20,7 +20,7 @@ rules:
     message: |
       A servlet Cookie is created with a security attribute explicitly
       disabled. `setSecure(false)` lets the cookie travel over plain HTTP,
-      and `setHttpOnly(false)` makes it readable from JavaScript — either way
+      and `setHttpOnly(false)` makes it readable from JavaScript. Either way
       a session or auth cookie can be intercepted or stolen (CWE-614). This is
       a common AI-generated mistake where the flag is set to `false` to "make
       it work" over localhost and never switched back.
@@ -51,7 +51,7 @@ rules:
       CORS is configured to allow every origin with the wildcard `*`. Any
       website can then make cross-origin requests to this endpoint, defeating
       the same-origin policy (CWE-942). This is a common AI-generated Spring
-      mistake — `@CrossOrigin(origins = "*")` or `addAllowedOrigin("*")` is
+      mistake: `@CrossOrigin(origins = "*")` or `addAllowedOrigin("*")` is
       pasted in to "make the browser call work" and the intended scope is
       never added. A bare `@CrossOrigin` (no arguments) also defaults to all
       origins.
@@ -90,14 +90,14 @@ rules:
       CORS is configured to allow any origin together with credentials. A
       wildcard origin combined with `allowCredentials = true` tells the browser
       to send the victim's cookies and authorization headers to a response that
-      any site can read — a cross-origin account-takeover primitive (CWE-942).
+      any site can read, a cross-origin account-takeover primitive (CWE-942).
       Because browsers reject a literal `*` when credentials are allowed,
       `addAllowedOriginPattern("*")` exists specifically to re-enable this unsafe
       combination, so its very use is the smell.
 
       Never pair a wildcard origin with credentials. List the exact trusted
-      origins — `setAllowedOrigins(List.of("https://app.example.com"))` with
-      `setAllowCredentials(true)` — or drop credentials if you genuinely need a
+      origins (`setAllowedOrigins(List.of("https://app.example.com"))` with
+      `setAllowCredentials(true)`) or drop credentials if you genuinely need a
       public, anonymous API.
     metadata:
       oauthlint-rule-id: AUTH-JAVA-CORS-002
@@ -126,7 +126,7 @@ rules:
     message: |
       A JCA `Cipher` is being created in ECB mode (or with a bare algorithm
       alias that defaults to ECB). ECB encrypts each block independently, so
-      identical plaintext blocks produce identical ciphertext blocks — it is
+      identical plaintext blocks produce identical ciphertext blocks. It is
       deterministic and leaks structure/patterns of the plaintext (CWE-327).
       `Cipher.getInstance("AES")`, `"DES"`, `"DESede"`, or `"Blowfish"` with no
       mode specified silently falls back to ECB as well.
@@ -162,7 +162,7 @@ rules:
       `Math.random()` are predictable: their output is seeded from system time
       and the internal state can be recovered from a few observed values, so an
       attacker can reconstruct the "random" secret (CWE-330). This is a common
-      AI-generated mistake — `new Random().nextInt(...)` gets pasted in to
+      AI-generated mistake: `new Random().nextInt(...)` gets pasted in to
       produce a token because it looks random enough.
 
       Use `java.security.SecureRandom` instead. For example,
@@ -251,7 +251,7 @@ rules:
       A broken hash algorithm (MD5 or SHA-1) is being instantiated via JCA
       `MessageDigest.getInstance(...)`. MD5 and SHA-1 are cryptographically
       broken: practical collision attacks exist, so they must NOT be used for
-      any security purpose — integrity checks, content/token fingerprints,
+      any security purpose: integrity checks, content/token fingerprints,
       digital signatures, HMAC keys, or deduplication that a trust decision
       depends on (CWE-328 / CWE-327).
 
@@ -284,7 +284,7 @@ rules:
       A password is being hashed with a fast, general-purpose digest from the
       JCA `MessageDigest` (MD5, SHA-1, SHA-256, SHA-512). These algorithms are
       designed to be fast, which makes offline brute-force and rainbow-table
-      attacks cheap — they are NOT suitable for storing passwords (CWE-916).
+      attacks cheap. They are NOT suitable for storing passwords (CWE-916).
 
       Use a dedicated, slow password-hashing function with a per-password salt
       and a tunable work factor: BCrypt (`BCryptPasswordEncoder`), Argon2
@@ -404,7 +404,7 @@ rules:
     message: |
       A JWT signing key is hard-coded as a string literal (CWE-798). Anyone with
       access to the source, the compiled artifact, or the version-control history
-      can read the secret and forge valid tokens — changing the subject, roles,
+      can read the secret and forge valid tokens, changing the subject, roles,
       or expiry at will, because the signature will still verify. This is a common
       AI-generated mistake: a placeholder secret is pasted inline to "make signing
       work" and is never moved out of the code.
@@ -433,14 +433,52 @@ rules:
       - pattern: $B.signWith($ALG, "...")
       - pattern: $P.setSigningKey("...")
       - pattern: $P.setSigningKey("...".getBytes(...))
+  - id: auth.java.jwt.no-claims-validation
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      This JWT is verified for signature but its intended-recipient claims are
+      never asserted: the Auth0 `JWT.require(alg)...build()` verifier pins no
+      `withIssuer(...)`/`withAudience(...)`, or the jjwt parser sets a signature
+      key but pins no `requireIssuer(...)`/`requireAudience(...)`. A valid
+      signature only proves the token was minted by whoever holds the key, not
+      that it was issued by the expected authority or meant for THIS service. A
+      token your provider issued for a different audience (or one minted by any
+      party that shares the key) will still verify, enabling token replay across
+      services (CWE-345, Insufficient Verification of Data Authenticity). This is
+      a common AI-generated mistake: the sample verifies the signature and stops
+      there.
+
+      Pin the token's recipient. With Auth0 java-jwt chain
+      `.withIssuer("https://your-idp")` and `.withAudience("your-api")` before
+      `.build()`; with jjwt chain `.requireIssuer(...)` and `.requireAudience(...)`
+      before `.build()`.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-jwt-no-claims-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc8725#section-3.8
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - java-jwt
+        - jjwt
+    pattern-either:
+      - pattern-regex: JWT\.require\((?:(?!\.build\(\)|\.withIssuer\(|\.withAudience\(|\.withAnyOfAudience\()[\s\S])*?\.build\(\)
+      - pattern-regex: Jwts\.parser(?:Builder)?\(\)(?=(?:(?!\.build\(\))[\s\S])*?\.(?:setSigningKey|verifyWith)\()(?:(?!\.build\(\)|\.requireIssuer\(|\.requireAudience\()[\s\S])*?\.build\(\)
   - id: auth.java.jwt.none-algorithm
     languages:
       - java
     severity: ERROR
     message: |
       A JWT is created or verified with the `none` algorithm, which means there
-      is no signature at all. An `alg=none` token can be forged by anyone —
-      changing the subject, roles, or expiry costs nothing because there is no
+      is no signature at all. An `alg=none` token can be forged by anyone.
+      Changing the subject, roles, or expiry costs nothing because there is no
       signature to verify (CWE-347). This is a common AI-generated mistake: the
       "no signature" algorithm is reached for during prototyping or testing and
       never swapped for a real signing key.
@@ -474,7 +512,7 @@ rules:
     message: |
       This JWT is created or parsed without a signature, so its contents are
       neither authenticated nor tamper-proof (CWE-347). An unsecured ("alg=none")
-      token can be forged by anyone — changing the claims (e.g. the subject or
+      token can be forged by anyone. Changing the claims (e.g. the subject or
       roles) costs nothing because there is no signature to verify. This is a
       common AI-generated mistake: the "plaintext"/"unsecured" JWT API is reached
       for during prototyping and never swapped for a signed token.
@@ -510,12 +548,12 @@ rules:
     message: |
       Untrusted request input flows into the JWT verification key. When the
       attacker controls the key, they sign their own forged token and supply the
-      matching key, so every token "verifies" — a complete authentication bypass
+      matching key, so every token "verifies", a complete authentication bypass
       (CWE-347, Improper Verification of Cryptographic Signature).
 
       The verification key must be fixed server-side. Resolve it from trusted
-      configuration, a keystore, or a vetted key set keyed by a validated `kid`
-      — never from `request.getParameter(...)` / `request.getHeader(...)` or a
+      configuration, a keystore, or a vetted key set keyed by a validated `kid`,
+      never from `request.getParameter(...)` / `request.getHeader(...)` or a
       `@RequestParam` / `@RequestHeader` value.
     metadata:
       oauthlint-rule-id: AUTH-JAVA-JWT-003
@@ -548,6 +586,52 @@ rules:
           - focus-metavariable: $SINK
     pattern-sanitizers:
       - pattern: $KS.getKey(...)
+  - id: auth.java.oauth.hardcoded-client-secret
+    languages:
+      - java
+    severity: WARNING
+    message: |
+      An OAuth 2.0 client secret is hard-coded as a string literal in a Spring
+      Security `ClientRegistration` builder (`.clientSecret("...")`). The client
+      secret authenticates your application to the authorization server's token
+      endpoint; committed to source control it is one search away from
+      compromise, letting an attacker impersonate your client to redeem
+      authorization codes and mint access tokens (CWE-798). This is a common
+      AI-generated mistake: a literal secret is inlined to make the OAuth sample
+      "just work" and never externalized.
+
+      Load the secret from outside the source: a `@Value("${...}")`-injected
+      property, `System.getenv(...)`, `Environment.getProperty(...)`, or a secret
+      manager (Vault, AWS Secrets Manager). In Spring Boot, prefer
+      `spring.security.oauth2.client.registration.<id>.client-secret` bound from
+      an environment variable. Rotate any secret already checked in.
+    metadata:
+      oauthlint-rule-id: AUTH-JAVA-OAUTH-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/java-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.spring.io/spring-security/reference/servlet/oauth2/client/core.html
+        - https://cwe.mitre.org/data/definitions/798.html
+        - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+      technology:
+        - spring-security
+    patterns:
+      - pattern: $B.clientSecret("...")
+      - pattern-not-regex: clientSecret\(\s*"\$\{?[^"]*\}?"
+      - pattern-not-regex: clientSecret\(\s*"<[^"]*>"
+      - pattern-not-regex: (?i)clientSecret\(\s*"(?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|dummy|sample|secret")
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.java"
+        - "**/*Tests.java"
+        - "**/samples/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
   - id: auth.java.oauth.insecure-token-endpoint
     languages:
       - java
@@ -555,7 +639,7 @@ rules:
     message: |
       An OAuth/OIDC endpoint is being contacted over cleartext `http://`.
       Authorization codes, `client_secret`, access/refresh tokens, and the
-      `code_verifier` then travel unencrypted — a network attacker can read or
+      `code_verifier` then travel unencrypted: a network attacker can read or
       rewrite them and take over the flow (CWE-319).
 
       RFC 6749 §3.1 / §10.9 require TLS for the authorization and token
@@ -586,7 +670,7 @@ rules:
     message: |
       OAuth token request uses the Resource Owner Password Credentials grant
       (`grant_type=password`). The application collects the user's password and
-      replays it to the authorization server — exactly what OAuth was designed
+      replays it to the authorization server, exactly what OAuth was designed
       to avoid. It cannot support federation, MFA, or step-up auth, and any
       compromise of your service exposes raw user passwords (CWE-522).
 
@@ -619,7 +703,7 @@ rules:
     severity: WARNING
     message: |
       OAuth authorization request sends a hardcoded, constant `state` value. A
-      static `state` provides ZERO CSRF protection — the whole point is an
+      static `state` provides ZERO CSRF protection: the whole point is an
       unguessable, per-request value that you store and then compare on the
       callback. A literal that ships in your source is known to everyone and
       identical on every request, so an attacker can forge a matching callback
@@ -678,11 +762,11 @@ rules:
     severity: ERROR
     message: |
       TLS hostname verification is disabled. A permissive `HostnameVerifier`
-      that returns `true` for every host — or Apache HttpClient's
-      `NoopHostnameVerifier` — accepts any certificate regardless of the name
+      that returns `true` for every host (or Apache HttpClient's
+      `NoopHostnameVerifier`) accepts any certificate regardless of the name
       it was issued for, so a man-in-the-middle can present a certificate for a
       different domain and the connection succeeds (CWE-295). This is a common
-      AI-generated mistake — the verifier is stubbed out to "fix" a handshake
+      AI-generated mistake: the verifier is stubbed out to "fix" a handshake
       or certificate error during development and shipped to production.
 
       Never accept all hosts. Leave the default hostname verification in place
@@ -728,12 +812,12 @@ rules:
       Spring Security CSRF protection is disabled. With CSRF off, an attacker
       can forge state-changing requests that a logged-in victim's browser
       submits with their session cookie (CWE-352). This is one of the most
-      common AI-generated Spring mistakes — `csrf().disable()` is pasted in to
+      common AI-generated Spring mistakes: `csrf().disable()` is pasted in to
       "make the API work" and never removed.
 
       Keep CSRF protection enabled. For a stateless API authenticated with
-      bearer tokens (not cookies), scope it instead — e.g. ignore specific
-      paths or use a `CookieCsrfTokenRepository` — rather than disabling it
+      bearer tokens (not cookies), scope it instead (e.g. ignore specific
+      paths or use a `CookieCsrfTokenRepository`) rather than disabling it
       globally.
     metadata:
       oauthlint-rule-id: AUTH-JAVA-WEB-001
@@ -757,11 +841,11 @@ rules:
     severity: WARNING
     message: |
       Spring Security's `X-Frame-Options` header is disabled. This header is
-      the browser's clickjacking defense — with it off, an attacker can embed
+      the browser's clickjacking defense. With it off, an attacker can embed
       the application in a hidden `<iframe>` on a malicious page and trick a
       logged-in victim into clicking UI elements they cannot see (CWE-1021).
 
-      Keep `X-Frame-Options` set to DENY or SAMEORIGIN — e.g.
+      Keep `X-Frame-Options` set to DENY or SAMEORIGIN, e.g.
       `frameOptions(f -> f.sameOrigin())` or `frameOptions(f -> f.deny())`. If
       you need to allow framing from a specific set of origins, use a Content
       Security Policy `frame-ancestors` directive instead of disabling the
@@ -789,7 +873,7 @@ rules:
     message: |
       Spring Security authorizes every request without authentication via
       `anyRequest().permitAll()`. Because `anyRequest()` is the catch-all
-      matcher, this makes the entire application publicly accessible — any
+      matcher, this makes the entire application publicly accessible. Any
       endpoint, including state-changing and sensitive ones, can be reached
       without a logged-in user (CWE-862, broken access control). This is a
       common AI-generated Spring mistake: the default-allow line is pasted in
@@ -820,14 +904,14 @@ rules:
     message: |
       Spring Security grants `permitAll()` to a sensitive management path. Spring
       Boot Actuator and similar diagnostic endpoints expose health, environment,
-      configuration, thread dumps, and heap dumps — opening them to anonymous
+      configuration, thread dumps, and heap dumps. Opening them to anonymous
       access leaks secrets and internal state and can enable remote code
       execution (CWE-862, broken access control). This is a common AI-generated
       mistake: the management path is opened to "fix" a probe or scrape and the
       intended authentication is never added.
 
-      Require authentication for management endpoints — e.g.
-      `requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")` — and
+      Require authentication for management endpoints (e.g.
+      `requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")`) and
       expose only `/actuator/health` (and `/info`) publicly if you must.
     metadata:
       oauthlint-rule-id: AUTH-JAVA-WEB-004

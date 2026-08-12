@@ -36,7 +36,7 @@ rules:
       destination against an explicit allow-list of hosts (resolve the URL and
       check its host against the allow-list, rejecting private/loopback ranges)
       before issuing the request.
-    # Taint mode so indirection is caught — `const u = req.query.endpoint;
+    # Taint mode so indirection is caught: `const u = req.query.endpoint;
     # http.get(u)` flags, not just the direct `fetch(req.query.url)` form.
     # Passing the value through a host allow-list / validation call
     # (isAllowedUrl, allowlist.includes, Set.has) clears the taint, so a

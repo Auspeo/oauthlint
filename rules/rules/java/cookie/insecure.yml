@@ -6,7 +6,7 @@ rules:
     message: |
       A servlet Cookie is created with a security attribute explicitly
       disabled. `setSecure(false)` lets the cookie travel over plain HTTP,
-      and `setHttpOnly(false)` makes it readable from JavaScript — either way
+      and `setHttpOnly(false)` makes it readable from JavaScript. Either way
       a session or auth cookie can be intercepted or stolen (CWE-614). This is
       a common AI-generated mistake where the flag is set to `false` to "make
       it work" over localhost and never switched back.

@@ -21,8 +21,8 @@ rules:
       CWE-327: use of a broken or risky cryptographic algorithm/configuration.
     # Algorithm confusion = the accepted-algorithm list mixes an HMAC variant
     # (HS*) with an asymmetric variant (RS*/ES*/PS*). We bind the algorithm list
-    # expression to $VEC — set either via the public `algorithms` field or via a
-    # `set_algorithms(...)` call — and require, with two ANDed metavariable-regex
+    # expression to $VEC (set either via the public `algorithms` field or via a
+    # `set_algorithms(...)` call) and require, with two ANDed metavariable-regex
     # constraints, that its source text contains BOTH an `Algorithm::HS*` AND an
     # `Algorithm::RS*|ES*|PS*` variant. Order-independent (no ellipsis-in-macro
     # fragility) and inherently low-FP: a single-family list such as

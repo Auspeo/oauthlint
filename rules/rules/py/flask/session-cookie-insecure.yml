@@ -15,7 +15,7 @@ rules:
       them from an environment check), e.g. `app.config["SESSION_COOKIE_SECURE"]
       = True` and `app.config["SESSION_COOKIE_HTTPONLY"] = True`.
     # Matches ONLY the literal `False` set via `app.config[...] = False` (the
-    # subscript form) or `app.config.update(...=False)` (the keyword form) — the
+    # subscript form) or `app.config.update(...=False)` (the keyword form), the
     # `app.config` variants that the bare module-level assignment rule
     # `auth.py.cookie.insecure-flags` does NOT see. `= True` and env-driven
     # values are never flagged. `$APP` matches any Flask app variable name.

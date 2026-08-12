@@ -102,7 +102,7 @@ download.
 - **oauthlint: Retry scan engine setup**
 
 The editor integration scans JavaScript and TypeScript. The full oauthlint rule
-pack covers **190+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, and C#/.NET**,
+pack covers **250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin**,
 including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience
 binding, unauthenticated transports, tool-handler SSRF) and dataflow (taint) rules for
 open-redirect and SSRF, and

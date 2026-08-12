@@ -6,13 +6,13 @@ rules:
     message: |
       A JWT signer or verifier is built with `Algorithm.none()`, the unsecured
       algorithm that produces (and accepts) tokens with no signature. An
-      `alg=none` token can be forged by anyone — changing the subject, roles, or
+      `alg=none` token can be forged by anyone. Changing the subject, roles, or
       expiry costs nothing because there is no signature to verify (CWE-347). This
       is a common AI-generated mistake: the "no signature" algorithm is reached
       for during prototyping or a Ktor demo and never swapped for a real key.
 
-      Sign and verify with a real algorithm and a key from configuration —
-      `Algorithm.HMAC256(System.getenv("JWT_SECRET"))` or an RSA/EC key — e.g.
+      Sign and verify with a real algorithm and a key from configuration:
+      `Algorithm.HMAC256(System.getenv("JWT_SECRET"))` or an RSA/EC key, e.g.
       `JWT.require(Algorithm.HMAC256(secret)).build().verify(token)`.
     # Auth0 java-jwt (com.auth0.jwt): the Algorithm.none() factory, used for both
     # JWT.create().sign(alg) and the JWT.require(alg) verifier.
