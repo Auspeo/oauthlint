@@ -13,7 +13,7 @@ OAuthLint's whole value rests on a low false-positive rate. A security linter th
 
 ## Method
 
-- **Corpus:** widely-used auth and OAuth projects (more than 7,000 source files) across all six supported languages, plus a few large, auth-heavy applications.
+- **Corpus:** widely-used auth and OAuth projects (more than 7,000 source files) across six of the supported languages, plus a few large, auth-heavy applications.
 - **Signal classification** (from `validation-targets.yml`):
   - **low:** mature auth code that should come back clean. Any finding here is a candidate false positive and is triaged one by one.
   - **high:** auth-heavy or AI-generated apps where real findings are expected.

@@ -7,7 +7,7 @@ section: "mcp"
 
 # MCP server
 
-The OAuthLint MCP server lets AI coding tools check the auth code they generate, in the loop, before it ever reaches your project. It is the OAuthLint thesis made actionable: AI tools reproduce a small, predictable set of OAuth / OIDC / JWT / session / CORS mistakes, so give the model a way to catch them itself.
+The OAuthLint MCP server lets AI coding tools check the auth code they generate, in the loop, before it ever reaches your project. It is the OAuthLint thesis made actionable: AI tools reproduce a small, predictable set of OAuth / OIDC / JWT / session / CORS / MCP server auth mistakes, so give the model a way to catch them itself.
 
 It runs as a [Model Context Protocol](https://modelcontextprotocol.io) server over the stdio transport, the standard wiring for a local server launched by Claude Code, Claude Desktop, Cursor, Windsurf and other MCP clients.
 

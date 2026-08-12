@@ -49,7 +49,7 @@ is fetched once and verified. No CLI, no Python. Tune severity and you are done.
 
 ## What it does
 
-- **Inline diagnostics** on save and on open, for JavaScript and TypeScript.
+- **Inline diagnostics** on save and on open, for all ten supported languages (JavaScript, TypeScript, Python, Go, Java, Rust, C#/.NET, PHP, Ruby, Kotlin).
   Severity maps to the editor's usual squiggles, so a `CRITICAL` finding reads as
   an error and a `LOW` one as information.
 - **Rule id and docs link on every finding.** Each diagnostic carries its rule id
@@ -101,7 +101,7 @@ download.
 - **oauthlint: Open rule documentation**
 - **oauthlint: Retry scan engine setup**
 
-The editor integration scans JavaScript and TypeScript. The full oauthlint rule
+The editor integration scans every language OAuthLint supports. The full oauthlint rule
 pack covers **250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin**,
 including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience
 binding, unauthenticated transports, tool-handler SSRF) and dataflow (taint) rules for

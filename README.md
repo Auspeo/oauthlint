@@ -40,7 +40,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
 - **MCP server auth**: token pass-through (confused deputy), missing RFC 8707 audience/resource binding, unauthenticated MCP transports, and SSRF from tool-handler arguments, for the official TypeScript and Python MCP SDKs
-- …and many more: 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Ktor, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, Spring Security, NextAuth, Express, MCP, and more)
+- …and many more: 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS, MCP, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -166,6 +166,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Go (golang-jwt, crypto/tls, net/http) | ✅ shipping |
 | Rust (jsonwebtoken, reqwest, actix/tower) | ✅ shipping |
 | Java (Spring Security, jjwt, nimbus-jose-jwt) | ✅ shipping |
+| C#/.NET (ASP.NET Core, Microsoft.IdentityModel JWT) | ✅ shipping |
 | PHP (Laravel, Socialite, firebase/php-jwt) | ✅ shipping |
 | Ruby (Rails, Devise, OmniAuth, Doorkeeper) | ✅ shipping |
 | Kotlin (Ktor, java-jwt, nimbus-jose-jwt) | ✅ shipping |
@@ -211,7 +212,7 @@ especially welcome.
 
 ### Shipped
 
-- 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including a dedicated MCP server-auth pack
+- 250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin, including a dedicated MCP server-auth pack and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS)
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors
@@ -223,9 +224,9 @@ especially welcome.
 
 ### Now
 
-- More framework-aware rules: Django REST, Express/Helmet, and more,
+- Deeper framework-aware coverage across the stacks already supported,
   tuned for high signal and low false positives
-- Closing rule-parity gaps across the nine supported languages
+- Closing rule-parity gaps across the ten supported languages
 
 ### Next
 

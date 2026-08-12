@@ -24,11 +24,25 @@ things a script can't check. The order below is the release order.
     pnpm build
     pnpm check:surfaces      # fails if any surface disagrees on rule count or coverage
 
-`scripts/check-surfaces.mjs` (also a CI job, "Surface consistency") asserts that the rule
-count and the coverage terms (currently `MCP`; add `PHP`, `Ruby`, ... as packs land, in the
-script's `MUST_MENTION`) are present and identical across the root/CLI/VS Code/JetBrains/Action
-READMEs, `vscode/package.json`, the site hero, and `Base.astro`. Green here means no surface
-"forgot" the new feature or the new number. Run it (or push a PR) before every release.
+`scripts/check-surfaces.mjs` (also a CI job, "Surface consistency") asserts six things,
+so no surface can "forget" a new feature, number, language, or bundle:
+
+1. the rule count ("N+ rules") is identical across the root/CLI/VS Code READMEs and the site hero;
+2. the coverage terms in `MUST_MENTION` (currently `MCP`, `PHP`, `Ruby`, `Kotlin`) appear on every
+   README, `vscode/package.json`, `plugin.xml`, the site hero, and `Base.astro`;
+3. the site announcement bar version matches the CLI release;
+4. **every language the pack ships is named** on `README.md`, `docs/semgrep.md`, and `docs/index.md`
+   (derived from the rules themselves, so a new language pack forces the docs to advertise it);
+5. **every pack language has a hosted per-language bundle** `site/public/r/oauthlint-<lang>.yaml`
+   (catches a language added to the pack but forgotten in `LANGUAGE_SUBSETS`);
+6. **no em-dashes** in rule messages or any user-facing prose (keeps the voice human).
+
+Run it (or push a PR) before every release. **When you add a language pack**, do all three: add
+its rules, add the display term to `MUST_MENTION`, and add the semgrep id to `LANGUAGE_SUBSETS` in
+`site/scripts/build-semgrep-config.ts`. The gate then tells you exactly which surface or doc still
+needs the new language. **When you add or change a feature** (a new command, a new capability like
+MCP-server scanning), the gate cannot see it, so walk the docs surface table below by hand and make
+sure a page actually describes it: a feature nobody can find in the docs may as well not exist.
 
 ### Surface-by-surface (what to update each ship)
 
@@ -42,6 +56,8 @@ READMEs, `vscode/package.json`, the site hero, and `Base.astro`. Green here mean
 | **GitHub Action** (`action/`) | README tagline; **bump `oauthlint@X.Y.Z` pin in `action/Dockerfile`** after npm publish | action-smoke CI |
 | **MCP server** (`mcp/`) | README if its scope changed; version bumps ride changesets | — |
 | **Site** (`site/`) | hero + meta/OG/keywords live in `html/index.html`, `pages/index.astro`, `layouts/Base.astro`; **bump the announcement bar** in `src/data/announcement.ts` (`version` → `vX.Y` of this release, new `text`, `href` → the release notes — bumping `version` re-shows it to everyone who dismissed the last one); **regenerate `site/public/og.png`** when the headline coverage changes (it's the social share banner) | check:surfaces (count, coverage terms, **announcement version freshness**) + eyeball og.png |
+| **Docs pages** (`site/src/pages/docs/`) | every new command, capability, or language must have a page that describes it; check `docs/index.md`, `cli.md`, `semgrep.md` (per-language bundle table), `mcp-server-auth.md`, and any page whose language/feature list could drift | check:surfaces (languages + em-dashes) + read the pages for a feature nobody documented |
+| **Distribution reach** | a new language must also be wired into the channels that scan by language: `.pre-commit-hooks.yaml` `types_or` and the VS Code extension (`activationEvents`, `SUPPORTED_LANGUAGES`, `documentSelectors`) both gate by language and are easy to forget | manual |
 | **GitHub repo About** | `gh repo edit Auspeo/oauthlint --description "..." --add-topic <t>` | manual |
 | **GitHub release** | ONE release on the **CLI tag** `oauthlint@X.Y.Z`, title `OAuthLint X.Y.Z`, `--latest`, canonical structure (see the release-notes convention). NOT on `vX.Y.Z`, NOT per-package. | manual |
 | **Launch copy** (if launching) | `~/Downloads/oauthlint-launch/*` — reconcile the rule count + add the new coverage before posting | manual |

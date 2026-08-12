@@ -17,6 +17,14 @@ const SUPPORTED_LANGUAGES = new Set([
   'javascriptreact',
   'typescript',
   'typescriptreact',
+  'python',
+  'go',
+  'java',
+  'rust',
+  'csharp',
+  'php',
+  'ruby',
+  'kotlin',
 ]);
 
 // Prompt once per session when the scan engine can't be obtained, instead of
@@ -172,6 +180,14 @@ export function activate(context: vscode.ExtensionContext): void {
     { language: 'javascriptreact', scheme: 'file' },
     { language: 'typescript', scheme: 'file' },
     { language: 'typescriptreact', scheme: 'file' },
+    { language: 'python', scheme: 'file' },
+    { language: 'go', scheme: 'file' },
+    { language: 'java', scheme: 'file' },
+    { language: 'rust', scheme: 'file' },
+    { language: 'csharp', scheme: 'file' },
+    { language: 'php', scheme: 'file' },
+    { language: 'ruby', scheme: 'file' },
+    { language: 'kotlin', scheme: 'file' },
   ];
 
   context.subscriptions.push(

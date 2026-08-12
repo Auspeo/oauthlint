@@ -2,11 +2,18 @@
 /**
  * check-surfaces.mjs — release guardrail.
  *
- * Every user-facing surface (READMEs, marketplace manifests, the site hero) must
- * agree with each other and with reality on three things that constantly drift:
+ * Every user-facing surface (READMEs, marketplace manifests, the site, the docs)
+ * must agree with each other and with reality on the things that constantly drift:
  *   1. the rule count ("N+ rules"),
- *   2. the coverage terms that must appear everywhere (e.g. "MCP"), and
- *   3. the site announcement bar pointing at the CURRENT release, not a stale one.
+ *   2. the coverage terms that must appear everywhere (e.g. "MCP"),
+ *   3. the site announcement bar pointing at the CURRENT release, not a stale one,
+ *   4. every language the pack ships being named on the coverage/docs surfaces,
+ *   5. every pack language having a hosted per-language Semgrep bundle, and
+ *   6. no em-dashes (an AI-writing tell) in rule messages or any user-facing prose.
+ *
+ * Checks 4-6 are derived from the pack itself, so adding a language pack forces the
+ * docs, the coverage prose, and the bundles to keep up, and the humanized-prose rule
+ * is enforced forever. Run before every release; it is also a CI job.
  *
  * The source of truth for the count is the rule pack itself (loadAllRules). Run
  * locally with `node scripts/check-surfaces.mjs` and in CI after `pnpm build`.
@@ -16,7 +23,7 @@
  * When a new coverage lands (PHP, Ruby, ...), add the term to MUST_MENTION and
  * every surface is forced to advertise it. The count auto-tracks the real pack.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadAllRules } from '../rules/dist/loader.js';
@@ -52,7 +59,8 @@ const problems = [];
 const passes = [];
 
 // 1) Rule count: source of truth = the pack; surfaces state the floored-to-ten figure.
-const realCount = (await loadAllRules()).length;
+const loaded = await loadAllRules();
+const realCount = loaded.length;
 const expected = Math.floor(realCount / 10) * 10; // 192 -> 190
 const seen = new Set();
 for (const f of COUNT_SURFACES) {
@@ -96,6 +104,81 @@ else if (annVer !== expectedAnnounce)
     `site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`,
   );
 else passes.push(`announcement bar: ${annVer} (matches release)`);
+
+// 4) Every language in the pack must be named on the surfaces that enumerate coverage.
+//    Source of truth = the languages the rules actually declare, so a new language
+//    pack forces the coverage prose and the docs to advertise it (no manual list).
+const LANG_DISPLAY = {
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  python: 'Python',
+  go: 'Go',
+  java: 'Java',
+  rust: 'Rust',
+  csharp: 'C#',
+  php: 'PHP',
+  ruby: 'Ruby',
+  kotlin: 'Kotlin',
+};
+const packLangs = [...new Set(loaded.flatMap((x) => x.rule.languages))]
+  .filter((l) => LANG_DISPLAY[l])
+  .sort();
+const LANGUAGE_SURFACES = [
+  'README.md',
+  'site/src/pages/docs/semgrep.md',
+  'site/src/pages/docs/index.md',
+];
+for (const f of LANGUAGE_SURFACES) {
+  const body = read(f);
+  for (const l of packLangs) {
+    const name = LANG_DISPLAY[l];
+    // `#` is not a word char, so C# needs a substring match; the rest use word boundaries.
+    const present = name === 'C#' ? body.includes('C#') : new RegExp(`\\b${name}\\b`).test(body);
+    if (present) passes.push(`${f}: lists ${name}`);
+    else problems.push(`${f}: language list is missing "${name}" (the pack ships ${l} rules)`);
+  }
+}
+
+// 5) Every language in the pack ships a hosted per-language Semgrep bundle.
+//    (Catches a language added to the pack but forgotten in LANGUAGE_SUBSETS.)
+for (const l of packLangs) {
+  const bundle = `site/public/r/oauthlint-${l}.yaml`;
+  if (existsSync(join(root, bundle))) passes.push(`bundle: oauthlint-${l}.yaml`);
+  else
+    problems.push(
+      `no per-language bundle for ${l} (expected ${bundle}); add "${l}" to LANGUAGE_SUBSETS in site/scripts/build-semgrep-config.ts and rebuild the site`,
+    );
+}
+
+// 6) No em-dashes (an AI-writing tell) in rule messages or user-facing prose. Keep the
+//    product's voice human: use a period, colon, comma, or parentheses instead.
+const walk = (dir, exts, out = []) => {
+  for (const e of readdirSync(join(root, dir), { withFileTypes: true })) {
+    const rel = `${dir}/${e.name}`;
+    if (e.isDirectory()) walk(rel, exts, out);
+    else if (exts.some((x) => e.name.endsWith(x))) out.push(rel);
+  }
+  return out;
+};
+const proseFiles = [
+  ...walk('rules/rules', ['.yml']),
+  ...walk('site/src/pages', ['.md', '.astro']),
+  'README.md',
+  'cli/README.md',
+  'rules/README.md',
+  'vscode/README.md',
+  'action/README.md',
+  'mcp/README.md',
+  'site/src/html/index.html',
+];
+let emdashHits = 0;
+for (const f of proseFiles) {
+  if (/—/.test(read(f))) {
+    problems.push(`${f}: contains an em-dash; use a period, colon, comma, or parentheses instead`);
+    emdashHits++;
+  }
+}
+if (emdashHits === 0) passes.push(`no em-dashes across ${proseFiles.length} prose files`);
 
 console.log(
   `Rule pack: ${realCount} rules (surfaces should read "${expected}+"). Coverage terms required everywhere: ${MUST_MENTION.join(', ')}.`,

@@ -86,6 +86,10 @@ semgrep --config https://oauthlint.dev/r/oauthlint-python.yaml ./src
 semgrep --config https://oauthlint.dev/r/oauthlint-go.yaml ./src
 semgrep --config https://oauthlint.dev/r/oauthlint-java.yaml ./src
 semgrep --config https://oauthlint.dev/r/oauthlint-rust.yaml ./src
+semgrep --config https://oauthlint.dev/r/oauthlint-csharp.yaml ./src
+semgrep --config https://oauthlint.dev/r/oauthlint-php.yaml ./src
+semgrep --config https://oauthlint.dev/r/oauthlint-ruby.yaml ./src
+semgrep --config https://oauthlint.dev/r/oauthlint-kotlin.yaml ./src
 ```
 
 > The hosted URL is always the latest pack. For a pinned ruleset in CI, use `npx oauthlint@<version> scan` instead. See [Use with Semgrep](/docs/semgrep).

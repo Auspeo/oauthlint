@@ -13,7 +13,7 @@ OAuthLint ships as plain Semgrep rules. If you already have [Semgrep](https://se
 semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
 ```
 
-That URL serves the complete OAuthLint ruleset: every OAuth / OIDC / JWT / session / CORS / TLS anti-pattern we detect, merged into one Semgrep config. Point it at any path (`./src`, `.`, a single file) and Semgrep does the rest.
+That URL serves the complete OAuthLint ruleset: every OAuth / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-pattern we detect, across all ten supported languages, merged into one Semgrep config. Point it at any path (`./src`, `.`, a single file) and Semgrep does the rest.
 
 > Don't have Semgrep? `pip install semgrep` (or `brew install semgrep`). Prefer zero setup? Use the [`oauthlint` CLI](/docs/cli): `npx oauthlint scan ./src` bundles the pinned rule pack and, on first run, downloads and checksum-verifies its own pinned [Opengrep](https://opengrep.dev) engine (no Python, no Semgrep to install), reusing an installed `opengrep`/`semgrep` if one is on your `PATH`.
 
@@ -29,6 +29,10 @@ If you only care about one language, use the matching subset so Semgrep loads fe
 | Go | `https://oauthlint.dev/r/oauthlint-go.yaml` |
 | Java | `https://oauthlint.dev/r/oauthlint-java.yaml` |
 | Rust | `https://oauthlint.dev/r/oauthlint-rust.yaml` |
+| C# / .NET | `https://oauthlint.dev/r/oauthlint-csharp.yaml` |
+| PHP | `https://oauthlint.dev/r/oauthlint-php.yaml` |
+| Ruby | `https://oauthlint.dev/r/oauthlint-ruby.yaml` |
+| Kotlin | `https://oauthlint.dev/r/oauthlint-kotlin.yaml` |
 
 ```bash
 # Python-only example

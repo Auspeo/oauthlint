@@ -7,7 +7,7 @@ section: "cli"
 
 # CLI reference
 
-The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS anti-patterns, lists the shipped rules, captures a baseline, scaffolds a config, diagnoses your install, explains a rule, and probes a running MCP server. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
+The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS / MCP server auth anti-patterns, lists the shipped rules, captures a baseline, scaffolds a config, diagnoses your install, explains a rule, and probes a running MCP server. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
 
 ## `scan`
 
@@ -88,7 +88,7 @@ npx oauthlint scan ./src --fix
 
 List every rule the current install ships with. Pretty output shows severity, an `LLM↑` marker for rules with high LLM prevalence, the rule id and its OAuthLint id.
 
-The pack is more than pattern matches: it also ships **dataflow (taint) rules** that track untrusted input to a dangerous sink. That covers open-redirect and SSRF detection across JavaScript/TypeScript, Python and Go, so it catches issues a syntactic pattern would miss.
+The pack is more than pattern matches: it also ships **dataflow (taint) rules** that track untrusted input to a dangerous sink. That covers open-redirect and SSRF detection across JavaScript/TypeScript, Python, Go, Java and Rust, so it catches issues a syntactic pattern would miss.
 
 ```bash
 # pretty listing
