@@ -4,8 +4,8 @@ A focused Semgrep rule library targeting the OAuth/OIDC/JWT/MCP anti-patterns th
 AI coding tools (Cursor, Claude Code, Copilot, Gemini Code Assist) produce on a
 recurring basis.
 
-The full pack ships 250+ rules across JavaScript/TypeScript, Python, Go, Rust,
-Java, C#/.NET, PHP, Ruby, and Kotlin, with framework-aware coverage (ASP.NET Core,
+The full pack ships 250+ rules across ten languages (JavaScript, TypeScript,
+Python, Go, C#, and more), with framework-aware coverage (ASP.NET Core,
 Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security,
 Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport,
 Express/Fastify/NestJS) and a dedicated MCP server-auth pack.

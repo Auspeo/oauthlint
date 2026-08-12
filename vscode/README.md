@@ -49,7 +49,7 @@ is fetched once and verified. No CLI, no Python. Tune severity and you are done.
 
 ## What it does
 
-- **Inline diagnostics** on save and on open, for all ten supported languages (JavaScript, TypeScript, Python, Go, Java, Rust, C#/.NET, PHP, Ruby, Kotlin).
+- **Inline diagnostics** on save and on open, for all ten supported languages (JavaScript, TypeScript, Python, Go, C#, and more).
   Severity maps to the editor's usual squiggles, so a `CRITICAL` finding reads as
   an error and a `LOW` one as information.
 - **Rule id and docs link on every finding.** Each diagnostic carries its rule id
@@ -102,7 +102,7 @@ download.
 - **oauthlint: Retry scan engine setup**
 
 The editor integration scans every language OAuthLint supports. The full oauthlint rule
-pack covers **250+ rules across JavaScript/TypeScript, Python, Go, Rust, Java, C#/.NET, PHP, Ruby, and Kotlin**,
+pack covers **250+ rules across ten languages (JavaScript, TypeScript, Python, Go, C#, and more)**,
 including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience
 binding, unauthenticated transports, tool-handler SSRF) and dataflow (taint) rules for
 open-redirect and SSRF, and
