@@ -57,20 +57,24 @@ intellijPlatform {
             // until-build=""), so the plugin keeps loading in current and future
             // IDEs instead of being filtered out of Marketplace search on every
             // IDE newer than the compile target. Compatibility is proven below by
-            // the Plugin Verifier across the whole 2024.2 -> 2025.3 span.
+            // the Plugin Verifier across the resolvable 2024.2 -> 2025.2 span.
             untilBuild = provider<String> { null }
         }
     }
     pluginVerification {
-        // Verify across the whole open-ended support range so an unbounded
-        // untilBuild is backed by real evidence, not a claim. Covers every IDE
-        // branch from the compile target up to the latest release.
+        // Verify across the open-ended support range so the unbounded untilBuild
+        // is backed by real evidence, not a claim. We pin the resolvable IntelliJ
+        // IDEA Community releases from the compile target up to the latest one
+        // published to the build repository (2025.2 = build 252). The newest
+        // branch (2025.3 = build 253) has no `ideaIC` artifact in the build repo
+        // yet, so it can't be downloaded to verify; the open-ended manifest
+        // (since-build 242, no upper bound) is what makes the plugin load there,
+        // and 252 -> 253 uses only the same stable annotator/service APIs.
         ides {
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.2")
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.3")
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
             ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.2")
-            ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.3")
         }
     }
     // Publishing to the JetBrains Marketplace. The token (GitHub secret
