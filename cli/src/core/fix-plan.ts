@@ -20,11 +20,11 @@ function plural(n: number, one: string, many = `${one}s`): string {
  */
 export function renderFixPreview(plan: FixPlan, opts: { cwd: string; color: boolean }): string {
   if (plan.files.length === 0) {
-    return `\n${pc.dim('No autofixable findings — nothing to preview.')}\n`;
+    return `\n${pc.dim('No autofixable findings, nothing to preview.')}\n`;
   }
 
   const parts: string[] = [
-    `\n${pc.bold('Fix preview')} ${pc.dim('(dry run — no files were changed)')}\n`,
+    `\n${pc.bold('Fix preview')} ${pc.dim('(dry run, no files were changed)')}\n`,
   ];
   for (const file of plan.files) {
     const name = label(file.path, opts.cwd);
@@ -43,12 +43,12 @@ export function renderFixPreview(plan: FixPlan, opts: { cwd: string; color: bool
 
 /**
  * Render the post-`--fix` summary: which files changed and how many fixes were
- * applied. When nothing changed (e.g. a second `--fix` run — fixes are
+ * applied. When nothing changed (e.g. a second `--fix` run, fixes are
  * idempotent) it says so explicitly rather than printing a misleading hint.
  */
 export function renderFixSummary(plan: FixPlan, opts: { cwd: string }): string {
   if (plan.files.length === 0) {
-    return `\n${pc.dim('🛠 No autofixable findings — no files were changed.')}\n`;
+    return `\n${pc.dim('🛠 No autofixable findings, no files were changed.')}\n`;
   }
   const lines = [
     `\n${pc.bold('🛠 Applied')} ${plan.totalFixes} ${plural(

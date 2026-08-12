@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 
 /**
- * `oauthlint probe <url>` — a live, credential-free MCP OAuth 2.1 resource-server
+ * `oauthlint probe <url>`, a live, credential-free MCP OAuth 2.1 resource-server
  * conformance probe. Static rules catch the code; this catches the deployed
  * behaviour of a running server. It never needs a token: every check is a
  * negative test (unauthenticated / invalid-token requests) plus RFC 9728
@@ -78,7 +78,7 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
     return 2;
   }
 
-  // 1. Unauthenticated request — the server MUST require a token (spec: 401).
+  // 1. Unauthenticated request, the server MUST require a token (spec: 401).
   let unauth: Response | undefined;
   try {
     unauth = await timedFetch(fetchImpl, target.href, { method: 'GET' }, timeoutMs);
@@ -96,13 +96,13 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
     checks.push({
       name: 'Requires authentication',
       status: 'fail',
-      details: '200 with no token — endpoint is unauthenticated',
+      details: '200 with no token, endpoint is unauthenticated',
     });
   } else if (unauth.status === 405 || unauth.status === 404) {
     checks.push({
       name: 'Requires authentication',
       status: 'skip',
-      details: `${unauth.status} on GET — try the exact MCP path/method`,
+      details: `${unauth.status} on GET, try the exact MCP path/method`,
     });
   } else {
     checks.push({
@@ -171,7 +171,7 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
       name: 'Protected Resource Metadata',
       status: 'fail',
       details:
-        'no /.well-known/oauth-protected-resource (RFC 9728) — clients cannot discover the AS',
+        'no /.well-known/oauth-protected-resource (RFC 9728), clients cannot discover the AS',
     });
   }
 
@@ -193,7 +193,7 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
       checks.push({
         name: 'Rejects invalid token',
         status: 'fail',
-        details: '200 for a bogus token — the server does not verify',
+        details: '200 for a bogus token, the server does not verify',
       });
     } else {
       checks.push({
@@ -213,7 +213,7 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
   if (opts.json) {
     out.write(`${JSON.stringify({ url: target.href, checks }, null, 2)}\n`);
   } else {
-    out.write(pc.bold(`OAuthLint — MCP auth probe: ${target.href}\n`));
+    out.write(pc.bold(`OAuthLint MCP auth probe: ${target.href}\n`));
     out.write(`${pc.dim('─'.repeat(64))}\n`);
     for (const c of checks) {
       out.write(`${badge(c.status)} ${c.name.padEnd(30, ' ')} ${pc.dim(c.details)}\n`);

@@ -22,8 +22,8 @@ interface PkgJson {
  * Exit only once buffered stdout/stderr have drained.
  *
  * `process.exit()` terminates immediately and does NOT flush async writes to a
- * pipe. When output exceeds the OS pipe buffer (~64 KB on macOS) — e.g. a large
- * `--json` or `--format sarif` report piped to a file or another process — the
+ * pipe. When output exceeds the OS pipe buffer (~64 KB on macOS), e.g. a large
+ * `--json` or `--format sarif` report piped to a file or another process, the
  * tail is silently truncated, producing invalid JSON/SARIF. Waiting for the
  * `drain` event first guarantees the whole report is written.
  */
@@ -90,7 +90,7 @@ export async function buildProgram(): Promise<Command> {
   program
     .name('oauthlint')
     .description(
-      'OAuthLint — catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.',
+      'OAuthLint catch the OAuth/OIDC/JWT anti-patterns AI coding tools systematically produce.',
     )
     .version(version, '-v, --version')
     .option('--no-update-check', 'Do not check npm for a newer oauthlint version')
@@ -211,7 +211,7 @@ export async function buildProgram(): Promise<Command> {
   program
     .command('explain')
     .argument('<rule>', 'A rule id (auth.jwt.alg-none), slug (jwt-alg-none), or AUTH-JWT-001')
-    .description('Explain one rule — why it matters, the fix, and vulnerable/safe examples')
+    .description('Explain one rule, why it matters, the fix, and vulnerable/safe examples')
     .option('--json', 'Emit the structured rule object instead of pretty output')
     .action(async (rule: string, opts: { json?: boolean }) => {
       const code = await runExplain({ rule, json: opts.json });

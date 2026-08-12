@@ -52,6 +52,7 @@ OAuthLint meets your code where it already lives:
 - **GitHub Action**: PR annotations and SARIF upload to GitHub code scanning. It's Docker-based, so it runs for any language. → [GitHub Action](/docs/github-action)
 - **VS Code**: inline diagnostics as you type, with Quick Fix suppressions. → [VS Code extension](/docs/vscode)
 - **AI coding tools**: an MCP server so Claude Code, Cursor, Windsurf and others scan the auth code they generate, in the loop. → [MCP server](/docs/mcp)
+- **Building MCP servers**: a rule pack for OAuth 2.1 resource-server mistakes (token pass-through, missing audience binding, unauthenticated transports, tool-handler SSRF) plus a live `probe` command. → [Scanning MCP servers](/docs/mcp-server-auth)
 
 ## Tune it to your project
 

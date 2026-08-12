@@ -17,7 +17,7 @@ It runs as a [Model Context Protocol](https://modelcontextprotocol.io) server ov
 
 The server exposes four tools to the model:
 
-- **`scan_code`** scans an in-memory snippet. The model pastes the code it just wrote, names the language (`javascript`, `typescript`, `python`, `go`, `java` or `rust`), and gets the findings back. The snippet is written to a private temporary file, scanned, and the temporary file is removed. It never touches your working tree.
+- **`scan_code`** scans an in-memory snippet. The model pastes the code it just wrote, names the language (`javascript`, `typescript`, `python`, `go`, `java`, `rust`, `csharp`, `php`, `ruby` or `kotlin`), and gets the findings back. The snippet is written to a private temporary file, scanned, and the temporary file is removed. It never touches your working tree.
 - **`scan_path`** scans a real file or directory on disk.
 - **`explain_rule`** returns a rule's severity, CWE, OWASP mapping, why it matters, how to fix it, and vulnerable and safe examples (the same data as [`oauthlint explain`](/docs/cli)).
 - **`list_rules`** lists the shipped rules, optionally filtered by language and minimum severity.

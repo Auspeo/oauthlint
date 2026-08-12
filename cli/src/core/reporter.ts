@@ -86,7 +86,7 @@ export class Reporter {
   reportStart(target: string, ruleCount: number): void {
     if (this.json) return;
     const c = this.colors;
-    this.line(c.dim(`OAuthLint — scanning ${c.bold(target)}`));
+    this.line(c.dim(`OAuthLint scanning ${c.bold(target)}`));
     this.line(c.dim(`Loaded ${ruleCount} rules`));
     this.line('');
   }
@@ -188,7 +188,7 @@ export class Reporter {
     if (firstLine) this.line(c.dim('  → ') + firstLine);
     if (f.docUrl) this.line(c.dim(`  📖 ${f.docUrl}`));
     // Teaching hint: every finding points at the offline explainer. Pretty mode
-    // only — reportResult returns early under `--json`, and SARIF/HTML never
+    // only, reportResult returns early under `--json`, and SARIF/HTML never
     // touch the Reporter, so machine-readable output stays uncorrupted.
     this.line(c.dim(`  ↳ run \`oauthlint explain ${f.ruleId}\` for details + the fix`));
     this.line('');
@@ -196,7 +196,7 @@ export class Reporter {
 
   /**
    * Print a source code frame beneath the `file:line` line. Degrades gracefully
-   * — and silently — when the columns are missing (no precise span to point at)
+   *, and silently, when the columns are missing (no precise span to point at)
    * or the file can't be read, leaving the existing terse output intact.
    */
   private printCodeFrame(f: Finding): void {

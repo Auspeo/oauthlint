@@ -15,7 +15,7 @@ export async function runList(opts: ListOptions = {}): Promise<number> {
     return 0;
   }
 
-  out.write(pc.bold(`OAuthLint — ${manifest.length} rules\n`));
+  out.write(pc.bold(`OAuthLint ${manifest.length} rules\n`));
   out.write(`${pc.dim('─'.repeat(70))}\n`);
   for (const m of manifest) {
     const sev = badge(m.severity);

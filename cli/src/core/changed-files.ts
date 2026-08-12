@@ -2,7 +2,7 @@ import { extname } from 'node:path';
 import { execa } from 'execa';
 
 /**
- * Raised when a git operation can't be performed — most commonly because the
+ * Raised when a git operation can't be performed, most commonly because the
  * target directory is not inside a git work tree, or `git` itself is missing.
  * Callers (the scan command) translate this into a clean, non-crashing error
  * message rather than a stack trace.
@@ -52,7 +52,7 @@ export function isScannableSourceFile(file: string): boolean {
 
 /**
  * Run `git` with the given args as an ARRAY (never a shell string), so user
- * input — branch names, refs — can't be interpreted by a shell. `execa`
+ * input, branch names, refs, can't be interpreted by a shell. `execa`
  * spawns the process directly without `/bin/sh`, eliminating shell injection.
  *
  * @throws GitError when git is not installed or the command fails.
@@ -63,7 +63,7 @@ async function git(cwd: string, args: string[]): Promise<string> {
     return stdout;
   } catch (err) {
     if (isMissingGitBinary(err)) {
-      throw new GitError('git is not installed or not on PATH — cannot resolve changed files.');
+      throw new GitError('git is not installed or not on PATH, cannot resolve changed files.');
     }
     const stderr =
       typeof (err as { stderr?: unknown }).stderr === 'string'
@@ -105,10 +105,10 @@ async function assertGitRepo(cwd: string): Promise<void> {
  * branch only scans what it actually changed (not unrelated commits already on
  * the default branch). Resolution order:
  *
- *   1. `origin/HEAD` — the remote's default branch symref (most accurate)
+ *   1. `origin/HEAD`, the remote's default branch symref (most accurate)
  *   2. `origin/main`
  *   3. `origin/master`
- *   4. `HEAD` — fallback when there is no remote (diffs only the work tree)
+ *   4. `HEAD`, fallback when there is no remote (diffs only the work tree)
  *
  * For each candidate we use its merge-base with the current HEAD so the diff
  * is scoped to the branch's own changes.
@@ -119,7 +119,7 @@ async function resolveDefaultRef(cwd: string): Promise<string> {
       const base = (await git(cwd, ['merge-base', candidate, 'HEAD'])).trim();
       if (base) return base;
     } catch {
-      // candidate doesn't exist (no remote / different default) — try the next.
+      // candidate doesn't exist (no remote / different default), try the next.
     }
   }
   return 'HEAD';
@@ -150,7 +150,7 @@ function toAbsolute(root: string, relPaths: string[]): string[] {
  *
  * `--diff-filter=ACMR` keeps Added / Copied / Modified / Renamed and drops
  * Deleted files (we can't scan a file that no longer exists). Untracked files
- * are picked up separately because plain `git diff` only reports tracked paths —
+ * are picked up separately because plain `git diff` only reports tracked paths ,
  * a freshly written, un-`add`ed source file would otherwise be missed.
  *
  * @throws GitError when not in a git repo (or git is unavailable).
@@ -167,7 +167,7 @@ export async function resolveDiffFiles(cwd: string, ref?: string): Promise<strin
     git(cwd, ['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...`]),
     git(cwd, ['diff', '--name-only', '--diff-filter=ACMR']),
     git(cwd, ['diff', '--name-only', '--cached', '--diff-filter=ACMR']),
-    // Untracked (but not git-ignored) files — `git diff` never lists these.
+    // Untracked (but not git-ignored) files, `git diff` never lists these.
     git(cwd, ['ls-files', '--others', '--exclude-standard']),
   ]);
   for (const out of batches) {
