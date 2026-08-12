@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.app">
+    <application android:label="Example">
+
+        <!-- AppAuth's own redirect receiver: safe (library-managed) -->
+        <activity
+            android:name="net.openid.appauth.RedirectUriReceiverActivity"
+            android:exported="true"
+            tools:node="replace">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.example.app" android:host="oauth2redirect" />
+            </intent-filter>
+        </activity>
+
+        <!-- verified https App Link redirect: safe -->
+        <activity
+            android:name=".HttpsCallbackActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="app.example.com" android:path="/oauth2redirect" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

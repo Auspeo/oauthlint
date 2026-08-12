@@ -1,0 +1,42 @@
+rules:
+  - id: auth.swift.flow.oauth-in-wkwebview
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      An OAuth / OpenID authorization URL is loaded inside a `WKWebView`. Running
+      the login in an embedded web view lets the host app read the page (cookies,
+      form fields, redirect with the authorization code) and hides the real
+      origin from the user, defeating the isolation an external browser provides;
+      it is disallowed by Google and other providers (CWE-1204 / RFC 8252).
+      AI-generated flows load the provider's authorize endpoint straight into a
+      WKWebView because it is the most direct way to show a login screen.
+
+      Use `ASWebAuthenticationSession` (or `SFSafariViewController`), which runs
+      the authorization in the system browser with a shared, isolated session and
+      returns via your registered callback URL scheme.
+    patterns:
+      - pattern: '$WV.load($REQ)'
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: '(?i).*(oauth|/authorize|response_type=|client_id=|accounts\.google|login\.microsoftonline|appleid\.apple\.com|/o/oauth2)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-flow-oauth-in-wkwebview
+      category: security
+      cwe: CWE-1204
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - ios
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc8252
+        - https://cwe.mitre.org/data/definitions/1204.html

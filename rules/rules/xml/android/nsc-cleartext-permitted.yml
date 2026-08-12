@@ -1,0 +1,38 @@
+rules:
+  - id: auth.xml.android.nsc-cleartext-permitted
+    languages:
+      - xml
+    severity: WARNING
+    message: |
+      A network-security-config permits cleartext traffic
+      (`cleartextTrafficPermitted="true"`) in a `<base-config>` or in a
+      `<domain-config>` that is not restricted to a loopback dev host. This lets
+      HTTP run unencrypted for the covered domains, exposing OAuth tokens and API
+      credentials to on-path capture (CWE-319). AI-generated configs enable this
+      to unblock an http:// endpoint and leave it on for real hosts.
+
+      Set `cleartextTrafficPermitted="false"` (or rely on the API-28+ secure
+      default). If cleartext is genuinely needed for local development, scope it to
+      a `<domain-config>` that lists only loopback hosts (localhost / 10.0.2.2),
+      which is not flagged.
+    # base-config true is always flagged. A domain-config is flagged only when it
+    # is NOT scoped to a loopback dev host (localhost / 10.0.2.2).
+    patterns:
+      - pattern-either:
+          - pattern: <base-config cleartextTrafficPermitted="true">...</base-config>
+          - pattern: <domain-config cleartextTrafficPermitted="true">...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>localhost</domain>...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>10.0.2.2</domain>...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>127.0.0.1</domain>...</domain-config>
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-nsc-cleartext-permitted
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - android
+      references:
+        - https://developer.android.com/privacy-and-security/security-config#CleartextTrafficPermitted
+        - https://cwe.mitre.org/data/definitions/319.html

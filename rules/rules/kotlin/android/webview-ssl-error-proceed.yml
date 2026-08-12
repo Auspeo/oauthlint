@@ -1,0 +1,61 @@
+rules:
+  - id: auth.kotlin.android.webview-ssl-error-proceed
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A `WebViewClient.onReceivedSslError(...)` handler calls `handler.proceed()`,
+      telling the WebView to ignore a TLS certificate error and load the page
+      anyway. This disables certificate validation for that WebView: an on-path
+      attacker with any (expired, self-signed, wrong-host) certificate can serve
+      the login/OAuth page and harvest the credentials and tokens the user enters
+      (CWE-295). AI samples add `proceed()` to "make it work" against a dev server
+      with a self-signed cert.
+
+      Never proceed on an SSL error in production. Cancel the load so the invalid
+      certificate is rejected:
+        override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+            handler.cancel()
+        }
+      For a legitimately pinned/self-signed host, validate the certificate
+      explicitly before deciding.
+    # Matches the handler only when its body calls proceed(); a body that calls
+    # cancel() is excluded, so the correct rejection path never fires.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              override fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+          - pattern: |
+              fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+      - pattern-not: |
+          override fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
+      - pattern-not: |
+          fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-ssl-error-proceed
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - android
+      references:
+        - https://developer.android.com/privacy-and-security/risks/insecure-https
+        - https://cwe.mitre.org/data/definitions/295.html

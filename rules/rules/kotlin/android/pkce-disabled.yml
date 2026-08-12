@@ -1,0 +1,42 @@
+rules:
+  - id: auth.kotlin.android.pkce-disabled
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An AppAuth `AuthorizationRequest.Builder` explicitly disables PKCE with
+      `.setCodeVerifier(null)`. PKCE (RFC 7636) is what stops a malicious app that
+      has registered the same redirect URI, or an attacker who intercepts the
+      authorization code on a mobile device, from exchanging that code for tokens.
+      Turning it off on a public Android client re-opens the authorization-code
+      interception attack (CWE-345). AI samples pass `null` after seeing the
+      "disable PKCE if the server does not support it" comment in the AppAuth docs.
+
+      Leave PKCE on: simply do not call `setCodeVerifier`, and AppAuth's Builder
+      generates a code verifier automatically. Only pass an explicit verifier you
+      generated yourself — never `null`.
+    # AppAuth defaults to PKCE, so ABSENCE of setCodeVerifier is safe and a real
+    # verifier is safe; only the explicit null disables it. Scoped to a function
+    # that builds an AuthorizationRequest so the match is AppAuth-specific.
+    patterns:
+      - pattern: $B.setCodeVerifier(null)
+      - pattern-inside: |
+          fun $F(...) {
+            ...
+            AuthorizationRequest.Builder(...)
+            ...
+          }
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-pkce-disabled
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: LOW
+      technology:
+        - android
+        - appauth
+      references:
+        - https://github.com/openid/AppAuth-Android
+        - https://datatracker.ietf.org/doc/html/rfc7636
+        - https://cwe.mitre.org/data/definitions/345.html

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ruleid: auth.xml.android.hardcoded-secret-strings -->
+    <string name="client_secret">aRq83Kd9sLp2mZx7Qw1nB4vT</string>
+    <!-- ruleid: auth.xml.android.hardcoded-secret-strings -->
+    <string name="api_key">sk_live_9f83jd0292kfovnw83hd</string>
+    <!-- ruleid: auth.xml.android.hardcoded-secret-strings -->
+    <string name="google_maps_api_key">AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY</string>
+</resources>
