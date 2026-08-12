@@ -1,0 +1,57 @@
+rules:
+  - id: auth.xml.android.exported-oauth-redirect
+    languages:
+      - xml
+    severity: WARNING
+    message: |
+      An exported activity registers a BROWSABLE intent-filter for a custom-scheme
+      OAuth redirect (`android:scheme="com.example.app"` with an oauth/callback/
+      redirect host). Custom URI schemes are not owned by any one app: a malicious
+      app can register the same scheme and intercept the authorization-code
+      redirect, capturing the code (CWE-926). AI-generated manifests wire the OAuth
+      callback to a hand-rolled exported activity on a custom scheme.
+
+      Prefer a verified HTTPS App Link (`android:scheme="https"` with
+      `android:autoVerify="true"`), which only your app — proven via Digital Asset
+      Links — can claim. If you use AppAuth, let its
+      `net.openid.appauth.RedirectUriReceiverActivity` handle the redirect (not
+      flagged), and always pair the flow with PKCE so an intercepted code is
+      useless.
+    # Custom-scheme (non-http/https) BROWSABLE redirect on an exported activity
+    # whose host hints at OAuth. AppAuth's RedirectUriReceiverActivity and verified
+    # https App Links are excluded.
+    patterns:
+      - pattern: |
+          <activity ... android:exported="true" ...>
+            ...
+            <intent-filter ...>
+              ...
+              <category android:name="android.intent.category.BROWSABLE" />
+              ...
+              <data android:scheme="$S" android:host="$H" ... />
+              ...
+            </intent-filter>
+            ...
+          </activity>
+      - metavariable-regex:
+          metavariable: $H
+          regex: '(?i).*(oauth|callback|redirect).*'
+      - pattern-not: |
+          <activity android:name="net.openid.appauth.RedirectUriReceiverActivity" ...>...</activity>
+      - pattern-not: |
+          <activity ...>...<data android:scheme="https" ... />...</activity>
+      - pattern-not: |
+          <activity ...>...<data android:scheme="http" ... />...</activity>
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-exported-oauth-redirect
+      category: security
+      cwe: CWE-926
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - android
+      references:
+        - https://developer.android.com/training/app-links
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-8.6
+        - https://cwe.mitre.org/data/definitions/926.html

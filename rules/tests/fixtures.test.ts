@@ -55,6 +55,8 @@ const LANG_DIRS: Record<string, { ext: string }> = {
   php: { ext: 'php' },
   ruby: { ext: 'rb' },
   kotlin: { ext: 'kt' },
+  swift: { ext: 'swift' },
+  xml: { ext: 'xml' },
 };
 
 function langOf(dir: string): { lang: string; ext: string } | null {
@@ -81,10 +83,11 @@ function fixtureKinds(dir: string): [string, string] {
 }
 
 function expectedCount(file: string): number {
-  // `// ruleid:` (JS/TS) or `# ruleid:` (Python) — count annotated cases.
+  // `// ruleid:` (JS/TS, Swift, ...), `# ruleid:` (Python, Ruby), or
+  // `<!-- ruleid:` (XML) — count annotated cases.
   return readFileSync(file, 'utf8')
     .split('\n')
-    .filter((line) => /(?:\/\/|#)\s*ruleid:/.test(line)).length;
+    .filter((line) => /(?:\/\/|#|<!--)\s*ruleid:/.test(line)).length;
 }
 
 async function scanCount(ruleFile: string, target: string): Promise<number> {

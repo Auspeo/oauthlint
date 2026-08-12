@@ -1,0 +1,41 @@
+rules:
+  - id: auth.swift.storage.token-in-appstorage
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      A token, secret, or credential is bound to `@AppStorage`. `@AppStorage` is
+      a thin SwiftUI wrapper over `UserDefaults`, so the value lands in an
+      unencrypted on-disk plist that is readable from a device backup, a
+      jailbroken device, or the simulator container (CWE-312). AI-generated
+      SwiftUI code reaches for `@AppStorage` for persistence and unknowingly
+      stores authentication material in the clear.
+
+      Keep `@AppStorage` for non-sensitive UI preferences. Store secrets in the
+      Keychain (Security framework or a wrapper) and read them into memory when
+      needed instead of persisting them through `@AppStorage`.
+    patterns:
+      - pattern: '@AppStorage($K) var $N = $D'
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-STORAGE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-storage-token-in-appstorage
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      technology:
+        - swiftui
+      references:
+        - https://developer.apple.com/documentation/swiftui/appstorage
+        - https://cwe.mitre.org/data/definitions/312.html

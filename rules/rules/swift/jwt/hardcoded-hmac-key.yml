@@ -1,0 +1,39 @@
+rules:
+  - id: auth.swift.jwt.hardcoded-hmac-key
+    languages:
+      - swift
+    severity: ERROR
+    message: |
+      A JWTKit HMAC signing key is registered from a hard-coded string literal
+      (`add(hmac: "...", ...)`). `HMACKey` is `ExpressibleByStringLiteral`, so the
+      literal becomes the key that signs and verifies every token: committed to
+      source control it is one search away from compromise, letting an attacker
+      forge a token for any user or role (CWE-798). AI-generated Vapor/JWTKit
+      samples inline the secret to make the snippet "just work".
+
+      Read the key from the environment or a secret store instead, e.g.
+      `add(hmac: HMACKey(from: Environment.get("JWT_KEY")!), digestAlgorithm: .sha256)`,
+      and rotate the leaked secret out of source control.
+    patterns:
+      - pattern: '$X.add(hmac: "...", ...)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-jwt-hardcoded-hmac-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - vapor
+        - jwt-kit
+      references:
+        - https://github.com/vapor/jwt-kit
+        - https://cwe.mitre.org/data/definitions/798.html
