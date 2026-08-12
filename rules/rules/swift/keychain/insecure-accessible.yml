@@ -1,0 +1,40 @@
+rules:
+  - id: auth.swift.keychain.insecure-accessible
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      A Keychain item is created with `kSecAttrAccessibleAlways` (or
+      `kSecAttrAccessibleAlwaysThisDeviceOnly`). "Always" accessibility means the
+      item is readable even while the device is locked, widening the window in
+      which a lost or seized device can leak the stored credential; both
+      constants are deprecated by Apple for exactly this reason (CWE-311).
+      AI-generated Keychain snippets often pick "Always" as the most permissive
+      option so the sample never fails to read.
+
+      Use the most restrictive class that still works for your access pattern,
+      e.g. `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, so the item is
+      available only while the device is unlocked and never syncs off-device.
+    pattern-either:
+      - pattern: kSecAttrAccessibleAlways
+      - pattern: kSecAttrAccessibleAlwaysThisDeviceOnly
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-KEYCHAIN-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-keychain-insecure-accessible
+      category: security
+      cwe: CWE-311
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - ios
+      references:
+        - https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly
+        - https://cwe.mitre.org/data/definitions/311.html

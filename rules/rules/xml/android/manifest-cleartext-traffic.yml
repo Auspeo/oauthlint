@@ -1,0 +1,30 @@
+rules:
+  - id: auth.xml.android.manifest-cleartext-traffic
+    languages:
+      - xml
+    severity: ERROR
+    message: |
+      The manifest sets `android:usesCleartextTraffic="true"` on `<application>`,
+      re-enabling plaintext HTTP for the entire app. Every network call — including
+      OAuth token exchanges and API requests carrying bearer tokens — may then run
+      over cleartext and be captured by an on-path attacker (CWE-319). On API 28+
+      cleartext is off by default; AI-generated manifests flip this flag back on to
+      "fix" a connection to an http:// dev endpoint and ship it that way.
+
+      Remove the attribute (leave the secure default) or set it to `false`, and if a
+      specific host genuinely needs cleartext during development, scope it with a
+      network-security-config `<domain-config>` instead of enabling it app-wide.
+    patterns:
+      - pattern: <application android:usesCleartextTraffic="true" ...>...</application>
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-manifest-cleartext-traffic
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - android
+      references:
+        - https://developer.android.com/guide/topics/manifest/application-element#usesCleartextTraffic
+        - https://cwe.mitre.org/data/definitions/319.html

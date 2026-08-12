@@ -1,0 +1,38 @@
+rules:
+  - id: auth.kotlin.android.webview-oauth
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An OAuth authorization URL is loaded inside an in-app `WebView`
+      (`webView.loadUrl("...authorize?client_id=...")`). Embedded WebViews are an
+      anti-pattern for OAuth: the host app can read the user's credentials and
+      the session cookie, there is no shared SSO session with the system browser,
+      and providers such as Google reject WebView auth outright (CWE-522). AI
+      samples reach for a WebView because it is the simplest way to "show the
+      login page".
+
+      Use an external user-agent instead: Chrome Custom Tabs
+      (`CustomTabsIntent`) or, for full OAuth/PKCE, AppAuth's
+      `AuthorizationService.performAuthorizationRequest(...)`, which hands the
+      flow to the system browser and returns via a redirect URI.
+    # Fires only when the loaded URL literal names an authorization endpoint /
+    # OAuth parameter. A WebView loading a non-auth page does not match.
+    patterns:
+      - pattern: $WV.loadUrl($URL)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: '(?i).*(/authorize|oauth|/auth\?|response_type|client_id=).*'
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-oauth
+      category: security
+      cwe: CWE-522
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      technology:
+        - android
+      references:
+        - https://developer.android.com/training/basics/intents/custom-tabs
+        - https://github.com/openid/AppAuth-Android
+        - https://cwe.mitre.org/data/definitions/522.html
