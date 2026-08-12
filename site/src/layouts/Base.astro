@@ -265,6 +265,42 @@ const jsonLd = {
       }
     </script>
 
+    <!-- Copy-to-clipboard for the install command. The command lives in the
+         sibling span; on click we write it and flash a brief green confirmation,
+         then restore the button. Fails silently where the Clipboard API is
+         unavailable (the command stays visible to select by hand). -->
+    <script>
+      for (const btn of document.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label="Copy install command"]',
+      )) {
+        const label = btn.querySelector('span');
+        const cmd = btn.previousElementSibling?.textContent?.trim() ?? '';
+        if (!label || !cmd) continue;
+        const original = label.textContent;
+        const originalColor = btn.style.color;
+        const originalBorder = btn.style.borderColor;
+        let resetTimer = 0;
+        btn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(cmd);
+          } catch {
+            return;
+          }
+          label.textContent = '✓ copied';
+          btn.style.color = 'var(--ol-sev-pass)';
+          btn.style.borderColor = 'var(--ol-sev-pass)';
+          btn.setAttribute('aria-label', 'Command copied to clipboard');
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            label.textContent = original;
+            btn.style.color = originalColor;
+            btn.style.borderColor = originalBorder;
+            btn.setAttribute('aria-label', 'Copy install command');
+          }, 1600);
+        });
+      }
+    </script>
+
     <!-- Scroll reveal: sections fade up as they enter the viewport. One restrained
          motion idea, not scattered effects. Gated on prefers-reduced-motion and on
          IntersectionObserver; the `html.js section` CSS only hides when JS is on, so
