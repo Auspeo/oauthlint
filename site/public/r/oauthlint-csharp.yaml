@@ -1,0 +1,975 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# csharp subset — 22 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.csharp.cookie.httponly-false
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie is created with `HttpOnly = false`, making it readable from
+      client-side JavaScript. If the site has any XSS, an injected script can
+      read the auth/session cookie via `document.cookie` and exfiltrate the
+      session (CWE-1004). This is a common AI-generated change made so JS can
+      "see" the cookie, which needlessly removes a key defense.
+
+      Set `HttpOnly = true` on authentication and session cookies so they are not
+      exposed to scripts. If the browser must read a value, keep it in a separate
+      non-sensitive cookie rather than weakening the session cookie.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-httponly-false
+      category: security
+      cwe: CWE-1004
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/1004.html
+      technology:
+        - aspnetcore
+        - cookies
+    pattern: HttpOnly = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.cookie.samesite-none
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A cookie is set to `SameSite = SameSiteMode.None`, which removes the SameSite
+      defense and sends the cookie on cross-site requests. For an authentication or
+      session cookie this re-opens the CSRF surface that `Lax`/`Strict` closes, and
+      `None` is only safe when the cookie is also marked `Secure` (browsers reject
+      `SameSite=None` without it) (CWE-1275). This is a common AI-generated change
+      made to get a cookie flowing in an embedded/cross-site scenario.
+
+      Leave auth/session cookies at `SameSiteMode.Lax` (the framework default) or
+      `SameSiteMode.Strict`. Only use `SameSiteMode.None` for a genuinely
+      cross-site cookie, and when you do, also set `Secure = true` and rely on
+      anti-forgery tokens for CSRF protection.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-samesite-none
+      category: security
+      cwe: CWE-1275
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/samesite
+        - https://cwe.mitre.org/data/definitions/1275.html
+      technology:
+        - aspnetcore
+        - cookies
+    pattern-either:
+      - pattern: SameSite = SameSiteMode.None
+      - pattern: $X.SameSite = SameSiteMode.None
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.cookie.secure-policy-none
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A cookie policy is set to `SecurePolicy = CookieSecurePolicy.None`, which
+      lets authentication and session cookies be sent over plain HTTP. On any
+      non-HTTPS hop an on-path attacker can read the cookie and hijack the
+      session (CWE-614). This is a common AI-generated shortcut to get cookies
+      working over `http://localhost` that then ships to production.
+
+      Use `CookieSecurePolicy.Always` so the `Secure` attribute is set and the
+      cookie is only transmitted over HTTPS. Prefer `Always` over `SameAsRequest`
+      for auth cookies.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-COOKIE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-secure-policy-none
+      category: security
+      cwe: CWE-614
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/cookie
+        - https://cwe.mitre.org/data/definitions/614.html
+      technology:
+        - aspnetcore
+        - cookies
+    pattern-either:
+      - pattern: SecurePolicy = CookieSecurePolicy.None
+      - pattern: $X.SecurePolicy = CookieSecurePolicy.None
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.cors.reflect-any-origin-credentials
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A CORS policy combines credentialed requests with a wildcard or reflected
+      origin (`AllowCredentials()` together with `AllowAnyOrigin()` or
+      `SetIsOriginAllowed(...)` that returns true for everything). This lets any
+      website make cross-origin requests carrying the user's cookies and read the
+      response, which is a cross-site data-theft and CSRF primitive (CWE-942).
+      This is a common AI-generated mistake made to "just make CORS work".
+
+      Never pair `AllowCredentials()` with a wildcard/reflected origin. Pin an
+      explicit allow-list with `WithOrigins("https://app.example.com")` and only
+      then call `AllowCredentials()`.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cors-reflect-any-origin-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/cors
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - aspnetcore
+        - cors
+    patterns:
+      - pattern-either:
+          - pattern: $B.SetIsOriginAllowed(...).AllowCredentials()
+          - pattern: $B.AllowCredentials().SetIsOriginAllowed(...)
+          - pattern: $B.AllowAnyOrigin().AllowCredentials()
+          - pattern: $B.AllowCredentials().AllowAnyOrigin()
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.crypto.ecb-mode
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A symmetric cipher is configured with `CipherMode.ECB`. ECB encrypts each
+      block independently, so identical plaintext blocks produce identical
+      ciphertext, leaking structure and enabling block-shuffling attacks
+      (CWE-327). This matters for anything auth-related: encrypted tokens,
+      cookies, or credentials.
+
+      Use an authenticated mode instead: prefer AES-GCM
+      (`AesGcm`) or, failing that, CBC with a random IV and a separate MAC.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CRYPTO-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-crypto-ecb-mode
+      category: security
+      cwe: CWE-327
+      owasp: A02:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://cwe.mitre.org/data/definitions/327.html
+      technology:
+        - dotnet
+    patterns:
+      - pattern-either:
+          - pattern: $X.Mode = System.Security.Cryptography.CipherMode.ECB
+          - pattern: $X.Mode = CipherMode.ECB
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+  - id: auth.csharp.crypto.insecure-random
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A security-sensitive value is generated with `System.Random` or
+      `Guid.NewGuid()` inside a token/secret/OTP generator. `System.Random` is a
+      non-cryptographic PRNG seeded from the clock: its output is predictable and
+      its state is recoverable from a few samples, so an attacker can reconstruct
+      the "random" secret (CWE-338). `Guid.NewGuid()` is not guaranteed to be
+      cryptographically random either. AI tools paste these in because they look
+      random enough.
+
+      Use `System.Security.Cryptography.RandomNumberGenerator` instead, e.g.
+      `RandomNumberGenerator.GetBytes(32)` (then Base64/hex encode) or
+      `RandomNumberGenerator.GetInt32(...)`.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CRYPTO-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-crypto-insecure-random
+      category: security
+      cwe: CWE-338
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/dotnet/api/system.security.cryptography.randomnumbergenerator
+        - https://cwe.mitre.org/data/definitions/338.html
+      technology:
+        - dotnet
+    patterns:
+      - pattern-either:
+          - pattern: new System.Random(...)
+          - pattern: new Random(...)
+          - pattern: Guid.NewGuid()
+          - pattern: System.Guid.NewGuid()
+      - pattern-inside: |
+          $RET $METHOD(...) { ... }
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: (?i).*(token|secret|otp|apikey|api_?key|reset|nonce|passcode|verificationcode|salt).*
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+  - id: auth.csharp.crypto.weak-password-hash
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A password is hashed with a fast general-purpose digest (`MD5`, `SHA1`,
+      `SHA256`, `SHA512`) from System.Security.Cryptography. These are designed to
+      be fast, which makes offline brute-force and rainbow-table attacks cheap;
+      they are NOT suitable for storing passwords (CWE-916).
+
+      Use ASP.NET Core Identity's `PasswordHasher<TUser>`, or a slow, salted
+      password KDF: PBKDF2 (`Rfc2898DeriveBytes` with a high iteration count),
+      bcrypt, or Argon2.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-CRYPTO-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-crypto-weak-password-hash
+      category: security
+      cwe: CWE-916
+      owasp: A02:2021
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/data-protection/consumer-apis/password-hashing
+        - https://cwe.mitre.org/data/definitions/916.html
+      technology:
+        - dotnet
+    patterns:
+      - pattern-either:
+          - pattern: System.Security.Cryptography.MD5.HashData($PW)
+          - pattern: MD5.HashData($PW)
+          - pattern: SHA1.HashData($PW)
+          - pattern: SHA256.HashData($PW)
+          - pattern: SHA512.HashData($PW)
+          - pattern: $H.ComputeHash($PW)
+      - metavariable-regex:
+          metavariable: $PW
+          regex: (?i).*(password|passwd|pwd|passphrase).*
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+  - id: auth.csharp.flow.open-redirect
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A redirect target comes straight from user input (a query-string value or a
+      `returnUrl`-style parameter) and is passed to `Redirect(...)` without a
+      local-URL check. An attacker can craft a link that bounces the victim to an
+      external phishing site after login, and this is the classic OAuth/OIDC
+      `returnUrl` open-redirect (CWE-601).
+
+      Validate the target before redirecting: use `Url.IsLocalUrl(returnUrl)` (or
+      `LocalRedirect(returnUrl)`, which throws on a non-local URL) so only
+      same-application paths are allowed.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-flow-open-redirect
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/preventing-open-redirects
+        - https://cwe.mitre.org/data/definitions/601.html
+      technology:
+        - aspnetcore
+    patterns:
+      - pattern-either:
+          - pattern: Redirect(Request.Query[$K])
+          - pattern: Redirect(Request.Query[$K].ToString())
+          - patterns:
+              - pattern-either:
+                  - pattern: Redirect($URL)
+                  - pattern: RedirectPermanent($URL)
+              - metavariable-regex:
+                  metavariable: $URL
+                  regex: (?i)^(returnurl|redirecturl|redirect_uri|returnto|next|url)$
+      - pattern-not-inside: |
+          if (Url.IsLocalUrl(...)) { ... }
+      - pattern-not-inside: |
+          if ($U.IsLocalUrl(...)) { ... }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*Test.cs"
+        - "**/*Tests.cs"
+  - id: auth.csharp.jwt.hardcoded-symmetric-key
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT signing key is built from a hard-coded string literal
+      (`new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))`). This key signs
+      and verifies every token: committed to source control it is one search away
+      from compromise, letting an attacker forge tokens for any user or role
+      (CWE-798). This is a common AI-generated mistake: a literal secret is
+      inlined to make the sample "just work" and never externalized.
+
+      Load the key from configuration or a secret store instead (e.g.
+      `Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])` or a value read
+      from Azure Key Vault / environment) and rotate the leaked secret out of
+      source control.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-hardcoded-symmetric-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/app-secrets
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern-either:
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.UTF8.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes("..."))
+          - pattern: new SymmetricSecurityKey(Encoding.ASCII.GetBytes("..."))
+      - pattern-not-regex: (?i)GetBytes\(\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)GetBytes\(\s*["']<[^"']*>["']
+      - pattern-not-regex: (?i)GetBytes\(\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.read-without-validation
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A JWT is decoded with a read-only API that performs NO validation
+      (`new JwtSecurityToken(tokenString)`, `handler.ReadJwtToken(...)`, or
+      `new JsonWebToken(tokenString)`). These constructors/methods only parse the
+      token; they do not check the signature, issuer, audience, or expiry. Trusting
+      the claims that come back lets an attacker forge any identity or role by
+      hand-crafting an unsigned token (CWE-345). This is a common AI-generated
+      shortcut for "reading the user id from the token" that silently skips
+      verification.
+
+      Validate the token before trusting its claims: call
+      `handler.ValidateToken(token, tokenValidationParameters, out var validated)`
+      (or `await handler.ValidateTokenAsync(...)`) and read claims from the
+      validated result. Only parse a token unvalidated when you are inspecting a
+      token you just issued, never one received from a client.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-read-without-validation
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler.validatetoken
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern-either:
+          - pattern: new System.IdentityModel.Tokens.Jwt.JwtSecurityToken($T)
+          - pattern: new JwtSecurityToken($T)
+          - pattern: new Microsoft.IdentityModel.JsonWebTokens.JsonWebToken($T)
+          - pattern: new JsonWebToken($T)
+          - pattern: $H.ReadJwtToken(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.require-expiration-disabled
+    languages:
+      - csharp
+    severity: WARNING
+    message: |
+      A JWT setup sets `RequireExpirationTime = false` on
+      `TokenValidationParameters`. Tokens without an `exp` claim are then accepted,
+      so a leaked or stolen token stays valid forever: it can never expire or be
+      timed out (CWE-613). This is a common AI-generated shortcut to accept tokens
+      that happen to omit `exp`.
+
+      Leave `RequireExpirationTime` at its secure default (`true`) and keep
+      `ValidateLifetime = true` so every token must carry an `exp` claim and is
+      rejected once it lapses.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-require-expiration-disabled
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.requireexpirationtime
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    pattern-either:
+      - pattern: RequireExpirationTime = false
+      - pattern: $X.RequireExpirationTime = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.require-signed-tokens-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT setup sets `RequireSignedTokens = false` on
+      `TokenValidationParameters`. With signed tokens no longer required, an
+      unsigned token (`alg: none`, empty signature segment) is returned by the
+      handler as valid, so an attacker can forge tokens with arbitrary claims and
+      no key at all (CWE-347). This is a common AI-generated shortcut to get past a
+      "token is not signed" error during local wiring.
+
+      Leave `RequireSignedTokens` at its secure default (`true`) so every accepted
+      token must carry a signature that verifies against a trusted key
+      (`IssuerSigningKey` / keys from OIDC metadata).
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-008
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-require-signed-tokens-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.requiresignedtokens
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    pattern-either:
+      - pattern: RequireSignedTokens = false
+      - pattern: $X.RequireSignedTokens = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.signature-validator-bypass
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A custom `SignatureValidator` on `TokenValidationParameters` returns a parsed
+      token WITHOUT verifying its signature: it just constructs and returns
+      `new JwtSecurityToken(token)` / `new JsonWebToken(token)`. Because the
+      delegate replaces the built-in signature check, any token (including an
+      unsigned or attacker-forged one) is accepted, letting an attacker impersonate
+      any user or role (CWE-347). This is a well-known "make validation pass" hack
+      that AI assistants reproduce from blog posts.
+
+      Remove the custom `SignatureValidator` and let the handler verify signatures
+      with `IssuerSigningKey` / `IssuerSigningKeys` (or keys resolved from OIDC
+      metadata). If you truly need a custom validator, it must cryptographically
+      verify the signature and throw on failure, never return a freshly parsed
+      token unchecked.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-signature-validator-bypass
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/dotnet/api/microsoft.identitymodel.tokens.tokenvalidationparameters.signaturevalidator
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern-either:
+          - pattern: SignatureValidator = ($TOK, $P) => new JwtSecurityToken(...)
+          - pattern: SignatureValidator = ($TOK, $P) => new JsonWebToken(...)
+          - pattern: |
+              SignatureValidator = ($TOK, $P) => { ... return new JwtSecurityToken(...); ... }
+          - pattern: |
+              SignatureValidator = ($TOK, $P) => { ... return new JsonWebToken(...); ... }
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-audience-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables audience validation
+      (`ValidateAudience = false`) on `TokenValidationParameters`. With the
+      audience unchecked, a token that was minted for a different API or client
+      is accepted here, turning this service into a confused deputy and enabling
+      cross-service token replay (CWE-287). This is a common AI-generated
+      shortcut: validation is switched off to silence an `aud` mismatch during
+      wiring and never restored.
+
+      Leave `ValidateAudience` at its secure default (`true`) and pin the
+      expected audience with `ValidAudience` (or `ValidAudiences`) so only tokens
+      issued for this API are honored.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-audience-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateAudience = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-issuer-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables issuer validation
+      (`ValidateIssuer = false`) on `TokenValidationParameters`. With the issuer
+      unchecked, a token from any issuer or identity provider is accepted, so an
+      attacker who controls (or spins up) any IdP can mint tokens this service
+      will trust (CWE-287). This is a common AI-generated shortcut: the check is
+      disabled to get past an `iss` mismatch during setup and never restored.
+
+      Leave `ValidateIssuer` at its secure default (`true`) and pin the expected
+      issuer with `ValidIssuer` (or `ValidIssuers`) so only tokens from your own
+      authority are honored.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-issuer-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateIssuer = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-lifetime-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables lifetime validation
+      (`ValidateLifetime = false`) on `TokenValidationParameters`. With the
+      lifetime unchecked, expired tokens are accepted forever, so a leaked or
+      revoked token never stops working and cannot be timed out (CWE-613). This
+      is a common AI-generated shortcut: expiry checks are turned off to stop a
+      short-lived test token from failing and then left disabled.
+
+      Leave `ValidateLifetime` at its secure default (`true`) so the `exp` (and
+      `nbf`) claims are enforced. If clock drift is the real problem, set a small
+      `ClockSkew` instead of disabling the check.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-lifetime-disabled
+      category: security
+      cwe: CWE-613
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/613.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    patterns:
+      - pattern: ValidateLifetime = false
+      - pattern-inside: $A.AddJwtBearer(...)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.jwt.validate-signing-key-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      A JWT bearer setup disables signature validation
+      (`ValidateIssuerSigningKey = false`) on `TokenValidationParameters`. With
+      the signing key unchecked, a token carrying any signature (or none) is
+      accepted, so an attacker can forge a token for any user or role (CWE-347).
+      This is a frequent AI-generated shortcut: validation is turned off to get
+      past a local key-setup error and never turned back on.
+
+      Leave `ValidateIssuerSigningKey` at its secure default (`true`) and supply
+      the real key via `IssuerSigningKey` / `IssuerSigningKeys`, loaded from the
+      OIDC metadata or configuration rather than hard-coded.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-jwt-validate-signing-key-disabled
+      category: security
+      cwe: CWE-347
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/jwt-authn
+        - https://cwe.mitre.org/data/definitions/347.html
+      technology:
+        - aspnetcore
+        - jwt-bearer
+    pattern: ValidateIssuerSigningKey = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.hardcoded-client-secret
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OAuth/OIDC client secret is assigned from a hard-coded string literal
+      (`options.ClientSecret = "..."`). This secret authenticates the whole
+      application to the identity provider: committed to source control it is one
+      search away from letting an attacker impersonate the app, redeem codes, and
+      obtain tokens (CWE-798). This is a common AI-generated mistake: the literal
+      secret is inlined to make the sample "just work" and never externalized.
+
+      Read it from configuration or a secret store instead (e.g.
+      `options.ClientSecret = builder.Configuration["Authentication:ClientSecret"]`
+      or a value from Azure Key Vault / environment) and rotate the leaked
+      secret out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-hardcoded-client-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/app-secrets
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    patterns:
+      - pattern: $O.ClientSecret = "..."
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["']\$\{?[A-Za-z_]+\}?["']
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["']<[^"']*>["']
+      - pattern-not-regex: (?i)ClientSecret\s*=\s*["'](?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.pkce-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OpenID Connect handler turns PKCE off (`UsePkce = false`). Without
+      Proof Key for Code Exchange, an authorization code intercepted on the
+      redirect (a malicious app, a leaked URL, a network hop) can be redeemed by
+      the attacker, defeating the code-flow protection that PKCE provides
+      (CWE-287). This is a common AI-generated change made to work around a
+      provider quirk and never reverted.
+
+      Leave PKCE enabled: it is the modern default (`UsePkce = true`) and is
+      required for public clients. Fix the underlying provider configuration
+      rather than disabling the proof key.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-pkce-disabled
+      category: security
+      cwe: CWE-287
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/287.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    pattern-either:
+      - pattern: UsePkce = false
+      - pattern: $X.UsePkce = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.oauth.require-https-metadata-disabled
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      An OIDC/JWT bearer handler disables HTTPS for its metadata and token
+      exchange (`RequireHttpsMetadata = false`). The discovery document, JWKS,
+      and token traffic can then travel over plain HTTP, where an on-path
+      attacker can swap signing keys or tokens and defeat the whole trust chain
+      (CWE-319). This is a common AI-generated leftover from local development
+      that ships to production.
+
+      Leave `RequireHttpsMetadata` at its secure default (`true`). If you truly
+      need cleartext for local development only, guard it behind an environment
+      check such as `env.IsDevelopment()` so production stays on HTTPS.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-OAUTH-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-oauth-require-https-metadata-disabled
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/security/authentication/configure-oidc-web-authentication
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - aspnetcore
+        - openid-connect
+    pattern-either:
+      - pattern: RequireHttpsMetadata = false
+      - pattern: $X.RequireHttpsMetadata = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.tls.disable-cert-validation
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      TLS server-certificate validation is turned off: the handler accepts any
+      certificate via `DangerousAcceptAnyServerCertificateValidator` or a
+      callback that always returns `true`. With validation bypassed, an on-path
+      attacker presenting a forged or self-signed certificate is trusted, and the
+      entire TLS protection (including any OAuth token in transit) is defeated
+      (CWE-295). This is a common AI-generated shortcut to silence a certificate
+      error during development.
+
+      Remove the override and let the system trust store validate the
+      certificate. If a private CA is involved, install/trust that CA rather than
+      accepting all certificates; scope any relaxed check to a single pinned host
+      in development only.
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-TLS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-tls-disable-cert-validation
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - aspnetcore
+        - httpclient
+    pattern-either:
+      - pattern: $R.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+      - pattern: $R.ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: ServerCertificateCustomValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateCustomValidationCallback = $X => true
+      - pattern: ServerCertificateCustomValidationCallback = $X => true
+      - pattern: $R.RemoteCertificateValidationCallback = (...) => true
+      - pattern: RemoteCertificateValidationCallback = (...) => true
+      - pattern: $R.RemoteCertificateValidationCallback = $X => true
+      - pattern: RemoteCertificateValidationCallback = $X => true
+      - pattern: $R.ServerCertificateValidationCallback = (...) => true
+      - pattern: ServerCertificateValidationCallback = (...) => true
+      - pattern: $R.ServerCertificateValidationCallback = $X => true
+      - pattern: ServerCertificateValidationCallback = $X => true
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"
+  - id: auth.csharp.web.authentication-after-authorization
+    languages:
+      - csharp
+    severity: ERROR
+    message: |
+      The middleware pipeline calls `UseAuthorization()` BEFORE
+      `UseAuthentication()`. ASP.NET Core requires authentication to run first so
+      that `HttpContext.User` is populated before authorization evaluates policies;
+      in the reverse order authorization sees an unauthenticated, anonymous user,
+      which either blocks legitimate users or, with a permissive fallback policy,
+      lets requests through unauthenticated (CWE-696). This is a common
+      AI-generated ordering mistake when wiring up `Program.cs`.
+
+      Register the middleware in the correct order: call
+      `app.UseAuthentication();` immediately before `app.UseAuthorization();` (both
+      after `UseRouting()` and before the endpoint mapping).
+    metadata:
+      oauthlint-rule-id: AUTH-CSHARP-WEB-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/csharp-web-authentication-after-authorization
+      category: security
+      cwe: CWE-696
+      owasp: API1:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://learn.microsoft.com/aspnet/core/fundamentals/middleware
+        - https://cwe.mitre.org/data/definitions/696.html
+      technology:
+        - aspnetcore
+    patterns:
+      - pattern: |
+          $APP.UseAuthorization();
+          ...
+          $APP.UseAuthentication();
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/*.Tests/**"
+        - "**/*.Test/**"
+        - "**/samples/**"
+        - "**/sandbox/**"
+        - "**/example/**"
+        - "**/examples/**"
+        - "**/demo/**"
+        - "**/benchmark/**"

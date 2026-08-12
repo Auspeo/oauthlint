@@ -123,7 +123,9 @@ const { body: bodyBlocks } = titleAndBody(rule.message);
 const titleHtml = renderInline(rule.title);
 
 // Disable directive comment uses language-appropriate comment syntax.
-const isHashComment = rule.languages.some((l) => l === 'python' || l === 'rust');
+// Python and Ruby use `#`; everything else we ship (JS/TS, Go, Java, Rust,
+// C#, PHP, Kotlin) uses `//`.
+const isHashComment = rule.languages.some((l) => l === 'python' || l === 'ruby');
 const commentPrefix = isHashComment ? '#' : '//';
 
 const codeFont =

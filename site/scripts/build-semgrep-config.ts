@@ -44,6 +44,7 @@ const LANGUAGE_SUBSETS = [
   'go',
   'java',
   'rust',
+  'csharp',
   'php',
   'ruby',
   'kotlin',
