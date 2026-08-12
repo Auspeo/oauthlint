@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# kotlin subset — 6 rules.
+# kotlin subset — 12 rules.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -13,6 +13,250 @@
 # Generated from the oauthlint-rules pack. Do not edit by hand.
 
 rules:
+  - id: auth.kotlin.android.cleartext-auth-url
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An authentication / OAuth endpoint is called over cleartext `http://`. Any
+      token, authorization code, or credential exchanged with that endpoint
+      crosses the network unencrypted and is trivially captured on a hostile
+      Wi-Fi or by an on-path attacker (CWE-319). AI-generated samples default to
+      `http://` because it "works" against a local test server and the scheme is
+      never upgraded for production hosts.
+
+      Use `https://` for every auth endpoint:
+        val tokenUrl = "https://accounts.example.com/oauth/token"
+      Cleartext to a local loopback host (localhost / 127.0.0.1 / 10.0.2.2) during
+      development is not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-cleartext-auth-url
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/privacy-and-security/security-config
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - android
+    patterns:
+      - pattern-regex: (?i)"http://[^"\s]*(oauth|token|authorize|signin|/auth|/login)
+      - pattern-not-regex: '"http://(localhost|127\.0\.0\.1|10\.0\.2\.2)'
+  - id: auth.kotlin.android.hardcoded-secret
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      An OAuth client secret / API key / password is assigned from a hard-coded
+      string literal. A secret shipped inside an APK is trivially recovered by
+      decompiling the app, so a "confidential" client secret embedded in a mobile
+      binary is effectively public (CWE-798). AI-generated Android samples inline
+      the value to make the snippet compile and it ships in the release build.
+
+      A public mobile client should use PKCE and hold no client secret at all;
+      any unavoidable key belongs in the build config or a secret store, not in
+      source:
+        val clientSecret = BuildConfig.CLIENT_SECRET   // injected at build time
+        val apiKey = System.getenv("API_KEY")
+      and rotate any secret already committed.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/privacy-and-security/security-tips#UserData
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: val $NAME = $VAL
+          - pattern: var $NAME = $VAL
+          - pattern: const val $NAME = $VAL
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(client_secret|clientsecret|api[_-]?key|secret|password|bearer|access_token|private_key).*
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^"[A-Za-z0-9_\-+/=]{16,}"$
+      - pattern-not-regex: (?i)=\s*"(?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|dummy|sample|test[-_])
+  - id: auth.kotlin.android.pkce-disabled
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An AppAuth `AuthorizationRequest.Builder` explicitly disables PKCE with
+      `.setCodeVerifier(null)`. PKCE (RFC 7636) is what stops a malicious app that
+      has registered the same redirect URI, or an attacker who intercepts the
+      authorization code on a mobile device, from exchanging that code for tokens.
+      Turning it off on a public Android client re-opens the authorization-code
+      interception attack (CWE-345). AI samples pass `null` after seeing the
+      "disable PKCE if the server does not support it" comment in the AppAuth docs.
+
+      Leave PKCE on: simply do not call `setCodeVerifier`, and AppAuth's Builder
+      generates a code verifier automatically. Only pass an explicit verifier you
+      generated yourself, never `null`.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-pkce-disabled
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://github.com/openid/AppAuth-Android
+        - https://datatracker.ietf.org/doc/html/rfc7636
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - android
+        - appauth
+    patterns:
+      - pattern: $B.setCodeVerifier(null)
+      - pattern-inside: |
+          fun $F(...) {
+            ...
+            AuthorizationRequest.Builder(...)
+            ...
+          }
+  - id: auth.kotlin.android.token-in-sharedprefs
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      An auth token / secret is written to plain `SharedPreferences`
+      (`prefs.edit().putString("auth_token", ...)`). SharedPreferences is an
+      unencrypted XML file in the app's private storage: on a rooted device, via
+      a device backup, or through any local-file exposure it is read in the clear,
+      leaking the credential (CWE-312). AI-generated Android samples reach for
+      plain SharedPreferences because it is the "hello world" of persistence and
+      never switch to encrypted storage.
+
+      Store credentials in `EncryptedSharedPreferences` (androidx.security.crypto)
+      backed by the Android Keystore instead:
+        val prefs = EncryptedSharedPreferences.create(
+            context, "secure_prefs", masterKey,
+            AES256_SIV, AES256_GCM)
+        prefs.edit().putString("auth_token", token).apply()
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-token-in-sharedprefs
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences
+        - https://cwe.mitre.org/data/definitions/312.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: $P.edit().putString($KEY, $VAL)
+          - pattern: $P.edit { putString($KEY, $VAL) }
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(token|secret|auth|jwt|password|credential|client_secret|authorize|oauth|api[_-]?key).*
+      - pattern-not-inside: |
+          val $P = EncryptedSharedPreferences.create(...)
+          ...
+  - id: auth.kotlin.android.webview-oauth
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An OAuth authorization URL is loaded inside an in-app `WebView`
+      (`webView.loadUrl("...authorize?client_id=...")`). Embedded WebViews are an
+      anti-pattern for OAuth: the host app can read the user's credentials and
+      the session cookie, there is no shared SSO session with the system browser,
+      and providers such as Google reject WebView auth outright (CWE-522). AI
+      samples reach for a WebView because it is the simplest way to "show the
+      login page".
+
+      Use an external user-agent instead: Chrome Custom Tabs
+      (`CustomTabsIntent`) or, for full OAuth/PKCE, AppAuth's
+      `AuthorizationService.performAuthorizationRequest(...)`, which hands the
+      flow to the system browser and returns via a redirect URI.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-oauth
+      category: security
+      cwe: CWE-522
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/training/basics/intents/custom-tabs
+        - https://github.com/openid/AppAuth-Android
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - android
+    patterns:
+      - pattern: $WV.loadUrl($URL)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: (?i).*(/authorize|oauth|/auth\?|response_type|client_id=).*
+  - id: auth.kotlin.android.webview-ssl-error-proceed
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A `WebViewClient.onReceivedSslError(...)` handler calls `handler.proceed()`,
+      telling the WebView to ignore a TLS certificate error and load the page
+      anyway. This disables certificate validation for that WebView: an on-path
+      attacker with any (expired, self-signed, wrong-host) certificate can serve
+      the login/OAuth page and harvest the credentials and tokens the user enters
+      (CWE-295). AI samples add `proceed()` to "make it work" against a dev server
+      with a self-signed cert.
+
+      Never proceed on an SSL error in production. Cancel the load so the invalid
+      certificate is rejected:
+        override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+            handler.cancel()
+        }
+      For a legitimately pinned/self-signed host, validate the certificate
+      explicitly before deciding.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-ssl-error-proceed
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/privacy-and-security/risks/insecure-https
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: |
+              override fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+          - pattern: |
+              fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+      - pattern-not: |
+          override fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
+      - pattern-not: |
+          fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
   - id: auth.kotlin.cookie.insecure-session
     languages:
       - kotlin

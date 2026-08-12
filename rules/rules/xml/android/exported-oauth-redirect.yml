@@ -12,8 +12,8 @@ rules:
       callback to a hand-rolled exported activity on a custom scheme.
 
       Prefer a verified HTTPS App Link (`android:scheme="https"` with
-      `android:autoVerify="true"`), which only your app — proven via Digital Asset
-      Links — can claim. If you use AppAuth, let its
+      `android:autoVerify="true"`), which only your app, proven via Digital Asset
+      Links, can claim. If you use AppAuth, let its
       `net.openid.appauth.RedirectUriReceiverActivity` handle the redirect (not
       flagged), and always pair the flow with PKCE so an intercepted code is
       useless.

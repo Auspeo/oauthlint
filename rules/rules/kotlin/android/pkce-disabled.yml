@@ -14,7 +14,7 @@ rules:
 
       Leave PKCE on: simply do not call `setCodeVerifier`, and AppAuth's Builder
       generates a code verifier automatically. Only pass an explicit verifier you
-      generated yourself — never `null`.
+      generated yourself, never `null`.
     # AppAuth defaults to PKCE, so ABSENCE of setCodeVerifier is safe and a real
     # verifier is safe; only the explicit null disables it. Scoped to a function
     # that builds an AuthorizationRequest so the match is AppAuth-specific.

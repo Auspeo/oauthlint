@@ -1,5 +1,11 @@
 # oauthlint-rules
 
+## 0.11.0
+
+### Minor Changes
+
+- Add a mobile auth rule pack: Swift/iOS and Android (Kotlin plus XML manifest and config). 18 new rules covering insecure token storage (UserDefaults, @AppStorage, SharedPreferences), cleartext traffic, OAuth in embedded WebViews, hardcoded secrets, Keychain and keystore misconfiguration, non-ephemeral web-auth sessions, and more. Validated at zero false positives against AppAuth-iOS and AppAuth-Android. The pack now ships 270+ rules.
+
 ## 0.10.0
 
 ### Minor Changes

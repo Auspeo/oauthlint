@@ -5,8 +5,8 @@ rules:
     severity: ERROR
     message: |
       The manifest sets `android:usesCleartextTraffic="true"` on `<application>`,
-      re-enabling plaintext HTTP for the entire app. Every network call — including
-      OAuth token exchanges and API requests carrying bearer tokens — may then run
+      re-enabling plaintext HTTP for the entire app. Every network call, including
+      OAuth token exchanges and API requests carrying bearer tokens, may then run
       over cleartext and be captured by an on-path attacker (CWE-319). On API 28+
       cleartext is off by default; AI-generated manifests flip this flag back on to
       "fix" a connection to an http:// dev endpoint and ship it that way.

@@ -1,7 +1,7 @@
 # OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
 # anti-patterns that AI coding tools systematically produce.
 #
-# Full pack — 253 rules across every supported language.
+# Full pack — 271 rules across every supported language.
 #
 # Run the full pack with no install:
 #   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
@@ -5746,6 +5746,250 @@ rules:
           - metavariable-regex:
               metavariable: $SECRET
               regex: ^(["'])(?:[a-zA-Z0-9!._-]{1,20}|secret|password|changeme|jwt[-_]?secret|my[-_]?secret)\1$
+  - id: auth.kotlin.android.cleartext-auth-url
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An authentication / OAuth endpoint is called over cleartext `http://`. Any
+      token, authorization code, or credential exchanged with that endpoint
+      crosses the network unencrypted and is trivially captured on a hostile
+      Wi-Fi or by an on-path attacker (CWE-319). AI-generated samples default to
+      `http://` because it "works" against a local test server and the scheme is
+      never upgraded for production hosts.
+
+      Use `https://` for every auth endpoint:
+        val tokenUrl = "https://accounts.example.com/oauth/token"
+      Cleartext to a local loopback host (localhost / 127.0.0.1 / 10.0.2.2) during
+      development is not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-cleartext-auth-url
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/privacy-and-security/security-config
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - android
+    patterns:
+      - pattern-regex: (?i)"http://[^"\s]*(oauth|token|authorize|signin|/auth|/login)
+      - pattern-not-regex: '"http://(localhost|127\.0\.0\.1|10\.0\.2\.2)'
+  - id: auth.kotlin.android.hardcoded-secret
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      An OAuth client secret / API key / password is assigned from a hard-coded
+      string literal. A secret shipped inside an APK is trivially recovered by
+      decompiling the app, so a "confidential" client secret embedded in a mobile
+      binary is effectively public (CWE-798). AI-generated Android samples inline
+      the value to make the snippet compile and it ships in the release build.
+
+      A public mobile client should use PKCE and hold no client secret at all;
+      any unavoidable key belongs in the build config or a secret store, not in
+      source:
+        val clientSecret = BuildConfig.CLIENT_SECRET   // injected at build time
+        val apiKey = System.getenv("API_KEY")
+      and rotate any secret already committed.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-hardcoded-secret
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/privacy-and-security/security-tips#UserData
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: val $NAME = $VAL
+          - pattern: var $NAME = $VAL
+          - pattern: const val $NAME = $VAL
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(client_secret|clientsecret|api[_-]?key|secret|password|bearer|access_token|private_key).*
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^"[A-Za-z0-9_\-+/=]{16,}"$
+      - pattern-not-regex: (?i)=\s*"(?:your[-_]|example|placeholder|xxx+|todo|changeme|change[-_]?me|replace|dummy|sample|test[-_])
+  - id: auth.kotlin.android.pkce-disabled
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An AppAuth `AuthorizationRequest.Builder` explicitly disables PKCE with
+      `.setCodeVerifier(null)`. PKCE (RFC 7636) is what stops a malicious app that
+      has registered the same redirect URI, or an attacker who intercepts the
+      authorization code on a mobile device, from exchanging that code for tokens.
+      Turning it off on a public Android client re-opens the authorization-code
+      interception attack (CWE-345). AI samples pass `null` after seeing the
+      "disable PKCE if the server does not support it" comment in the AppAuth docs.
+
+      Leave PKCE on: simply do not call `setCodeVerifier`, and AppAuth's Builder
+      generates a code verifier automatically. Only pass an explicit verifier you
+      generated yourself, never `null`.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-007
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-pkce-disabled
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: LOW
+      references:
+        - https://github.com/openid/AppAuth-Android
+        - https://datatracker.ietf.org/doc/html/rfc7636
+        - https://cwe.mitre.org/data/definitions/345.html
+      technology:
+        - android
+        - appauth
+    patterns:
+      - pattern: $B.setCodeVerifier(null)
+      - pattern-inside: |
+          fun $F(...) {
+            ...
+            AuthorizationRequest.Builder(...)
+            ...
+          }
+  - id: auth.kotlin.android.token-in-sharedprefs
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      An auth token / secret is written to plain `SharedPreferences`
+      (`prefs.edit().putString("auth_token", ...)`). SharedPreferences is an
+      unencrypted XML file in the app's private storage: on a rooted device, via
+      a device backup, or through any local-file exposure it is read in the clear,
+      leaking the credential (CWE-312). AI-generated Android samples reach for
+      plain SharedPreferences because it is the "hello world" of persistence and
+      never switch to encrypted storage.
+
+      Store credentials in `EncryptedSharedPreferences` (androidx.security.crypto)
+      backed by the Android Keystore instead:
+        val prefs = EncryptedSharedPreferences.create(
+            context, "secure_prefs", masterKey,
+            AES256_SIV, AES256_GCM)
+        prefs.edit().putString("auth_token", token).apply()
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-token-in-sharedprefs
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences
+        - https://cwe.mitre.org/data/definitions/312.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: $P.edit().putString($KEY, $VAL)
+          - pattern: $P.edit { putString($KEY, $VAL) }
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(token|secret|auth|jwt|password|credential|client_secret|authorize|oauth|api[_-]?key).*
+      - pattern-not-inside: |
+          val $P = EncryptedSharedPreferences.create(...)
+          ...
+  - id: auth.kotlin.android.webview-oauth
+    languages:
+      - kotlin
+    severity: WARNING
+    message: |
+      An OAuth authorization URL is loaded inside an in-app `WebView`
+      (`webView.loadUrl("...authorize?client_id=...")`). Embedded WebViews are an
+      anti-pattern for OAuth: the host app can read the user's credentials and
+      the session cookie, there is no shared SSO session with the system browser,
+      and providers such as Google reject WebView auth outright (CWE-522). AI
+      samples reach for a WebView because it is the simplest way to "show the
+      login page".
+
+      Use an external user-agent instead: Chrome Custom Tabs
+      (`CustomTabsIntent`) or, for full OAuth/PKCE, AppAuth's
+      `AuthorizationService.performAuthorizationRequest(...)`, which hands the
+      flow to the system browser and returns via a redirect URI.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-oauth
+      category: security
+      cwe: CWE-522
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/training/basics/intents/custom-tabs
+        - https://github.com/openid/AppAuth-Android
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - android
+    patterns:
+      - pattern: $WV.loadUrl($URL)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: (?i).*(/authorize|oauth|/auth\?|response_type|client_id=).*
+  - id: auth.kotlin.android.webview-ssl-error-proceed
+    languages:
+      - kotlin
+    severity: ERROR
+    message: |
+      A `WebViewClient.onReceivedSslError(...)` handler calls `handler.proceed()`,
+      telling the WebView to ignore a TLS certificate error and load the page
+      anyway. This disables certificate validation for that WebView: an on-path
+      attacker with any (expired, self-signed, wrong-host) certificate can serve
+      the login/OAuth page and harvest the credentials and tokens the user enters
+      (CWE-295). AI samples add `proceed()` to "make it work" against a dev server
+      with a self-signed cert.
+
+      Never proceed on an SSL error in production. Cancel the load so the invalid
+      certificate is rejected:
+        override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+            handler.cancel()
+        }
+      For a legitimately pinned/self-signed host, validate the certificate
+      explicitly before deciding.
+    metadata:
+      oauthlint-rule-id: AUTH-KOTLIN-ANDROID-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/kotlin-android-webview-ssl-error-proceed
+      category: security
+      cwe: CWE-295
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/privacy-and-security/risks/insecure-https
+        - https://cwe.mitre.org/data/definitions/295.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: |
+              override fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+          - pattern: |
+              fun onReceivedSslError(...) {
+                ...
+                $H.proceed()
+                ...
+              }
+      - pattern-not: |
+          override fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
+      - pattern-not: |
+          fun onReceivedSslError(...) {
+            ...
+            $H.cancel()
+            ...
+          }
   - id: auth.kotlin.cookie.insecure-session
     languages:
       - kotlin
@@ -11095,6 +11339,354 @@ rules:
         - "**/vendored/**"
         - "**/node_modules/**"
         - "**/*.stories.*"
+  - id: auth.swift.cors.wildcard-with-credentials
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      A Vapor `CORSMiddleware.Configuration` combines `allowedOrigin: .all` (the
+      `*` wildcard) with `allowCredentials: true`. This tells browsers to send
+      cookies and Authorization headers to a resource that accepts every origin,
+      which lets any site read authenticated responses on the user's behalf, the
+      classic wildcard-plus-credentials CORS misconfiguration (CWE-942). The
+      browser will actually refuse `*` with credentials, so AI-generated fixes
+      that "reflect the origin" recreate the same hole against every caller.
+
+      Restrict the origin to a known allow-list, e.g.
+      `allowedOrigin: .custom("https://app.example.com")` (or `.any([...])`), or
+      set `allowCredentials: false` if no cookies/credentials are needed.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-CORS-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-cors-wildcard-with-credentials
+      category: security
+      cwe: CWE-942
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.vapor.codes/advanced/middleware/
+        - https://cwe.mitre.org/data/definitions/942.html
+      technology:
+        - vapor
+    patterns:
+      - pattern: CORSMiddleware.Configuration(...)
+      - pattern: "CORSMiddleware.Configuration(..., allowedOrigin: .all, ...)"
+      - pattern: "CORSMiddleware.Configuration(..., allowCredentials: true, ...)"
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.flow.non-ephemeral-webauth
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      An `ASWebAuthenticationSession` explicitly sets
+      `prefersEphemeralWebBrowserSession = false`. With a non-ephemeral session
+      the OAuth login reuses the shared Safari cookie jar, so a previously
+      signed-in account is silently re-selected and the user cannot easily
+      switch or fully sign out, a session-confusion / lingering-credential risk
+      (CWE-522). AI-generated auth flows toggle this off to "remember" the user
+      without considering the shared-cookie consequences.
+
+      Set `prefersEphemeralWebBrowserSession = true` so each authorization runs
+      in a private, cookie-isolated session and no credentials persist across
+      logins.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-FLOW-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-flow-non-ephemeral-webauth
+      category: security
+      cwe: CWE-522
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession/prefersephemeralwebbrowsersession
+        - https://cwe.mitre.org/data/definitions/522.html
+      technology:
+        - ios
+    pattern: $S.prefersEphemeralWebBrowserSession = false
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.flow.oauth-in-wkwebview
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      An OAuth / OpenID authorization URL is loaded inside a `WKWebView`. Running
+      the login in an embedded web view lets the host app read the page (cookies,
+      form fields, redirect with the authorization code) and hides the real
+      origin from the user, defeating the isolation an external browser provides;
+      it is disallowed by Google and other providers (CWE-1204 / RFC 8252).
+      AI-generated flows load the provider's authorize endpoint straight into a
+      WKWebView because it is the most direct way to show a login screen.
+
+      Use `ASWebAuthenticationSession` (or `SFSafariViewController`), which runs
+      the authorization in the system browser with a shared, isolated session and
+      returns via your registered callback URL scheme.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-FLOW-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-flow-oauth-in-wkwebview
+      category: security
+      cwe: CWE-1204
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc8252
+        - https://cwe.mitre.org/data/definitions/1204.html
+      technology:
+        - ios
+    patterns:
+      - pattern: $WV.load($REQ)
+      - metavariable-regex:
+          metavariable: $REQ
+          regex: (?i).*(oauth|/authorize|response_type=|client_id=|accounts\.google|login\.microsoftonline|appleid\.apple\.com|/o/oauth2)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.jwt.hardcoded-hmac-key
+    languages:
+      - swift
+    severity: ERROR
+    message: |
+      A JWTKit HMAC signing key is registered from a hard-coded string literal
+      (`add(hmac: "...", ...)`). `HMACKey` is `ExpressibleByStringLiteral`, so the
+      literal becomes the key that signs and verifies every token: committed to
+      source control it is one search away from compromise, letting an attacker
+      forge a token for any user or role (CWE-798). AI-generated Vapor/JWTKit
+      samples inline the secret to make the snippet "just work".
+
+      Read the key from the environment or a secret store instead, e.g.
+      `add(hmac: HMACKey(from: Environment.get("JWT_KEY")!), digestAlgorithm: .sha256)`,
+      and rotate the leaked secret out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-JWT-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-jwt-hardcoded-hmac-key
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://github.com/vapor/jwt-kit
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - vapor
+        - jwt-kit
+    patterns:
+      - pattern: '$X.add(hmac: "...", ...)'
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.keychain.insecure-accessible
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      A Keychain item is created with `kSecAttrAccessibleAlways` (or
+      `kSecAttrAccessibleAlwaysThisDeviceOnly`). "Always" accessibility means the
+      item is readable even while the device is locked, widening the window in
+      which a lost or seized device can leak the stored credential; both
+      constants are deprecated by Apple for exactly this reason (CWE-311).
+      AI-generated Keychain snippets often pick "Always" as the most permissive
+      option so the sample never fails to read.
+
+      Use the most restrictive class that still works for your access pattern,
+      e.g. `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, so the item is
+      available only while the device is unlocked and never syncs off-device.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-KEYCHAIN-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-keychain-insecure-accessible
+      category: security
+      cwe: CWE-311
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.apple.com/documentation/security/ksecattraccessiblewhenunlockedthisdeviceonly
+        - https://cwe.mitre.org/data/definitions/311.html
+      technology:
+        - ios
+    pattern-either:
+      - pattern: kSecAttrAccessibleAlways
+      - pattern: kSecAttrAccessibleAlwaysThisDeviceOnly
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.secret.hardcoded-credential
+    languages:
+      - swift
+    severity: ERROR
+    message: |
+      A secret, API key, token, or password is assigned from a hard-coded string
+      literal. Committed to source control it is one search away from compromise,
+      letting an attacker reuse it against the backing service (CWE-798).
+      AI-generated code inlines the value to make the snippet "just work" and it
+      ships unchanged.
+
+      Read the value from the environment, an xcconfig / Info.plist build
+      setting, or a secret store instead, e.g.
+      `ProcessInfo.processInfo.environment["API_KEY"]`, and rotate the leaked
+      secret out of source control.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-SECRET-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-secret-hardcoded-credential
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.apple.com/documentation/security/keychain_services
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - ios
+    patterns:
+      - pattern-either:
+          - pattern: let $NAME = "$VAL"
+          - pattern: var $NAME = "$VAL"
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i).*(secret|apikey|api_key|client_secret|token|password|private_key|access_key)
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: (?i)^(?!.*(?:your[-_]|xxx|placeholder|example|<|\{)).{16,}$
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.storage.token-in-appstorage
+    languages:
+      - swift
+    severity: WARNING
+    message: |
+      A token, secret, or credential is bound to `@AppStorage`. `@AppStorage` is
+      a thin SwiftUI wrapper over `UserDefaults`, so the value lands in an
+      unencrypted on-disk plist that is readable from a device backup, a
+      jailbroken device, or the simulator container (CWE-312). AI-generated
+      SwiftUI code reaches for `@AppStorage` for persistence and unknowingly
+      stores authentication material in the clear.
+
+      Keep `@AppStorage` for non-sensitive UI preferences. Store secrets in the
+      Keychain (Security framework or a wrapper) and read them into memory when
+      needed instead of persisting them through `@AppStorage`.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-STORAGE-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-storage-token-in-appstorage
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.apple.com/documentation/swiftui/appstorage
+        - https://cwe.mitre.org/data/definitions/312.html
+      technology:
+        - swiftui
+    patterns:
+      - pattern: "@AppStorage($K) var $N = $D"
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
+  - id: auth.swift.storage.token-in-userdefaults
+    languages:
+      - swift
+    severity: ERROR
+    message: |
+      A token, secret, or credential is written to `UserDefaults`. UserDefaults
+      is an unencrypted plist on disk (readable from an unlocked device backup,
+      a jailbroken device, or the simulator container) and is never an
+      appropriate place for authentication material (CWE-312). AI-generated iOS
+      code frequently reaches for `UserDefaults.standard.set(...)` because it is
+      the simplest key/value store, silently persisting access/refresh tokens in
+      the clear. App-group suites (`UserDefaults(suiteName:)`) are just as
+      exposed.
+
+      Store secrets in the Keychain instead (via Security framework or a wrapper
+      such as KeychainAccess), e.g. `keychain.set(token, key: "authToken")`, and
+      keep UserDefaults for non-sensitive preferences only.
+    metadata:
+      oauthlint-rule-id: AUTH-SWIFT-STORAGE-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/swift-storage-token-in-userdefaults
+      category: security
+      cwe: CWE-312
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.apple.com/documentation/security/keychain_services
+        - https://cwe.mitre.org/data/definitions/312.html
+      technology:
+        - ios
+    pattern-either:
+      - patterns:
+          - pattern: "UserDefaults.$UD.set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: "UserDefaults.$UD.set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: "UserDefaults(...).set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: "UserDefaults(...).set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: "UserDefaults(...)!.set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $K
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+      - patterns:
+          - pattern: "UserDefaults(...)!.set($V, forKey: $K)"
+          - metavariable-regex:
+              metavariable: $V
+              regex: (?i)^["']?.*(token|secret|auth|jwt|password|credential|refresh|access|apikey|api_key|bearer|client_secret)
+    paths:
+      exclude:
+        - "**/test/**"
+        - "**/Tests/**"
+        - "**/*Tests.swift"
+        - "**/*Test.swift"
+        - "**/example/**"
+        - "**/examples/**"
   - id: auth.tls.reject-unauthorized
     languages:
       - javascript
@@ -11131,3 +11723,157 @@ rules:
       - pattern: "{..., rejectUnauthorized: false, ...}"
       - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
       - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  - id: auth.xml.android.exported-oauth-redirect
+    languages:
+      - xml
+    severity: WARNING
+    message: |
+      An exported activity registers a BROWSABLE intent-filter for a custom-scheme
+      OAuth redirect (`android:scheme="com.example.app"` with an oauth/callback/
+      redirect host). Custom URI schemes are not owned by any one app: a malicious
+      app can register the same scheme and intercept the authorization-code
+      redirect, capturing the code (CWE-926). AI-generated manifests wire the OAuth
+      callback to a hand-rolled exported activity on a custom scheme.
+
+      Prefer a verified HTTPS App Link (`android:scheme="https"` with
+      `android:autoVerify="true"`), which only your app, proven via Digital Asset
+      Links, can claim. If you use AppAuth, let its
+      `net.openid.appauth.RedirectUriReceiverActivity` handle the redirect (not
+      flagged), and always pair the flow with PKCE so an intercepted code is
+      useless.
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-exported-oauth-redirect
+      category: security
+      cwe: CWE-926
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/training/app-links
+        - https://datatracker.ietf.org/doc/html/rfc8252#section-8.6
+        - https://cwe.mitre.org/data/definitions/926.html
+      technology:
+        - android
+    patterns:
+      - pattern: |
+          <activity ... android:exported="true" ...>
+            ...
+            <intent-filter ...>
+              ...
+              <category android:name="android.intent.category.BROWSABLE" />
+              ...
+              <data android:scheme="$S" android:host="$H" ... />
+              ...
+            </intent-filter>
+            ...
+          </activity>
+      - metavariable-regex:
+          metavariable: $H
+          regex: (?i).*(oauth|callback|redirect).*
+      - pattern-not: |
+          <activity android:name="net.openid.appauth.RedirectUriReceiverActivity" ...>...</activity>
+      - pattern-not: |
+          <activity ...>...<data android:scheme="https" ... />...</activity>
+      - pattern-not: |
+          <activity ...>...<data android:scheme="http" ... />...</activity>
+  - id: auth.xml.android.hardcoded-secret-strings
+    languages:
+      - xml
+    severity: ERROR
+    message: |
+      A credential (client secret, API key, password, bearer token) is hard-coded
+      as a value in `res/values/strings.xml`. String resources are compiled
+      verbatim into the APK and are recovered in seconds by unzipping/decompiling
+      the app, so any secret placed here is effectively public (CWE-798).
+      AI-generated Android code drops secrets into strings.xml because it is the
+      "official" place for constants.
+
+      A public mobile client should hold no client secret at all (use PKCE). For an
+      unavoidable key, inject it at build time via `BuildConfig` / Gradle
+      properties or fetch it from a backend at runtime, never commit it as a
+      string resource. Note: a public `client_id` and OAuth `scope` list are not
+      secrets and are intentionally not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-hardcoded-secret-strings
+      category: security
+      cwe: CWE-798
+      owasp: API2:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/privacy-and-security/security-tips#UserData
+        - https://cwe.mitre.org/data/definitions/798.html
+      technology:
+        - android
+    patterns:
+      - pattern: <string name="$N">$V</string>
+      - metavariable-regex:
+          metavariable: $N
+          regex: (?i).*(secret|api[_-]?key|client_secret|password|token|bearer|private_key).*
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^[A-Za-z0-9_\-+=.]{16,}$
+  - id: auth.xml.android.manifest-cleartext-traffic
+    languages:
+      - xml
+    severity: ERROR
+    message: |
+      The manifest sets `android:usesCleartextTraffic="true"` on `<application>`,
+      re-enabling plaintext HTTP for the entire app. Every network call, including
+      OAuth token exchanges and API requests carrying bearer tokens, may then run
+      over cleartext and be captured by an on-path attacker (CWE-319). On API 28+
+      cleartext is off by default; AI-generated manifests flip this flag back on to
+      "fix" a connection to an http:// dev endpoint and ship it that way.
+
+      Remove the attribute (leave the secure default) or set it to `false`, and if a
+      specific host genuinely needs cleartext during development, scope it with a
+      network-security-config `<domain-config>` instead of enabling it app-wide.
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-manifest-cleartext-traffic
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: HIGH
+      references:
+        - https://developer.android.com/guide/topics/manifest/application-element#usesCleartextTraffic
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - android
+    patterns:
+      - pattern: <application android:usesCleartextTraffic="true" ...>...</application>
+  - id: auth.xml.android.nsc-cleartext-permitted
+    languages:
+      - xml
+    severity: WARNING
+    message: |
+      A network-security-config permits cleartext traffic
+      (`cleartextTrafficPermitted="true"`) in a `<base-config>` or in a
+      `<domain-config>` that is not restricted to a loopback dev host. This lets
+      HTTP run unencrypted for the covered domains, exposing OAuth tokens and API
+      credentials to on-path capture (CWE-319). AI-generated configs enable this
+      to unblock an http:// endpoint and leave it on for real hosts.
+
+      Set `cleartextTrafficPermitted="false"` (or rely on the API-28+ secure
+      default). If cleartext is genuinely needed for local development, scope it to
+      a `<domain-config>` that lists only loopback hosts (localhost / 10.0.2.2),
+      which is not flagged.
+    metadata:
+      oauthlint-rule-id: AUTH-XML-ANDROID-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/xml-android-nsc-cleartext-permitted
+      category: security
+      cwe: CWE-319
+      owasp: API8:2023
+      llm-prevalence: MEDIUM
+      references:
+        - https://developer.android.com/privacy-and-security/security-config#CleartextTrafficPermitted
+        - https://cwe.mitre.org/data/definitions/319.html
+      technology:
+        - android
+    patterns:
+      - pattern-either:
+          - pattern: <base-config cleartextTrafficPermitted="true">...</base-config>
+          - pattern: <domain-config cleartextTrafficPermitted="true">...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>localhost</domain>...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>10.0.2.2</domain>...</domain-config>
+      - pattern-not: <domain-config cleartextTrafficPermitted="true">...<domain ...>127.0.0.1</domain>...</domain-config>

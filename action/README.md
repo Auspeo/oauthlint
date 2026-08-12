@@ -3,10 +3,10 @@
 Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools systematically produce,
 right inside your CI.
 
-It runs the full oauthlint pack, 250+ rules across ten languages (JavaScript,
-TypeScript, Python, Go, C#, and more), plus a dedicated MCP server-auth
-pack, in any repository, with no language toolchain to install (the Action is
-Docker-based).
+It runs the full oauthlint pack, 270+ rules across eleven languages (JavaScript,
+TypeScript, Python, Go, C#, and more) plus mobile auth (Swift/iOS, Android) and a
+dedicated MCP server-auth pack, in any repository, with no language toolchain to
+install (the Action is Docker-based).
 
 Out of the box, every finding shows up **inline on the PR's _Files changed_ tab**
 and in a **job summary**, with no token, no extra permission, and no SARIF upload required.

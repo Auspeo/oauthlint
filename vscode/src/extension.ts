@@ -25,6 +25,8 @@ const SUPPORTED_LANGUAGES = new Set([
   'php',
   'ruby',
   'kotlin',
+  'swift',
+  'xml',
 ]);
 
 // Prompt once per session when the scan engine can't be obtained, instead of
@@ -188,6 +190,8 @@ export function activate(context: vscode.ExtensionContext): void {
     { language: 'php', scheme: 'file' },
     { language: 'ruby', scheme: 'file' },
     { language: 'kotlin', scheme: 'file' },
+    { language: 'swift', scheme: 'file' },
+    { language: 'xml', scheme: 'file' },
   ];
 
   context.subscriptions.push(

@@ -1,6 +1,6 @@
 {
   "name": "oauthlint",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Catch the OAuth, OIDC, JWT, and MCP security bugs AI coding tools produce. CLI for the oauthlint-rules Semgrep pack, low false positives, CWE/OWASP-mapped fixes.",
   "type": "module",
   "main": "./dist/index.js",

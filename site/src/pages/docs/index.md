@@ -7,7 +7,7 @@ section: "getting-started"
 
 # Getting started
 
-OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-patterns that AI coding tools ship by default. It covers ten languages (JavaScript, TypeScript, Python, Go, C#, and more) and flags each finding with a fix, before the code reaches a pull request.
+OAuthLint scans your code for the OAuth 2.0 / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-patterns that AI coding tools ship by default. It covers eleven languages (JavaScript, TypeScript, Python, Go, C#, and more) plus mobile auth (Swift/iOS, Android), and flags each finding with a fix, before the code reaches a pull request.
 
 ## Run your first scan
 
@@ -50,7 +50,7 @@ OAuthLint meets your code where it already lives:
 
 - **CLI / CI**: `npx oauthlint scan`, locally or in any pipeline. → [CLI reference](/docs/cli)
 - **GitHub Action**: PR annotations and SARIF upload to GitHub code scanning. It's Docker-based, so it runs for any language. → [GitHub Action](/docs/github-action)
-- **VS Code**: inline diagnostics as you type, with Quick Fix suppressions. → [VS Code extension](/docs/vscode)
+- **Your editor (VS Code, Cursor, Windsurf, and more)**: inline diagnostics as you type, with Quick Fix suppressions. The extension ships via OpenVSX too, so it runs in other VS Code forks and agentic editors. → [VS Code extension](/docs/vscode)
 - **AI coding tools**: an MCP server so Claude Code, Cursor, Windsurf and others scan the auth code they generate, in the loop. → [MCP server](/docs/mcp)
 - **Building MCP servers**: a rule pack for OAuth 2.1 resource-server mistakes (token pass-through, missing audience binding, unauthenticated transports, tool-handler SSRF) plus a live `probe` command. → [Scanning MCP servers](/docs/mcp-server-auth)
 

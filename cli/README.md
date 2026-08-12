@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / MCP / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A static-analysis linter with a curated, auth-only rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin · CLI + GitHub Action + VS Code · free & MIT
+A static-analysis linter with a curated, auth-only rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin · Swift · Android · CLI + GitHub Action + VS Code, Cursor, Windsurf and other forks · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
@@ -56,7 +56,7 @@ Each finding ends with a hint, `↳ run \`oauthlint explain <rule-id>\` for deta
 
 AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and others) ship the *same* auth bugs across every project: a JWT accepted with `alg: none`, a hard-coded `client_secret`, an OAuth flow with no `state`/PKCE, a token in `localStorage`, a `*` wildcard `redirect_uri`, an unrate-limited `/login`, a plaintext password, `Math.random()` for a CSRF token.
 
-- **250+ rules** across **ten languages (JavaScript, TypeScript, Python, Go, C#, and more)**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit). It also ships a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the TypeScript and Python MCP SDKs, and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS).
+- **270+ rules** across **eleven languages (JavaScript, TypeScript, Python, Go, C#, and more)**, plus **mobile auth (Swift/iOS, Android)**, each mapped to CWE/OWASP with a fix page (a lesson, not a grep hit). It also ships a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the TypeScript and Python MCP SDKs, and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS).
 - **Dataflow (taint) analysis.** Beyond pattern-matching, the pack traces untrusted input through to dangerous sinks: an OAuth credential reaching a log sink, request input reaching a JWT verification key, **open-redirect** and **SSRF** (now across JS/TS, Python, Go, Java and Rust, plus a rule that flags `Authorization: Basic` credentials written to logs).
 - **Autofix.** `--fix` applies safe rewrites (cookie flags and similar) in place; `--fix-dry-run` previews them as a unified diff first. Per-finding fix data also rides along in `--json` and SARIF under `fixes`.
 - **HTML report.** `scan --format html` renders a self-contained, offline, no-JavaScript audit you can email or attach to a PR.
@@ -88,8 +88,9 @@ Use oauthlint when you'd rather not write and maintain an auth rule pack yoursel
 
 - **GitHub Action.** `Auspeo/oauthlint@v1` (the `Auspeo/oauthlint/action@v1` subpath still works), Docker-based (any language), with inline PR annotations and a job summary. [Docs](https://github.com/Auspeo/oauthlint/tree/main/action).
 - **CI recipes.** SARIF uploads to [GitHub Code Scanning](https://oauthlint.dev/docs/code-scanning), and there's a worked example for [GitLab CI](https://oauthlint.dev/docs/gitlab-ci).
-- **VS Code / Cursor / Windsurf.** [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode): inline diagnostics on save, a status-bar finding count, an "Apply fix" Quick Fix where a rule ships a safe autofix, and Quick Fix suppressions.
-- **MCP server.** `oauthlint-mcp` lets AI coding tools (Claude Code, Cursor, Windsurf, and others) scan the OAuth code they generate, in the same loop that wrote it. It ships with the next release; until then it runs from source. Setup per tool at [oauthlint.dev/docs/mcp](https://oauthlint.dev/docs/mcp).
+- **VS Code, Cursor, Windsurf, and other VS Code forks.** [oauthlint](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode) on the VS Code Marketplace and [OpenVSX](https://open-vsx.org/extension/auspeo/oauthlint-vscode) (so it runs in Cursor, Windsurf, and other forks and agentic editors): inline diagnostics on save, a status-bar finding count, an "Apply fix" Quick Fix where a rule ships a safe autofix, and Quick Fix suppressions.
+- **JetBrains IDEs.** The oauthlint plugin on the [JetBrains Marketplace](https://plugins.jetbrains.com) brings the same diagnostics to IntelliJ IDEA, PyCharm, GoLand, WebStorm, and the rest of the JetBrains family.
+- **MCP server.** `oauthlint-mcp` lets AI coding tools (Claude Code, Cursor, Windsurf, and others) scan the OAuth code they generate, in the same loop that wrote it. It is on npm, so `npx oauthlint-mcp` runs it with no install. Setup per tool at [oauthlint.dev/docs/mcp](https://oauthlint.dev/docs/mcp).
 
 ## License
 

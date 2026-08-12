@@ -8,7 +8,7 @@ rules:
       `prefersEphemeralWebBrowserSession = false`. With a non-ephemeral session
       the OAuth login reuses the shared Safari cookie jar, so a previously
       signed-in account is silently re-selected and the user cannot easily
-      switch or fully sign out — a session-confusion / lingering-credential risk
+      switch or fully sign out, a session-confusion / lingering-credential risk
       (CWE-522). AI-generated auth flows toggle this off to "remember" the user
       without considering the shared-cookie consequences.
 
