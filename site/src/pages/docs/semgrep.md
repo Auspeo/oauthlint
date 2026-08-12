@@ -15,7 +15,7 @@ semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
 
 That URL serves the complete OAuthLint ruleset: every OAuth / OIDC / JWT / session / cookie / CORS / TLS / secrets / MCP server auth anti-pattern we detect, across all ten supported languages, merged into one Semgrep config. Point it at any path (`./src`, `.`, a single file) and Semgrep does the rest.
 
-> Don't have Semgrep? `pip install semgrep` (or `brew install semgrep`). Prefer zero setup? Use the [`oauthlint` CLI](/docs/cli): `npx oauthlint scan ./src` bundles the pinned rule pack and, on first run, downloads and checksum-verifies its own pinned [Opengrep](https://opengrep.dev) engine (no Python, no Semgrep to install), reusing an installed `opengrep`/`semgrep` if one is on your `PATH`.
+> Don't have Semgrep? `pip install semgrep` (or `brew install semgrep`). Prefer zero setup? Use the [`oauthlint` CLI](/docs/cli): `npx oauthlint scan ./src` bundles the pinned rule pack and, on first run, downloads and checksum-verifies its own small pinned scan engine (nothing else to install), reusing an installed `opengrep`/`semgrep` if one is on your `PATH`.
 
 ## Per-language bundles
 

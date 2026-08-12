@@ -7,7 +7,7 @@ section: "cli"
 
 # CLI reference
 
-The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS / MCP server auth anti-patterns, lists the shipped rules, captures a baseline, scaffolds a config, diagnoses your install, explains a rule, and probes a running MCP server. Run it with `npx oauthlint <command>`, no install required. It is self-contained: on first run it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), and it uses an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
+The `oauthlint` CLI scans your code for OAuth / OIDC / JWT / session / CORS / MCP server auth anti-patterns, lists the shipped rules, captures a baseline, scaffolds a config, diagnoses your install, explains a rule, and probes a running MCP server. Run it with `npx oauthlint <command>`, no install required. It is self-contained: nothing to install and no config. On first run it downloads and checksum-verifies a small pinned scan engine (~41 MB, one time, cached), reusing an installed `opengrep` or `semgrep` if one is on your `PATH`. Point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine <path>`.
 
 ## `scan`
 

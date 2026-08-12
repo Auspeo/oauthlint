@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / MCP / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
+A static-analysis linter with a curated, auth-only rule pack and **dataflow (taint) analysis** (JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin, and growing) · CLI + GitHub Action + VS Code extension · free & MIT licensed
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Auspeo/oauthlint/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Auspeo/oauthlint/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
@@ -20,7 +20,7 @@ A curated, multi-language Semgrep rule pack with **dataflow (taint) analysis** (
 npx oauthlint scan ./src
 ```
 
-> Self-contained: no Python, no Semgrep to install. The CLI bundles the rule pack and, on first run, downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached). It uses an installed `opengrep` or `semgrep` if one is on your `PATH`, and you can point it at a specific binary with `OAUTHLINT_ENGINE` or `--engine`.
+> Self-contained: nothing to install and no config. The CLI bundles the rule pack and, on first run, downloads and checksum-verifies a small pinned scan engine (~41 MB, one time, cached). It reuses an installed `opengrep` or `semgrep` if one is on your `PATH`; override it with `OAUTHLINT_ENGINE` or `--engine`.
 
 📖 **Full documentation & rule catalogue: [oauthlint.dev](https://oauthlint.dev)** · 🔬 **the empirical case for it: [oauthlint.dev/research](https://oauthlint.dev/research)**
 
@@ -44,7 +44,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
-## Why OAuthLint and not just Semgrep?
+## Why OAuthLint?
 
 Honest answer: nothing stops you from writing these rules yourself. Semgrep is open source, it's the engine we run, and a capable engineer could reproduce a lot of this. We don't have a technical moat, and we won't pretend otherwise.
 

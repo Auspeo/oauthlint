@@ -26,7 +26,7 @@ Findings come back as structured data the model can act on (rule id, severity, l
 
 ## Requirements
 
-The server rides on the OAuthLint CLI, so it is self-contained the same way: on first scan it downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached). It uses an installed `opengrep` or `semgrep` if one is on your `PATH`; override the engine with `OAUTHLINT_ENGINE`. If the engine cannot be obtained (offline on first run with nothing installed), the scan tools return a clear, actionable error rather than failing silently.
+The server rides on the OAuthLint CLI, so it is self-contained the same way: nothing to install and no config. On first scan it downloads and checksum-verifies a small pinned scan engine (~41 MB, one time, cached), reusing an installed `opengrep` or `semgrep` if one is on your `PATH`; override it with `OAUTHLINT_ENGINE`. If the engine cannot be obtained (offline on first run with nothing installed), the scan tools return a clear, actionable error rather than failing silently.
 
 You need Node.js 20 or newer. There is no install step for the server itself; MCP clients launch it with `npx oauthlint-mcp`.
 

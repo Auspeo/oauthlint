@@ -16,7 +16,7 @@
         error, warning, and weak-warning levels.</p>
 
         <p>OAuthLint is fully self-contained. The rule pack ships inside the plugin and
-        the Opengrep scan engine is downloaded once and verified against a pinned
+        a small pinned scan engine is downloaded once and verified against a pinned
         SHA-256 checksum. There is nothing else to install.</p>
 
         <p>Supported languages: ten in all, from JavaScript and Python to Go,

@@ -4,7 +4,7 @@
 
 **Catch the OAuth / OIDC / JWT / MCP / session / CORS anti-patterns AI coding tools systematically produce.**
 
-A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin · CLI + GitHub Action + VS Code · free & MIT
+A static-analysis linter with a curated, auth-only rule pack · JS/TS · Python · Go · Rust · Java · C#/.NET · PHP · Ruby · Kotlin · CLI + GitHub Action + VS Code · free & MIT
 
 [![npm](https://img.shields.io/npm/v/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
 [![npm downloads](https://img.shields.io/npm/dm/oauthlint.svg?style=flat-square)](https://www.npmjs.com/package/oauthlint)
@@ -19,7 +19,7 @@ A curated, multi-language Semgrep rule pack · JS/TS · Python · Go · Rust · 
 npx oauthlint scan ./src
 ```
 
-> Self-contained: no Python, no Semgrep to install. The CLI bundles the rule pack and, on first run, downloads and checksum-verifies a pinned [Opengrep](https://opengrep.dev) engine (~41 MB, one time, cached), then normalises the output for humans and CI. It uses an installed `opengrep` or `semgrep` if one is on your `PATH`; override the engine with `OAUTHLINT_ENGINE` or `--engine`.
+> Self-contained: nothing to install and no config. On first run the CLI downloads and checksum-verifies a small pinned scan engine (~41 MB, one time, cached), then normalises the output for humans and CI. It reuses an installed `opengrep` or `semgrep` if one is on your `PATH`; override it with `OAUTHLINT_ENGINE` or `--engine`.
 
 📖 **Full docs & rule catalogue → [oauthlint.dev/docs](https://oauthlint.dev/docs)** · 🔬 **the research behind it → [oauthlint.dev/research](https://oauthlint.dev/research)**
 
@@ -74,7 +74,7 @@ semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
 
 Per-language bundles exist too (`oauthlint-python.yaml`, `oauthlint-go.yaml`, …). That URL is always the latest pack; for a pinned ruleset in CI, use this CLI (`npx oauthlint@<version> scan`) or vendor [`oauthlint-rules`](https://www.npmjs.com/package/oauthlint-rules). See [the Semgrep docs](https://oauthlint.dev/docs/semgrep).
 
-## Why oauthlint, and not just Semgrep?
+## Why oauthlint?
 
 Honest answer: nothing stops you writing these rules yourself. Semgrep is open source and it's the engine we run, so there's no technical moat. What oauthlint gives you is the work most people never do:
 
