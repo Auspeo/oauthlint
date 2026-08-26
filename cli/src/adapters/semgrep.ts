@@ -148,6 +148,18 @@ export interface SemgrepAdapterOptions {
    * Every other adapter flag is shared, so the same adapter drives either engine.
    */
   metrics?: boolean;
+  /**
+   * Path globs to exclude from the scan, passed through as `--exclude`. Used to
+   * keep the scan off non-production trees (tests, mocks, stories, build output)
+   * where auth anti-patterns are fixtures, not shippable code. Both engines
+   * accept the flag and recursive double-star glob patterns.
+   */
+  excludes?: readonly string[];
+  /**
+   * Path globs to restrict the scan to, passed through as `--include`. When set,
+   * only matching files are scanned.
+   */
+  includes?: readonly string[];
 }
 
 export class SemgrepAdapter {
@@ -157,6 +169,8 @@ export class SemgrepAdapter {
   private readonly timeoutMs?: number;
   private readonly maxOutputBytes?: number;
   private readonly metrics: boolean;
+  private readonly excludes: readonly string[];
+  private readonly includes: readonly string[];
 
   constructor(opts: SemgrepAdapterOptions) {
     this.binary = opts.binary ?? 'semgrep';
@@ -165,6 +179,8 @@ export class SemgrepAdapter {
     this.timeoutMs = opts.timeoutMs;
     this.maxOutputBytes = opts.maxOutputBytes;
     this.metrics = opts.metrics ?? true;
+    this.excludes = opts.excludes ?? [];
+    this.includes = opts.includes ?? [];
   }
 
   /**
@@ -175,6 +191,11 @@ export class SemgrepAdapter {
   private baseScanArgs(): string[] {
     const args = ['scan', '--config', this.configPath, '--json', '--quiet', '--no-git-ignore'];
     if (this.metrics) args.push('--metrics=off');
+    // Path filters. Both engines accept repeated `--exclude`/`--include` flags
+    // and `**/`-prefixed globs; the same flags drive `scan` and `planFixes`, so
+    // autofix never rewrites an excluded (e.g. test/mock) file either.
+    for (const glob of this.excludes) args.push('--exclude', glob);
+    for (const glob of this.includes) args.push('--include', glob);
     return args;
   }
 

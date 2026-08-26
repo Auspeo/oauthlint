@@ -14,6 +14,33 @@ const ConfigSchema = z.object({
   codeFrame: z.boolean().optional(),
 });
 
+/**
+ * Globs excluded from a scan when the user's config does not set its own
+ * `exclude`. These are non-production trees — test, spec, mock, story, e2e, and
+ * build output — where auth anti-patterns are fixtures and stubs (mock tokens,
+ * fake secrets, throwaway callbacks), not shippable code. Firing there is the
+ * classic false positive a low-FP linter must avoid, and it mirrors the intent
+ * of the `exclude` block that `oauthlint init` already writes. A user who wants
+ * to scan these trees sets `exclude: []` (or their own list) to override.
+ */
+export const DEFAULT_EXCLUDES: readonly string[] = [
+  '**/*.test.*',
+  '**/*.spec.*',
+  '**/test/**',
+  '**/tests/**',
+  '**/__tests__/**',
+  '**/__mocks__/**',
+  '**/mocks/**',
+  '**/*.stories.*',
+  '**/*.cy.*',
+  '**/*.e2e.*',
+  '**/e2e/**',
+  '**/cypress/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/build/**',
+];
+
 export const DEFAULT_CONFIG: OAuthLintConfig = {
   failOn: 'HIGH',
 };
