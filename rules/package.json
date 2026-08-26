@@ -1,6 +1,6 @@
 {
   "name": "oauthlint-rules",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Semgrep rules catching the OAuth, OIDC, JWT, and MCP security bugs that AI coding tools produce.",
   "type": "module",
   "main": "./dist/index.js",
