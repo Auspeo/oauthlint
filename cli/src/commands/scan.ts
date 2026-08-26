@@ -15,7 +15,7 @@ import {
   partitionByBaseline,
 } from '../core/baseline.js';
 import { GitError, resolveDiffFiles, resolveStagedFiles } from '../core/changed-files.js';
-import { loadConfig } from '../core/config.js';
+import { DEFAULT_EXCLUDES, loadConfig } from '../core/config.js';
 import { renderFixPreview, renderFixSummary } from '../core/fix-plan.js';
 import { Reporter } from '../core/reporter.js';
 import { toSarif } from '../core/sarif.js';
@@ -183,10 +183,17 @@ export async function runScan(opts: ScanCommandOptions): Promise<number> {
   if (!adapter) {
     try {
       const engine = await resolveEngine();
+      // Path filters: an explicit `exclude` in the user's config wins (an empty
+      // list opts back into scanning everything); otherwise fall back to the
+      // default non-production excludes so a default scan does not fire on test,
+      // mock, and story files. `include`, when set, restricts the scan further.
+      const excludes = config.exclude ?? DEFAULT_EXCLUDES;
       adapter = new SemgrepAdapter({
         configPath: rulesDir,
         binary: engine.path,
         metrics: engine.engine === 'semgrep',
+        excludes,
+        includes: config.include,
       });
     } catch (err) {
       if (err instanceof EngineUnavailableError) {

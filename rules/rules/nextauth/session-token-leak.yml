@@ -20,6 +20,13 @@ rules:
     # fire only when the assigned property name is a known token field (regex
     # allow-list), so copying `session.user.id` or `session.user.role` stays
     # clean.
+    #
+    # The method-shorthand callback is scoped as `{ session($P) {...} }` (a
+    # session method on an object) rather than a bare `session($P) {...}`: a bare
+    # method shorthand is not standalone-parseable and the engine rejects it with
+    # an "Invalid pattern for JavaScript" parse error. Semgrep normalises the
+    # function shape, so that one form covers both `session(p) {...}` and
+    # `async session(p) {...}`; the arrow forms are listed alongside it.
     patterns:
       - pattern-inside: 'callbacks: {...}'
       - pattern-either:
@@ -33,8 +40,7 @@ rules:
           - pattern-inside: '$X: NextAuthConfig = {...}'
           - pattern-inside: '$X: AuthOptions = {...}'
       - pattern-either:
-          - pattern-inside: 'session($P) {...}'
-          - pattern-inside: 'async session($P) {...}'
+          - pattern-inside: '{ session($P) {...} }'
           - pattern-inside: 'session: ($P) => {...}'
           - pattern-inside: 'session: async ($P) => {...}'
       - pattern-either:

@@ -23,15 +23,22 @@ rules:
     # more than that single statement (it inspects the request first), so it
     # never matches; anchoring to `implements CanActivate` stops the rule firing
     # on an unrelated method that happens to be named `canActivate`.
+    #
+    # The method is wrapped in `class $K { ... }` rather than written as a bare
+    # `canActivate($CTX) {...}`: a bare method shorthand is not a standalone
+    # parseable JS/TS snippet, so the engine rejects it with a
+    # "Invalid pattern for JavaScript" parse error. Wrapping it in a class gives
+    # the parser a valid enclosing node; the `implements CanActivate`
+    # `pattern-inside` still supplies the guard anchoring.
     patterns:
       - pattern-inside: |
           class $C implements CanActivate {
             ...
           }
       - pattern-either:
-          - pattern: 'canActivate($CTX) { return true; }'
-          - pattern: 'canActivate($CTX) { return Promise.resolve(true); }'
-          - pattern: 'async canActivate($CTX) { return true; }'
+          - pattern: 'class $K { canActivate($CTX) { return true; } }'
+          - pattern: 'class $K { canActivate($CTX) { return Promise.resolve(true); } }'
+          - pattern: 'class $K { async canActivate($CTX) { return true; } }'
     paths:
       exclude:
         - "**/test/**"

@@ -2412,20 +2412,9 @@ rules:
           - metavariable-regex:
               metavariable: $MODEL
               regex: (?i)user
-          - metavariable-pattern:
-              metavariable: $PWD
-              patterns:
-                - pattern-not: $X.hash(...)
-                - pattern-not: hash($X, ...)
-                - pattern-not: bcrypt.$Y(...)
-                - pattern-not: argon2.$Y(...)
-                - pattern-not: scrypt.$Y(...)
-                - pattern-not: crypto.scrypt(...)
-                - pattern-not: await $X.hash(...)
-                - pattern-not: await hash($X, ...)
           - metavariable-regex:
               metavariable: $PWD
-              regex: (?i)^(?!.*hash).*$
+              regex: ^(?:[A-Za-z_$][\w$]*\.)*[Pp]assword$
       - patterns:
           - pattern-either:
               - pattern: "$DB.$MODEL.create({..., data: {..., password: $PWD, ...}, ...})"
@@ -2433,20 +2422,9 @@ rules:
           - metavariable-regex:
               metavariable: $MODEL
               regex: (?i)user
-          - metavariable-pattern:
-              metavariable: $PWD
-              patterns:
-                - pattern-not: $X.hash(...)
-                - pattern-not: hash($X, ...)
-                - pattern-not: bcrypt.$Y(...)
-                - pattern-not: argon2.$Y(...)
-                - pattern-not: scrypt.$Y(...)
-                - pattern-not: crypto.scrypt(...)
-                - pattern-not: await $X.hash(...)
-                - pattern-not: await hash($X, ...)
           - metavariable-regex:
               metavariable: $PWD
-              regex: (?i)^(?!.*hash).*$
+              regex: ^(?:[A-Za-z_$][\w$]*\.)*[Pp]assword$
     paths:
       exclude:
         - "**/test/**"
@@ -6552,9 +6530,9 @@ rules:
             ...
           }
       - pattern-either:
-          - pattern: canActivate($CTX) { return true; }
-          - pattern: canActivate($CTX) { return Promise.resolve(true); }
-          - pattern: async canActivate($CTX) { return true; }
+          - pattern: class $K { canActivate($CTX) { return true; } }
+          - pattern: class $K { canActivate($CTX) { return Promise.resolve(true); } }
+          - pattern: class $K { async canActivate($CTX) { return true; } }
     paths:
       exclude:
         - "**/test/**"
@@ -6658,13 +6636,7 @@ rules:
           - pattern-inside: "$X: NextAuthOptions = {...}"
           - pattern-inside: "$X: NextAuthConfig = {...}"
           - pattern-inside: "$X: AuthOptions = {...}"
-      - pattern-either:
-          - pattern: authorized($P) { return true; }
-          - pattern: async authorized($P) { return true; }
-          - pattern: "authorized: ($P) => true"
-          - pattern: "authorized: async ($P) => true"
-          - pattern: "authorized: ($P) => { return true; }"
-          - pattern: "authorized: async ($P) => { return true; }"
+      - pattern: "{ authorized($P) { return true; } }"
     paths:
       exclude:
         - "**/test/**"
@@ -6864,13 +6836,7 @@ rules:
           - pattern-inside: "$X: NextAuthOptions = {...}"
           - pattern-inside: "$X: NextAuthConfig = {...}"
           - pattern-inside: "$X: AuthOptions = {...}"
-      - pattern-either:
-          - pattern: redirect($P) { return url; }
-          - pattern: async redirect($P) { return url; }
-          - pattern: "redirect: ($P) => url"
-          - pattern: "redirect: async ($P) => url"
-          - pattern: "redirect: ($P) => { return url; }"
-          - pattern: "redirect: async ($P) => { return url; }"
+      - pattern: "{ redirect($P) { return url; } }"
     paths:
       exclude:
         - "**/test/**"
@@ -6922,8 +6888,7 @@ rules:
           - pattern-inside: "$X: NextAuthConfig = {...}"
           - pattern-inside: "$X: AuthOptions = {...}"
       - pattern-either:
-          - pattern-inside: session($P) {...}
-          - pattern-inside: async session($P) {...}
+          - pattern-inside: "{ session($P) {...} }"
           - pattern-inside: "session: ($P) => {...}"
           - pattern-inside: "session: async ($P) => {...}"
       - pattern-either:

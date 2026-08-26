@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -41,6 +41,34 @@ describe('SemgrepAdapter', () => {
     const adapter = new SemgrepAdapter({ binary, configPath: '/tmp' });
     const result = await adapter.scan('/tmp');
     expect(result.findings).toEqual([]);
+  });
+
+  it('passes excludes and includes through as --exclude / --include flags', async () => {
+    const argsFile = join(tmp, 'argv.txt');
+    const bin = join(tmp, 'semgrep-argv');
+    // Record argv (one arg per line) so the test can assert on the flags, then
+    // emit empty output so the adapter reports a clean scan.
+    writeFileSync(
+      bin,
+      `#!/bin/sh\nfor a in "$@"; do printf '%s\\n' "$a"; done > ${JSON.stringify(argsFile)}\nprintf '%s' ''\n`,
+    );
+    chmodSync(bin, 0o755);
+    const adapter = new SemgrepAdapter({
+      binary: bin,
+      configPath: '/tmp',
+      metrics: false,
+      excludes: ['**/*.test.*', '**/__mocks__/**'],
+      includes: ['src/**'],
+    });
+    await adapter.scan('/tmp');
+    const argv = readFileSync(argsFile, 'utf8').split('\n');
+    // Each flag is a discrete argv entry immediately followed by its glob.
+    expect(argv).toContain('--exclude');
+    expect(argv).toContain('**/*.test.*');
+    expect(argv).toContain('**/__mocks__/**');
+    expect(argv).toContain('--include');
+    expect(argv).toContain('src/**');
+    expect(argv[argv.indexOf('**/*.test.*') - 1]).toBe('--exclude');
   });
 
   it('getVersion returns null when the binary is missing', async () => {
