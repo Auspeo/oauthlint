@@ -12,8 +12,11 @@
 
         <p>It scans the current file on open and on save and highlights each finding
         with a gutter marker and a tooltip that carries the rule id, the explanation,
-        and a link to the rule documentation. Severity is mapped to the IDE's own
-        error, warning, and weak-warning levels.</p>
+        and a link to the rule documentation. Where a fix is available you can apply it
+        with an Alt+Enter quick fix, or suppress the finding with an inline comment. A
+        "Scan Project" action runs one pass over the whole project and lists every
+        finding in a tool window with click-to-navigate. Severity is mapped to the IDE's
+        own error, warning, and weak-warning levels.</p>
 
         <p>OAuthLint is fully self-contained. The rule pack ships inside the plugin and
         a small pinned scan engine is downloaded once and verified against a pinned
@@ -28,6 +31,21 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>0.5.0</h3>
+        <ul>
+          <li><b>Apply fixes from the editor.</b> Findings that carry a suggested fix now offer
+              an Alt+Enter quick fix that rewrites the code in place. Two more intentions were
+              added on every finding: suppress it with an inline comment, and open its rule
+              documentation.</li>
+          <li><b>Scan the whole project.</b> A new "OAuthLint: Scan Project" action (Tools menu)
+              runs one pass over the entire project and lists every finding in a dedicated
+              OAuthLint tool window at the bottom, with double-click navigation to the exact
+              line. Previously findings appeared only in files you had open.</li>
+          <li><b>Branded gutter icon.</b> Lines with a finding now show the OAuthLint mark in
+              the gutter.</li>
+          <li>The bundled rule pack was refreshed and its cache key bumped so it stays current
+              on upgrade.</li>
+        </ul>
         <h3>0.4.1</h3>
         <ul>
           <li><b>Compatibility with 2025.x IDEs.</b> The plugin now loads in IntelliJ IDEA,
@@ -94,5 +112,25 @@
 
         <!-- Notifications (offline first run, engine retry). -->
         <notificationGroup id="OAuthLint" displayType="BALLOON"/>
+
+        <!-- Project-wide findings list, populated by the "Scan Project" action.
+             The panel is registered with a project service on first activation. -->
+        <toolWindow
+                id="OAuthLint"
+                anchor="bottom"
+                secondary="true"
+                icon="/icons/oauthlintGutter.svg"
+                factoryClass="dev.oauthlint.toolwindow.OAuthLintToolWindowFactory"/>
     </extensions>
+
+    <actions>
+        <!-- One whole-project Opengrep run -> navigable findings list. -->
+        <action
+                id="dev.oauthlint.action.ScanProjectAction"
+                class="dev.oauthlint.action.ScanProjectAction"
+                text="OAuthLint: Scan Project"
+                description="Scan the whole project for OAuth/OIDC/JWT/MCP anti-patterns and list every finding.">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>
