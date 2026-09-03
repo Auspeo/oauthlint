@@ -32,8 +32,34 @@ enum class Severity {
 }
 
 /**
+ * The exact source span an autofix replacement overwrites. Mirrors the engine's
+ * `FixRange` (and the VS Code extension's `OAuthLintFixRange`): lines/columns are
+ * 1-based and `endCol` is exclusive. Byte offsets, when present, are 0-based and
+ * `[startOffset, endOffset)`; they mirror what Semgrep reports but the annotator
+ * builds edits from line/column (offsets are byte-based, document offsets are
+ * char-based, so line/column is the safe basis for the edit).
+ */
+data class FixRange(
+    val startLine: Int,
+    val startCol: Int,
+    val endLine: Int,
+    val endCol: Int,
+    val startOffset: Int?,
+    val endOffset: Int?,
+)
+
+/** Per-finding autofix data — present only when the matched rule ships a `fix:`. */
+data class Fix(
+    val replacement: String,
+    val range: FixRange,
+)
+
+/**
  * A single normalised OAuthLint finding. Lines and columns are 1-based (as
  * Opengrep reports them); the annotator converts them to editor offsets.
+ * [filePath] is the file the finding was reported in (as Opengrep emits it —
+ * absolute for an absolute scan target); it lets a whole-project scan navigate
+ * to the offending file. [fix] carries the autofix when the rule ships one.
  */
 data class Finding(
     val ruleId: String,
@@ -44,6 +70,8 @@ data class Finding(
     val endLine: Int,
     val endCol: Int,
     val docUrl: String?,
+    val filePath: String = "",
+    val fix: Fix? = null,
 )
 
 /**
@@ -145,13 +173,38 @@ private data class SemgrepResult(
         endLine = end.line,
         endCol = end.col,
         docUrl = extra.metadata?.docUrl,
+        filePath = path,
+        fix = toFix(),
     )
+
+    /**
+     * Build the finding's autofix from `extra.fix` (the rendered replacement
+     * text) when the matched rule ships a `fix:`. The replacement overwrites the
+     * match's own span, so the fix range is the finding's own start/end — exactly
+     * how the CLI adapter and the VS Code runner surface it. Returns null when
+     * there is no fix, so [Finding.fix] stays absent.
+     */
+    private fun toFix(): Fix? {
+        val replacement = extra.fix ?: return null
+        return Fix(
+            replacement = replacement,
+            range = FixRange(
+                startLine = start.line,
+                startCol = start.col,
+                endLine = end.line,
+                endCol = end.col,
+                startOffset = start.offset,
+                endOffset = end.offset,
+            ),
+        )
+    }
 }
 
 @Serializable
 private data class SemgrepPos(
     val line: Int = 1,
     val col: Int = 1,
+    val offset: Int? = null,
 )
 
 @Serializable
@@ -159,6 +212,9 @@ private data class SemgrepExtra(
     val severity: String? = null,
     val message: String? = null,
     val metadata: SemgrepMetadata? = null,
+    // The autofix replacement text for this match's span. Present only when the
+    // matched rule ships a `fix:`; absent otherwise (findings without a fix).
+    val fix: String? = null,
 )
 
 @Serializable

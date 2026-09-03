@@ -14,6 +14,7 @@ import com.intellij.psi.PsiFile
 import dev.oauthlint.engine.EngineManager
 import dev.oauthlint.engine.EngineUnavailableException
 import dev.oauthlint.notify.EngineNotifications
+import dev.oauthlint.quickfix.OAuthLintIntentions
 import dev.oauthlint.rules.RuleBundle
 import dev.oauthlint.scan.Finding
 import dev.oauthlint.scan.OpenGrepScanner
@@ -89,10 +90,17 @@ class OAuthLintExternalAnnotator : ExternalAnnotator<CollectedInfo, List<Finding
             val severity = toHighlightSeverity(finding.severity)
             val summary = finding.message.lineSequence().firstOrNull()?.trim().takeUnless { it.isNullOrEmpty() }
                 ?: finding.ruleId
-            holder.newAnnotation(severity, "$summary (${finding.ruleId})")
+            var builder = holder.newAnnotation(severity, "$summary (${finding.ruleId})")
                 .range(range)
                 .tooltip(buildTooltip(finding))
-                .create()
+                .gutterIconRenderer(
+                    OAuthLintGutterIconRenderer("$summary (${finding.ruleId})", OAuthLintIntentions.docUrlFor(finding)),
+                )
+            // Alt+Enter actions: Apply fix (when available) · Suppress · Open docs.
+            for (fix in OAuthLintIntentions.forFinding(finding)) {
+                builder = builder.withFix(fix)
+            }
+            builder.create()
         }
     }
 
