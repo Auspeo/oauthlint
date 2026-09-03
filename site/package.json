@@ -16,15 +16,15 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@astrojs/sitemap": "3.7.3",
+    "@astrojs/sitemap": "3.7.4",
     "astro": "5.18.2",
-    "shiki": "4.3.1",
+    "shiki": "4.4.3",
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.10",
     "oauthlint-rules": "workspace:*",
-    "tsx": "4.23.0",
+    "tsx": "4.23.13",
     "typescript": "5.9.3",
     "vitest": "2.1.9"
   }
