@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.14',
-  text: 'v0.14 is out: a mobile auth pack for Swift/iOS and Android, catching insecure token storage, cleartext traffic, and OAuth in embedded WebViews.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.14.0',
+  version: 'v0.15',
+  text: 'v0.15 is out: rules that were silently dropped on the shipped engine now run, and scans skip your test and mock files by default.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.15.0',
 };
 
 /**
