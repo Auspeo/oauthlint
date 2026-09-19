@@ -42,7 +42,7 @@ nav a[href]:hover {
   html.js section {
     opacity: 0;
     transform: translateY(18px);
-    transition: opacity 0.6s var(--ol-ease-out), transform 0.6s var(--ol-ease-out);
+    transition: opacity 0.45s var(--ol-ease-out), transform 0.45s var(--ol-ease-out);
     will-change: opacity, transform;
   }
   html.js section.is-visible {
