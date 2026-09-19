@@ -101,10 +101,10 @@
   --ol-focus-ring: var(--ol-accent-400);
 
   /* ---- Pro tier (pro) — deepened accent + signal ---- */
-  --ol-pro:        oklch(0.700 0.135 268);
-  --ol-pro-strong: oklch(0.620 0.140 268);
-  --ol-pro-bg:     oklch(0.270 0.060 268);
-  --ol-pro-border: oklch(0.430 0.095 268);
+  --ol-pro: oklch(0.7 0.135 268);
+  --ol-pro-strong: oklch(0.62 0.14 268);
+  --ol-pro-bg: oklch(0.27 0.06 268);
+  --ol-pro-border: oklch(0.43 0.095 268);
 
   /* ---- Typography ---- */
   --ol-font-display: "Sora", "Hanken Grotesk", system-ui, sans-serif;
