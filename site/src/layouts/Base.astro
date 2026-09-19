@@ -78,8 +78,10 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Auspeo" />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href={canonical} />
+    <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
     <meta name="theme-color" content="#0E1113" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -110,6 +112,7 @@ const jsonLd = {
     </script>
 
     <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="OAuthLint" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
