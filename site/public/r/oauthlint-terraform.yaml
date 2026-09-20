@@ -1,0 +1,97 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# terraform subset — 3 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.iac.tf-hardcoded-oauth-secret
+    languages:
+      - terraform
+    severity: WARNING
+    message: |
+      A secret-like attribute (client_secret, token, password, api_key, private_key, ...) is assigned a hard-coded string literal in Terraform. The value ships in the repository and, because Terraform records arguments in state, it also lands in the state file, so it must be treated as leaked and rotated.
+      Read it from a variable (var.*), a secret-manager data source (AWS Secrets Manager, Vault, GCP Secret Manager), or an environment-backed input instead, and keep the value out of both the code and the state where possible.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-tf-hardcoded-oauth-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/798.html
+        - https://developer.hashicorp.com/terraform/language/state/sensitive-data
+      technology:
+        - terraform
+    patterns:
+      - pattern: $KEY = "$VAL"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)^(.*_)?(secret|token|password|client_secret|api_?key|private_key)$
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: .{8,}
+  - id: auth.iac.tf-oauth-implicit-grant
+    languages:
+      - terraform
+    severity: ERROR
+    message: |
+      This Terraform resource provisions an OAuth client with the implicit grant enabled (grant_types or allowed_oauth_flows contains "implicit"). The implicit flow returns access tokens in the URL fragment, has no client authentication, and cannot use refresh-token rotation. It is removed from OAuth 2.1 and disallowed by the OAuth security BCP (RFC 9700) precisely because those tokens leak through browser history, referrers, and logs.
+      Use the authorization_code grant with PKCE instead. Drop "implicit" from the flow list and let the client exchange a code for tokens over the back channel.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-tf-oauth-implicit-grant
+      category: security
+      cwe: CWE-287
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700
+        - https://oauth.net/2/grant-types/implicit/
+      technology:
+        - terraform
+        - oauth
+        - auth0
+        - cognito
+    pattern-either:
+      - pattern: grant_types = [..., "implicit", ...]
+      - pattern: allowed_oauth_flows = [..., "implicit", ...]
+  - id: auth.iac.tf-oauth-insecure-callback
+    languages:
+      - terraform
+    severity: ERROR
+    message: |
+      This Terraform resource registers an OAuth redirect/callback URL that is either plaintext http:// (not on localhost) or uses a wildcard host. A non-TLS callback exposes the authorization code or token to network interception, and a wildcard-host redirect lets an attacker who controls any matching subdomain steal the code (open redirect, CWE-601).
+      Register exact https:// callback URLs with fixed hosts. Keep http:// only for localhost/127.0.0.1 during local development, and never register a redirect target with a `*` in the host.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-tf-oauth-insecure-callback
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6819
+        - https://datatracker.ietf.org/doc/html/rfc9700
+      technology:
+        - terraform
+        - oauth
+        - auth0
+        - cognito
+    patterns:
+      - pattern-either:
+          - pattern: callbacks = [..., "$URL", ...]
+          - pattern: callback_urls = [..., "$URL", ...]
+          - pattern: redirect_uris = [..., "$URL", ...]
+      - metavariable-regex:
+          metavariable: $URL
+          regex: (http://(?!localhost|127\.0\.0\.1)|https?://\*)

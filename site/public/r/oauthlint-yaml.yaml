@@ -1,0 +1,43 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# yaml subset — 1 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.iac.ci-hardcoded-oauth-secret
+    languages:
+      - yaml
+    severity: WARNING
+    message: |
+      A secret-like key (client_secret, token, password, api_key, ...) is assigned a hard-coded literal in this CI workflow instead of being read from the secret store. Anything committed here lives in git history and in every build log forever, so the credential must be treated as leaked and rotated.
+      Reference it from the CI secret store instead, for example ${{ secrets.OKTA_CLIENT_SECRET }} in GitHub Actions or a masked CI variable, and remove the literal from the file.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-005
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-ci-hardcoded-oauth-secret
+      category: security
+      cwe: CWE-798
+      owasp: A07:2021
+      llm-prevalence: HIGH
+      references:
+        - https://cwe.mitre.org/data/definitions/798.html
+        - https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions
+      technology:
+        - github-actions
+        - ci
+    patterns:
+      - pattern: "$KEY: $VAL"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)^([a-z0-9]+_)*(secret|token|password|client_secret|api[_-]?key)$
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^(?!\$\{\{|https?://|secrets\.|var\.|env\.)[^\s]{12,}$

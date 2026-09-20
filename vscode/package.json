@@ -71,7 +71,7 @@
         "oauthlint.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Run OAuthLint on save."
+          "description": "Enable OAuthLint scanning (live as you type, on open, and on save)."
         },
         "oauthlint.minSeverity": {
           "type": "string",
@@ -88,6 +88,22 @@
           "type": "string",
           "default": "",
           "description": "Path to an existing opengrep or semgrep binary to use as the scan engine. Empty = download and manage Opengrep automatically (a one-time ~41 MB download on first scan)."
+        },
+        "oauthlint.run": {
+          "type": "string",
+          "enum": ["onType", "onSave"],
+          "enumDescriptions": [
+            "Flag findings live as you type, and when a file opens.",
+            "Flag only when a file is saved or opened."
+          ],
+          "default": "onType",
+          "description": "When to scan. onType uses a resident engine to flag findings as you type; both modes still flag on open and refresh with autofixes on save."
+        },
+        "oauthlint.debounceMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "description": "How long to wait after you stop typing before running the live scan, in milliseconds."
         }
       }
     },

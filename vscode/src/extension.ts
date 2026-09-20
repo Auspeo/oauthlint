@@ -1,15 +1,47 @@
+import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { type ScanScope, applyScanDiagnostics } from './diagnostics.js';
 import { EngineManager, EngineUnavailableError } from './engine.js';
 import { buildApplyFixEdit } from './fix.js';
 import { type FindingHoverData, buildFindingHoverMarkdown } from './hover.js';
-import { type OAuthLintFinding, filterBySeverity, runOAuthLint } from './runner.js';
+import { type LspDiagnostic, OpengrepLspEngine, type SpawnFn } from './lspEngine.js';
+import {
+  type OAuthLintFinding,
+  bundledRulesDir,
+  filterBySeverity,
+  runOAuthLint,
+} from './runner.js';
 import { type StatusBarState, computeStatusBar } from './statusbar.js';
 import { buildDisableNextLineDirective, leadingIndent } from './suppressions.js';
 
 const DIAG_SOURCE = 'oauthlint';
+// CLI (authoritative, autofix-carrying) scan debounce, used on save.
 const SCAN_DEBOUNCE_MS = 600;
+// Fast live-scan default debounce (overridable via `oauthlint.debounceMs`).
+const LIVE_DEBOUNCE_MS = 250;
+
+/** LSP diagnostic severity (1 Error, 2 Warning, 3 Info, 4 Hint) to OAuthLint tier. */
+const LSP_SEVERITY_TO_TIER: Record<number, OAuthLintFinding['severity']> = {
+  1: 'HIGH',
+  2: 'MEDIUM',
+  3: 'INFO',
+  4: 'INFO',
+};
+
+/** Project one live LSP diagnostic onto the finding shape the extension renders. */
+function lspDiagnosticToFinding(d: LspDiagnostic, filePath: string): OAuthLintFinding {
+  const ruleId = String(d.code ?? '');
+  return {
+    ruleId,
+    severity: LSP_SEVERITY_TO_TIER[d.severity ?? 2] ?? 'MEDIUM',
+    filePath,
+    startLine: d.range.start.line + 1,
+    endLine: d.range.end.line + 1,
+    message: d.message,
+    docUrl: `https://oauthlint.dev/rules/${ruleId.replace(/^auth\./, '')}`,
+  };
+}
 
 /** Languages the extension scans — mirrors the activationEvents + code-action selectors. */
 const SUPPORTED_LANGUAGES = new Set([
@@ -93,6 +125,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const debounceTimers = new Map<string, NodeJS.Timeout>();
 
+  // CLI scan (authoritative, carries autofix data), debounced. Used on save and
+  // for the explicit scan commands.
   const scheduleScan = (uri: vscode.Uri) => {
     const cfg = vscode.workspace.getConfiguration('oauthlint');
     if (!cfg.get<boolean>('enabled', true)) return;
@@ -107,9 +141,101 @@ export function activate(context: vscode.ExtensionContext): void {
     );
   };
 
+  // Resident Opengrep LSP: the rule pack compiles once, then each in-memory
+  // buffer scan costs ~10-20ms, so findings appear as you type and the moment a
+  // file opens. Started lazily on first use (it needs the resolved engine
+  // binary); if it cannot start, the CLI path is the fallback.
+  let lspEngine: OpengrepLspEngine | undefined;
+  let lspStartFailed = false;
+  const ensureLspEngine = async (): Promise<OpengrepLspEngine | undefined> => {
+    if (lspEngine) return lspEngine;
+    if (lspStartFailed) return undefined;
+    let binary: string;
+    try {
+      binary = await engine.resolve();
+    } catch {
+      lspStartFailed = true;
+      return undefined;
+    }
+    const cfg = vscode.workspace.getConfiguration('oauthlint');
+    const rulesDir = cfg.get<string>('rulesDir', '').trim() || bundledRulesDir();
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    const created = new OpengrepLspEngine({
+      binary,
+      rulesRoot: rulesDir,
+      rootUri: folder ? folder.uri.toString() : 'file:///',
+      spawn: spawn as unknown as SpawnFn,
+      log: (m) => output.appendLine(`[oauthlint][lsp] ${m}`),
+    });
+    created.start();
+    lspEngine = created;
+    context.subscriptions.push({ dispose: () => created.stop() });
+    return created;
+  };
+
+  // Fast live scan of a single in-memory document via the resident LSP. Falls
+  // back to the CLI scan if the LSP engine cannot start.
+  const scanDocumentLive = async (document: vscode.TextDocument): Promise<void> => {
+    if (document.uri.scheme !== 'file') return;
+    if (!SUPPORTED_LANGUAGES.has(document.languageId)) return;
+    const cfg = vscode.workspace.getConfiguration('oauthlint');
+    if (!cfg.get<boolean>('enabled', true)) return;
+
+    const eng = await ensureLspEngine();
+    if (!eng) {
+      await scanUri(document.uri, engine, diagnostics, output, statusBar, findingByDiagnostic);
+      return;
+    }
+    const minSeverity = cfg.get<OAuthLintFinding['severity']>('minSeverity', 'MEDIUM');
+    statusBar.markScanning();
+    const diags = await eng.scanDocument(
+      document.uri.toString(),
+      document.languageId,
+      document.getText(),
+    );
+    const findings = filterBySeverity(
+      diags.map((d) => lspDiagnosticToFinding(d, document.uri.fsPath)),
+      minSeverity,
+    );
+    const byFile = bucketDiagnosticsByFile(findings, findingByDiagnostic);
+    // Always carry this file's key (possibly empty) so a fixed finding clears.
+    if (!byFile.has(document.uri.fsPath)) byFile.set(document.uri.fsPath, []);
+    applyScanDiagnostics(diagnostics, {
+      scope: 'file',
+      scannedUri: document.uri,
+      byFile,
+      toUri: (filePath) => vscode.Uri.file(filePath),
+    });
+    statusBar.markScanComplete();
+  };
+
+  const liveTimers = new Map<string, NodeJS.Timeout>();
+  const scheduleLive = (document: vscode.TextDocument) => {
+    const cfg = vscode.workspace.getConfiguration('oauthlint');
+    if (!cfg.get<boolean>('enabled', true)) return;
+    const key = document.uri.toString();
+    const existing = liveTimers.get(key);
+    if (existing) clearTimeout(existing);
+    const delay = Math.max(0, cfg.get<number>('debounceMs', LIVE_DEBOUNCE_MS));
+    liveTimers.set(
+      key,
+      setTimeout(() => {
+        liveTimers.delete(key);
+        void scanDocumentLive(document);
+      }, delay),
+    );
+  };
+
   context.subscriptions.push(
+    // Flag the moment a file opens, fast, via the resident LSP.
+    vscode.workspace.onDidOpenTextDocument((doc) => scheduleLive(doc)),
+    // Flag as you type when run=onType (the default); the debounce keeps it cheap.
+    vscode.workspace.onDidChangeTextDocument((e) => {
+      const run = vscode.workspace.getConfiguration('oauthlint').get<string>('run', 'onType');
+      if (run === 'onType') scheduleLive(e.document);
+    }),
+    // On save, run the authoritative CLI scan so autofix data is available.
     vscode.workspace.onDidSaveTextDocument((doc) => scheduleScan(doc.uri)),
-    vscode.workspace.onDidOpenTextDocument((doc) => scheduleScan(doc.uri)),
     // Re-render the status bar for whatever file is now in front.
     vscode.window.onDidChangeActiveTextEditor(() => statusBar.refresh()),
     // The count is derived from our diagnostics collection — keep it live.
@@ -122,7 +248,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('oauthlint')) {
         for (const editor of vscode.window.visibleTextEditors) {
-          scheduleScan(editor.document.uri);
+          scheduleLive(editor.document);
         }
         statusBar.refresh();
       }
@@ -214,9 +340,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Reflect the file that is already in front on activation.
   statusBar.refresh();
 
-  // Kick off an initial scan for already-open editors.
+  // Kick off an initial (fast) scan for already-open editors.
   for (const editor of vscode.window.visibleTextEditors) {
-    scheduleScan(editor.document.uri);
+    scheduleLive(editor.document);
   }
 }
 
@@ -298,6 +424,50 @@ class StatusBarController implements vscode.Disposable {
   }
 }
 
+/** Build one VS Code diagnostic from a finding and remember the finding behind it. */
+function buildDiagnostic(
+  f: OAuthLintFinding,
+  findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>,
+): vscode.Diagnostic {
+  const range = new vscode.Range(
+    Math.max(0, f.startLine - 1),
+    0,
+    Math.max(0, f.endLine - 1),
+    Number.MAX_SAFE_INTEGER,
+  );
+  const diag = new vscode.Diagnostic(
+    range,
+    f.message.split('\n')[0] ?? f.ruleId,
+    SEVERITY_TO_VSCODE[f.severity],
+  );
+  diag.source = DIAG_SOURCE;
+  diag.code = {
+    value: f.ruleId,
+    target: vscode.Uri.parse(
+      f.docUrl ?? `https://oauthlint.dev/rules/${f.ruleId.replace(/^auth\./, '')}`,
+    ),
+  };
+  findingByDiagnostic.set(diag, f);
+  return diag;
+}
+
+/** Group findings into per-file diagnostic buckets for `applyScanDiagnostics`. */
+function bucketDiagnosticsByFile(
+  findings: OAuthLintFinding[],
+  findingByDiagnostic: WeakMap<vscode.Diagnostic, OAuthLintFinding>,
+): Map<string, vscode.Diagnostic[]> {
+  const byFile = new Map<string, vscode.Diagnostic[]>();
+  for (const f of findings) {
+    let bucket = byFile.get(f.filePath);
+    if (!bucket) {
+      bucket = [];
+      byFile.set(f.filePath, bucket);
+    }
+    bucket.push(buildDiagnostic(f, findingByDiagnostic));
+  }
+  return byFile;
+}
+
 async function scanUri(
   uri: vscode.Uri,
   engine: EngineManager,
@@ -370,35 +540,7 @@ async function scanUri(
   }
 
   const findings = filterBySeverity(result.report.findings, minSeverity);
-  const byFile = new Map<string, vscode.Diagnostic[]>();
-  for (const f of findings) {
-    const path = f.filePath;
-    const range = new vscode.Range(
-      Math.max(0, f.startLine - 1),
-      0,
-      Math.max(0, f.endLine - 1),
-      Number.MAX_SAFE_INTEGER,
-    );
-    const diag = new vscode.Diagnostic(
-      range,
-      f.message.split('\n')[0] ?? f.ruleId,
-      SEVERITY_TO_VSCODE[f.severity],
-    );
-    diag.source = DIAG_SOURCE;
-    diag.code = {
-      value: f.ruleId,
-      target: vscode.Uri.parse(
-        f.docUrl ?? `https://oauthlint.dev/rules/${f.ruleId.replace(/^auth\./, '')}`,
-      ),
-    };
-    findingByDiagnostic.set(diag, f);
-    let bucket = byFile.get(path);
-    if (!bucket) {
-      bucket = [];
-      byFile.set(path, bucket);
-    }
-    bucket.push(diag);
-  }
+  const byFile = bucketDiagnosticsByFile(findings, findingByDiagnostic);
 
   // Remove the previous scan's stale diagnostics, then re-apply. A single-file
   // scan only drops its own file's entries (delete) so a concurrent scan of

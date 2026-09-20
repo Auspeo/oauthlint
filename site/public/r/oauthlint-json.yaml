@@ -1,0 +1,66 @@
+# OAuthLint — Semgrep rules for the OAuth / OIDC / JWT / session / CORS
+# anti-patterns that AI coding tools systematically produce.
+#
+# json subset — 2 rules.
+#
+# Run the full pack with no install:
+#   semgrep --config https://oauthlint.dev/r/oauthlint.yaml ./src
+#
+# Docs:    https://oauthlint.dev/docs/semgrep
+# Rules:   https://oauthlint.dev/rules
+# License: MIT — https://github.com/Auspeo/oauthlint
+#
+# Generated from the oauthlint-rules pack. Do not edit by hand.
+
+rules:
+  - id: auth.iac.gha-oidc-missing-sub
+    languages:
+      - json
+    severity: ERROR
+    message: |
+      This AWS IAM trust policy federates GitHub Actions OIDC (token.actions.githubusercontent.com) with an `aud` condition but sets no `sub` condition at all, so ANY GitHub repository, owned by anyone, can assume this role. The audience check alone is shared by every GitHub Actions token and does not identify your repo.
+      Add a StringEquals (or StringLike, still pinned) condition on token.actions.githubusercontent.com:sub bound to your repository and ref, for example repo:ORG/REPO:ref:refs/heads/main. Without it the role is effectively public to all of GitHub.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-002
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-gha-oidc-missing-sub
+      category: security
+      cwe: CWE-284
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      references:
+        - https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect
+        - https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      technology:
+        - github-actions
+        - aws-iam
+        - oidc
+    patterns:
+      - pattern: '{"token.actions.githubusercontent.com:aud": "$AUD", ...}'
+      - pattern-not-inside: |
+          {..., $OP: {..., "token.actions.githubusercontent.com:sub": "$S2", ...}, ...}
+  - id: auth.iac.gha-oidc-wildcard-sub
+    languages:
+      - json
+    severity: ERROR
+    message: |
+      This AWS IAM trust policy federates GitHub Actions OIDC (token.actions.githubusercontent.com) but pins the `sub` claim to a wildcard pattern, so any repository, branch, or pull request matching the glob can assume this role. A leaked or malicious workflow in a matching repo gets your cloud credentials.
+      Pin `sub` to an exact ref, for example repo:ORG/REPO:ref:refs/heads/main or repo:ORG/REPO:environment:prod, and keep the `aud` condition on sts.amazonaws.com. Scope one role per repository/environment rather than one wildcard role for many.
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-001
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-gha-oidc-wildcard-sub
+      category: security
+      cwe: CWE-284
+      owasp: A01:2021
+      llm-prevalence: HIGH
+      references:
+        - https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect
+        - https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      technology:
+        - github-actions
+        - aws-iam
+        - oidc
+    patterns:
+      - pattern: '{"token.actions.githubusercontent.com:sub": "$SUB"}'
+      - metavariable-regex:
+          metavariable: $SUB
+          regex: .*\*

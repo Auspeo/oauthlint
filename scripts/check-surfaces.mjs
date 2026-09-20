@@ -127,6 +127,9 @@ const LANG_DISPLAY = {
   ruby: 'Ruby',
   kotlin: 'Kotlin',
   swift: 'Swift',
+  json: 'JSON',
+  terraform: 'Terraform',
+  yaml: 'YAML',
   // Note: the Android XML config rules declare `languages: [xml]`. XML is a
   // config-file target, not a marketed language, so it is intentionally absent
   // here: it is excluded from the language-name and per-language-bundle checks.

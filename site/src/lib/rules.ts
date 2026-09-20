@@ -41,7 +41,10 @@ export type FixtureLang =
   | 'ruby'
   | 'kotlin'
   | 'swift'
-  | 'xml';
+  | 'xml'
+  | 'json'
+  | 'terraform'
+  | 'yaml';
 
 export interface Fixture {
   /** Raw fixture source code. */
@@ -97,6 +100,10 @@ const EXT_LANG: Record<string, FixtureLang> = {
   kt: 'kotlin',
   swift: 'swift',
   xml: 'xml',
+  json: 'json',
+  tf: 'terraform',
+  yaml: 'yaml',
+  yml: 'yaml',
 };
 const FIXTURE_EXTS = Object.keys(EXT_LANG);
 
@@ -114,6 +121,9 @@ const LANG_LABEL: Record<string, string> = {
   kotlin: 'Kotlin',
   swift: 'Swift',
   xml: 'XML',
+  json: 'JSON',
+  terraform: 'Terraform',
+  yaml: 'YAML',
 };
 
 /** Map a Semgrep / OAuthLint severity onto the design severity scale. */
