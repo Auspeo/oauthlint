@@ -462,6 +462,7 @@ rules:
       technology:
         - jsonwebtoken
     pattern: $V.validate_aud = false
+    fix: $V.validate_aud = true
   - id: auth.rust.jwt.no-expiration-validation
     languages:
       - rust
@@ -489,6 +490,7 @@ rules:
       technology:
         - jsonwebtoken
     pattern: $V.validate_exp = false
+    fix: $V.validate_exp = true
   - id: auth.rust.jwt.no-issuer-validation
     languages:
       - rust
@@ -568,15 +570,18 @@ rules:
         - https://cwe.mitre.org/data/definitions/798.html
       technology:
         - oauth2
-    pattern-either:
-      - pattern: ClientSecret::new("...".to_string())
-      - pattern: ClientSecret::new("...".to_owned())
-      - pattern: ClientSecret::new("...".into())
-      - pattern: ClientSecret::new(String::from("..."))
-      - pattern: oauth2::ClientSecret::new("...".to_string())
-      - pattern: oauth2::ClientSecret::new("...".to_owned())
-      - pattern: oauth2::ClientSecret::new("...".into())
-      - pattern: oauth2::ClientSecret::new(String::from("..."))
+    patterns:
+      - pattern-either:
+          - pattern: ClientSecret::new("...".to_string())
+          - pattern: ClientSecret::new("...".to_owned())
+          - pattern: ClientSecret::new("...".into())
+          - pattern: ClientSecret::new(String::from("..."))
+          - pattern: oauth2::ClientSecret::new("...".to_string())
+          - pattern: oauth2::ClientSecret::new("...".to_owned())
+          - pattern: oauth2::ClientSecret::new("...".into())
+          - pattern: oauth2::ClientSecret::new(String::from("..."))
+      - pattern-not-regex: '"[^"]{0,7}"'
+      - pattern-not-regex: (?i)"(test|testing|changeme|change-me|example|placeholder|secret|client[-_]?secret|top[-_]?secret|super[-_]?secret|my[-_]?secret|our[-_]?secret|the[-_]?secret|some[-_]?secret|a[-_]?secret|dummy|sample|password|passwd|hunter2|letmein|abc123|s3cret|deadbeef|none|null|redacted|foo|bar|baz|qux|todo|tbd|a{2,}|b{2,}|c{2,}|x{2,}|z{2,}|[0-9]{2,})"
   - id: auth.rust.oauth.insecure-token-endpoint
     languages:
       - rust

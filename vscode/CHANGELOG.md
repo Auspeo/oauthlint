@@ -4,6 +4,22 @@ All notable changes to the OAuthLint VS Code extension are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2026-09-20
+
+### Added
+
+- MCP OAuth conformance rules. The bundled pack (275 rules) flags a resource
+  server that does not bind tokens to its own audience (RFC 8707) and JWT
+  verification that skips the audience or issuer check (RFC 9068 / 9207), across
+  the jose and PyJWT verifiers MCP servers use.
+- More quick fixes. Eight more rules now carry a safe fix that re-enables a
+  disabled validation flag, each proven to leave compliant code unchanged.
+
+### Changed
+
+- Scans skip cross-language test and mock trees by default, so fixtures and
+  stubs no longer produce false positives.
+
 ## [0.8.0] - 2026-08-12
 
 ### Added

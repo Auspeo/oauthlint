@@ -17,9 +17,9 @@ export interface Announcement {
 }
 
 export const announcement: Announcement | null = {
-  version: 'v0.15',
-  text: 'v0.15 is out: rules that were silently dropped on the shipped engine now run, and scans skip your test and mock files by default.',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.15.0',
+  version: 'v0.16',
+  text: 'v0.16 is out: MCP OAuth conformance (a live probe plus new rules), broader auto-fixes, and the tool is now supply-chain hardened (OpenSSF Scorecard + SBOM).',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.16.0',
 };
 
 /**

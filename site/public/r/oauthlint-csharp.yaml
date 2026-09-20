@@ -41,6 +41,7 @@ rules:
         - aspnetcore
         - cookies
     pattern: HttpOnly = false
+    fix: HttpOnly = true
     paths:
       exclude:
         - "**/test/**"
@@ -81,9 +82,12 @@ rules:
       technology:
         - aspnetcore
         - cookies
-    pattern-either:
-      - pattern: SameSite = SameSiteMode.None
-      - pattern: $X.SameSite = SameSiteMode.None
+    patterns:
+      - pattern-either:
+          - pattern: SameSite = SameSiteMode.None
+          - pattern: $X.SameSite = SameSiteMode.None
+      - pattern-not-inside: "{..., Secure = true, ...}"
+      - pattern-not-inside: "{..., SecurePolicy = CookieSecurePolicy.Always, ...}"
     paths:
       exclude:
         - "**/test/**"
@@ -609,6 +613,7 @@ rules:
     patterns:
       - pattern: ValidateAudience = false
       - pattern-inside: $A.AddJwtBearer(...)
+    fix: ValidateAudience = true
     paths:
       exclude:
         - "**/test/**"
@@ -651,6 +656,7 @@ rules:
     patterns:
       - pattern: ValidateIssuer = false
       - pattern-inside: $A.AddJwtBearer(...)
+    fix: ValidateIssuer = true
     paths:
       exclude:
         - "**/test/**"
@@ -693,6 +699,7 @@ rules:
     patterns:
       - pattern: ValidateLifetime = false
       - pattern-inside: $A.AddJwtBearer(...)
+    fix: ValidateLifetime = true
     paths:
       exclude:
         - "**/test/**"
@@ -733,6 +740,7 @@ rules:
         - aspnetcore
         - jwt-bearer
     pattern: ValidateIssuerSigningKey = false
+    fix: ValidateIssuerSigningKey = true
     paths:
       exclude:
         - "**/test/**"

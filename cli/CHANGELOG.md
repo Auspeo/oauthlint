@@ -1,5 +1,19 @@
 # oauthlint
 
+## 0.16.0
+
+### Minor Changes
+
+- Deepen the `probe` MCP conformance check and skip test and mock files by default.
+
+  - `oauthlint probe <url>` now inspects the authorization server metadata, credential-free: PKCE S256 is required (it fails when the server does not advertise it), an empty `scopes_supported` warns (the "works in one client, breaks in another" interop bug), and the `resource` identifier is checked as an absolute https URI (RFC 8707 audience binding).
+  - Default scan excludes now cover cross-language test and mock trees (Rust, Go, Python, Java, Kotlin, C#), so fixtures and stubs stop producing false positives. Set `exclude: []` to scan them.
+
+### Patch Changes
+
+- Updated dependencies
+  - oauthlint-rules@0.12.0
+
 ## 0.15.0
 
 ### Minor Changes

@@ -60,11 +60,14 @@ Static rules scan your source. The `probe` command checks the deployed behaviour
 npx oauthlint probe https://mcp.example.com/mcp
 ```
 
-It runs four checks against the URL:
+It runs a set of checks against the URL, from the resource server itself through to its authorization server metadata:
 
 - **Requires authentication.** An unauthenticated request must be refused (401 / 403), not answered with 200.
 - **`WWW-Authenticate`.** The 401 challenge should advertise `resource_metadata`, so clients can find the authorization server (RFC 9728).
 - **Protected Resource Metadata.** `/.well-known/oauth-protected-resource` should be discoverable and carry `resource` plus a non-empty `authorization_servers` (RFC 9728).
+- **Resource identifier.** The `resource` value must be an absolute https URI: it is the audience clients bind their token to (RFC 8707). A relative or http value breaks audience binding.
+- **PKCE (S256).** The authorization server metadata must advertise `S256` in `code_challenge_methods_supported`. MCP's OAuth 2.1 profile requires PKCE.
+- **`scopes_supported`.** An empty or missing scopes list is the interop bug that makes a server work in one client and fail in another.
 - **Rejects invalid token.** A bogus bearer token must be refused (401 / 403), proving the server actually verifies tokens rather than waving them through.
 
 A healthy server looks like this:
@@ -75,11 +78,14 @@ OAuthLint MCP auth probe: https://mcp.example.com/mcp
  ✓  Requires authentication         401 without a token
  ✓  WWW-Authenticate                Bearer challenge advertises resource_metadata
  ✓  Protected Resource Metadata     RFC 9728 metadata at https://mcp.example.com/.well-known/oauth-protected-resource
+ ✓  Resource identifier             absolute https resource (https://mcp.example.com/mcp)
+ ✓  PKCE (S256)                     code_challenge_methods_supported advertises S256
+ ✓  scopes_supported                2 scope(s) advertised
  ✓  Rejects invalid token           401 for a bogus bearer token
 ────────────────────────────────────────────────────────────────
 ```
 
-Add `--json` for machine-readable output (`{ url, checks }`). `probe` exits `1` if any check hard-fails (unauthenticated endpoint, invalid token accepted, or no Protected Resource Metadata), `0` otherwise. An invalid or unreachable URL exits `2`.
+Add `--json` for machine-readable output (`{ url, checks }`). `probe` exits `1` if any check hard-fails (unauthenticated endpoint, invalid token accepted, no Protected Resource Metadata, or PKCE S256 not advertised), `0` otherwise. An invalid or unreachable URL exits `2`.
 
 `probe` complements the static rules: the rules read your source before it ships, the probe tests the live server after it deploys. A full RFC 8707 audience check needs a real token from the authorization server, so run the static `mcp/` rules for that. See the [`probe`](/docs/cli#probe) entry in the CLI reference for flags and exit codes.
 

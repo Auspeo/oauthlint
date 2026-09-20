@@ -82,6 +82,7 @@ rules:
       technology:
         - ios
     pattern: $S.prefersEphemeralWebBrowserSession = false
+    fix: $S.prefersEphemeralWebBrowserSession = true
     paths:
       exclude:
         - "**/test/**"

@@ -31,6 +31,17 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>0.6.0</h3>
+        <ul>
+          <li><b>MCP OAuth conformance rules.</b> The bundled pack (now 275 rules) flags the
+              auth mistakes MCP servers ship: a resource server that does not bind tokens to
+              its own audience (RFC 8707), and JWT verification that skips the audience or
+              issuer check (RFC 9068 / 9207), across the jose and PyJWT verifiers MCP servers
+              use.</li>
+          <li><b>More one-click fixes.</b> Eight more rules now carry a safe Alt+Enter fix that
+              re-enables a disabled validation flag, each proven to leave compliant code
+              untouched.</li>
+        </ul>
         <h3>0.5.0</h3>
         <ul>
           <li><b>Apply fixes from the editor.</b> Findings that carry a suggested fix now offer
