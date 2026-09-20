@@ -21,6 +21,10 @@ rules:
     # a rest (`..`), and a text regex would false-positive on comments, so we
     # keep this AST-only for precision.
     pattern: $V.validate_exp = false
+    # Safe, deterministic autofix: flip the disabled check back on. The pattern is
+    # a single member assignment ($V.validate_exp = false), so the fix reuses $V
+    # and the receiver is preserved.
+    fix: '$V.validate_exp = true'
     metadata:
       oauthlint-rule-id: AUTH-RUST-JWT-003
       oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-expiration-validation
