@@ -137,7 +137,11 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
   }
 
   // 3. Protected Resource Metadata (RFC 9728) is discoverable and well-formed.
+  // Capture the resource identifier and authorization server(s) so steps 3b/5
+  // can check audience identity and the AS's OAuth 2.1 conformance.
   let prmOk = false;
+  let prmResource = '';
+  let asList: string[] = [];
   for (const murl of metadataUrls(target)) {
     try {
       const r = await timedFetch(fetchImpl, murl, { method: 'GET' }, timeoutMs);
@@ -146,6 +150,8 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
       const hasResource = typeof body.resource === 'string';
       const hasAs =
         Array.isArray(body.authorization_servers) && body.authorization_servers.length > 0;
+      if (hasResource) prmResource = body.resource as string;
+      if (hasAs) asList = (body.authorization_servers as unknown[]).map(String);
       if (hasResource && hasAs) {
         checks.push({
           name: 'Protected Resource Metadata',
@@ -173,6 +179,94 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
       details:
         'no /.well-known/oauth-protected-resource (RFC 9728), clients cannot discover the AS',
     });
+  }
+
+  // 3b. The `resource` identifier must be an absolute https URI: it is the
+  // audience value clients bind their access token to (RFC 8707). A relative
+  // or http value breaks audience binding and re-opens the confused-deputy gap.
+  if (prmResource) {
+    let httpsAbs = false;
+    try {
+      httpsAbs = new URL(prmResource).protocol === 'https:';
+    } catch {
+      httpsAbs = false;
+    }
+    checks.push(
+      httpsAbs
+        ? {
+            name: 'Resource identifier',
+            status: 'ok',
+            details: `absolute https resource (${prmResource})`,
+          }
+        : {
+            name: 'Resource identifier',
+            status: 'warn',
+            details: `resource is not an absolute https URI (${prmResource}), breaks RFC 8707 audience binding`,
+          },
+    );
+  }
+
+  // 5. Authorization Server metadata (OAuth 2.1). PKCE S256 is mandatory for MCP,
+  // and an empty `scopes_supported` is the interop bug that makes a server work
+  // in one client and fail in another. Credential-free: metadata fetch only.
+  if (asList.length) {
+    const asBase = asList[0].replace(/\/+$/, '');
+    let asMeta:
+      | { code_challenge_methods_supported?: unknown; scopes_supported?: unknown }
+      | undefined;
+    for (const au of [
+      `${asBase}/.well-known/oauth-authorization-server`,
+      `${asBase}/.well-known/openid-configuration`,
+    ]) {
+      try {
+        const r = await timedFetch(fetchImpl, au, { method: 'GET' }, timeoutMs);
+        if (r.status !== 200) continue;
+        asMeta = (await r.json()) as typeof asMeta;
+        break;
+      } catch {
+        // try next candidate
+      }
+    }
+    if (!asMeta) {
+      checks.push({
+        name: 'Authorization Server metadata',
+        status: 'warn',
+        details: `no metadata at ${asBase}/.well-known/oauth-authorization-server`,
+      });
+    } else {
+      const methods = Array.isArray(asMeta.code_challenge_methods_supported)
+        ? (asMeta.code_challenge_methods_supported as unknown[]).map(String)
+        : [];
+      checks.push(
+        methods.includes('S256')
+          ? {
+              name: 'PKCE (S256)',
+              status: 'ok',
+              details: 'code_challenge_methods_supported advertises S256',
+            }
+          : {
+              name: 'PKCE (S256)',
+              status: 'fail',
+              details: 'S256 not advertised, MCP OAuth 2.1 requires PKCE',
+            },
+      );
+      const scopes = asMeta.scopes_supported;
+      const scopesOk = Array.isArray(scopes) && scopes.length > 0;
+      checks.push(
+        scopesOk
+          ? {
+              name: 'scopes_supported',
+              status: 'ok',
+              details: `${(scopes as unknown[]).length} scope(s) advertised`,
+            }
+          : {
+              name: 'scopes_supported',
+              status: 'warn',
+              details:
+                'empty/missing scopes_supported, the "works in one client, fails in another" interop bug',
+            },
+      );
+    }
   }
 
   // 4. Invalid token is rejected (the server actually verifies).
@@ -219,10 +313,9 @@ export async function runProbe(rawUrl: string, opts: ProbeOptions = {}): Promise
       out.write(`${badge(c.status)} ${c.name.padEnd(30, ' ')} ${pc.dim(c.details)}\n`);
     }
     out.write(`${pc.dim('─'.repeat(64))}\n`);
-    out.write(pc.dim('Credential-free negative tests + RFC 9728 discovery. A full audience\n'));
-    out.write(
-      pc.dim('check (RFC 8707) needs a token from the AS; run the static mcp/ rules for that.\n'),
-    );
+    out.write(pc.dim('Credential-free: negative tests + RFC 9728 discovery + AS metadata\n'));
+    out.write(pc.dim('(PKCE, scopes). A full audience check (RFC 8707) needs a real token; the\n'));
+    out.write(pc.dim('static mcp/ rules cover token passthrough and audience binding in code.\n'));
   }
 
   // Exit non-zero if any hard failure (unauthenticated / accepts invalid token / no PRM).

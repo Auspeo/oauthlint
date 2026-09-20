@@ -63,4 +63,66 @@ describe('runProbe', () => {
     expect(code).toBe(1);
     expect(s.text()).toContain('unauthenticated');
   });
+
+  it('passes a fully conformant AS (PKCE S256 + scopes advertised)', async () => {
+    const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url);
+      const auth = (init?.headers as Record<string, string> | undefined)?.Authorization;
+      if (u.includes('/.well-known/oauth-protected-resource')) {
+        return json(200, {
+          resource: 'https://mcp.example.com/mcp',
+          authorization_servers: ['https://as.example.com'],
+        });
+      }
+      if (u.includes('/.well-known/oauth-authorization-server')) {
+        return json(200, {
+          code_challenge_methods_supported: ['S256'],
+          scopes_supported: ['mcp:tools', 'mcp:read'],
+        });
+      }
+      return new Response('', {
+        status: 401,
+        headers: auth
+          ? {}
+          : {
+              'www-authenticate':
+                'Bearer resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource/mcp"',
+            },
+      });
+    }) as unknown as typeof fetch;
+
+    const s = sink();
+    const code = await runProbe('https://mcp.example.com/mcp', { fetchImpl, stream: s.stream });
+    expect(code).toBe(0);
+    expect(s.text()).toContain('PKCE (S256)');
+    expect(s.text()).toContain('scopes_supported');
+    expect(s.text()).not.toContain('✗');
+  });
+
+  it('fails when the authorization server does not advertise PKCE S256', async () => {
+    const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url);
+      const auth = (init?.headers as Record<string, string> | undefined)?.Authorization;
+      if (u.includes('/.well-known/oauth-protected-resource')) {
+        return json(200, {
+          resource: 'https://mcp.example.com/mcp',
+          authorization_servers: ['https://as.example.com'],
+        });
+      }
+      if (u.includes('/.well-known/oauth-authorization-server')) {
+        // No S256 (only the insecure `plain`), and an empty scopes list.
+        return json(200, { code_challenge_methods_supported: ['plain'], scopes_supported: [] });
+      }
+      return new Response('', {
+        status: 401,
+        headers: auth ? {} : { 'www-authenticate': 'Bearer resource_metadata="x"' },
+      });
+    }) as unknown as typeof fetch;
+
+    const s = sink();
+    const code = await runProbe('https://mcp.example.com/mcp', { fetchImpl, stream: s.stream });
+    expect(code).toBe(1);
+    expect(s.text()).toContain('S256 not advertised');
+    expect(s.text()).toContain('interop bug');
+  });
 });
