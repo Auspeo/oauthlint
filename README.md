@@ -13,6 +13,7 @@ A static-analysis linter with a curated, auth-only rule pack and **dataflow (tai
 [![VS Code Marketplace](https://img.shields.io/open-vsx/v/auspeo/oauthlint-vscode?style=flat-square&label=VS%20Code&color=2f6feb)](https://marketplace.visualstudio.com/items?itemName=auspeo.oauthlint-vscode)
 [![docs](https://img.shields.io/badge/docs-oauthlint.dev-2f6feb.svg?style=flat-square)](https://oauthlint.dev)
 [![powered by Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-0a7d6b.svg?style=flat-square)](https://semgrep.dev)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/Auspeo/oauthlint?style=flat-square&label=OpenSSF%20Scorecard)](https://securityscorecards.dev/viewer/?uri=github.com/Auspeo/oauthlint)
 
 </div>
 

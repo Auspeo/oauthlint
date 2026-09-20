@@ -29,3 +29,22 @@ is the tool working as intended).
 
 The latest minor release on npm receives security fixes. oauthlint is pre-1.0,
 so please stay on the most recent version.
+
+## Supply chain
+
+A security tool has to be trustworthy about its own supply chain, so we harden
+and measure it in the open:
+
+- **Pinned CI.** Every GitHub Action is pinned to a full commit SHA (not a
+  movable tag), so a compromised upstream tag cannot silently change our build.
+- **OpenSSF Scorecard.** The repository is scored continuously by the OpenSSF
+  Scorecard workflow and the result is published (see the badge in the README),
+  so our posture is visible and tracked over time.
+- **SBOM.** Every published GitHub release carries a CycloneDX Software Bill of
+  Materials (`oauthlint-sbom.cdx.json`), so you can audit exactly what a release
+  is built from.
+- **Code scanning.** CodeQL runs on the repository and its findings surface in
+  the Security tab.
+
+Planned: npm publish provenance (build attestation) once publishing moves fully
+into CI.
