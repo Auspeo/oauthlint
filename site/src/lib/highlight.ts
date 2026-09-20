@@ -30,6 +30,9 @@ const SHIKI_LANG: Record<FixtureLang, BundledLanguage> = {
   kotlin: 'kotlin',
   swift: 'swift',
   xml: 'xml',
+  json: 'json',
+  terraform: 'terraform',
+  yaml: 'yaml',
 };
 
 /**

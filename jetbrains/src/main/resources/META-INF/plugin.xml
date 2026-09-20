@@ -33,6 +33,9 @@
     <change-notes><![CDATA[
         <h3>0.6.0</h3>
         <ul>
+          <li><b>Live linting as you type.</b> Findings now appear while you edit, powered by a
+              resident scan engine that keeps the rule pack compiled and scans the in-memory file
+              in about 10 to 20 ms instead of re-running the whole scan each time.</li>
           <li><b>MCP OAuth conformance rules.</b> The bundled pack (now 275 rules) flags the
               auth mistakes MCP servers ship: a resource server that does not bind tokens to
               its own audience (RFC 8707), and JWT verification that skips the audience or

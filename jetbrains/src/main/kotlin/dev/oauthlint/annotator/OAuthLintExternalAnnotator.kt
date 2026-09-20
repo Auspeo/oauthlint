@@ -22,13 +22,19 @@ import dev.oauthlint.scan.Severity
 import com.intellij.openapi.project.Project
 
 /**
- * What [collectInformation] captures on the EDT for the (off-EDT) scan: the file
- * path to scan plus a snapshot of the enabled/severity settings so the scan does
- * not read live settings from a background thread.
+ * What [collectInformation] captures on the EDT for the (off-EDT) scan. For the
+ * resident LSP path it snapshots the in-memory document ([text], [uri],
+ * [languageId], [rootUri]) so the scan sees exactly what the editor shows without
+ * writing to disk; [filePath] backs the CLI fallback; [minSeverity] snapshots the
+ * setting so the scan does not read live settings from a background thread.
  */
 data class CollectedInfo(
     val project: Project,
     val filePath: String,
+    val uri: String,
+    val languageId: String,
+    val text: String,
+    val rootUri: String,
     val minSeverity: Severity,
 )
 
@@ -50,9 +56,17 @@ class OAuthLintExternalAnnotator : ExternalAnnotator<CollectedInfo, List<Finding
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): CollectedInfo? {
         val settings = dev.oauthlint.settings.OAuthLintSettings.getInstance().state
         if (!settings.enabled) return null
-        val path = file.virtualFile?.path ?: return null
+        val virtualFile = file.virtualFile ?: return null
+        val path = virtualFile.path
+        // Snapshot the live buffer on the EDT so the (off-EDT) LSP scan sees the
+        // exact text the editor shows, never a stale on-disk copy.
+        val text = editor.document.text
+        val uri = java.io.File(path).toURI().toString()
+        val languageId = languageIdFor(file)
+        val basePath = file.project.basePath
+        val rootUri = if (basePath != null) java.io.File(basePath).toURI().toString() else "file:///"
         val minSeverity = parseSeverity(settings.minSeverity)
-        return CollectedInfo(file.project, path, minSeverity)
+        return CollectedInfo(file.project, path, uri, languageId, text, rootUri, minSeverity)
     }
 
     override fun doAnnotate(collectedInfo: CollectedInfo): List<Finding> {
@@ -60,7 +74,13 @@ class OAuthLintExternalAnnotator : ExternalAnnotator<CollectedInfo, List<Finding
         return try {
             val engine = app.service<EngineManager>().resolve()
             val rulesDir = app.service<RuleBundle>().resolveConfigDir()
-            val findings = OpenGrepScanner(engine, rulesDir).scan(collectedInfo.filePath)
+            // Prefer the resident LSP process (compiles the pack once, ~10-20ms per
+            // scan). A null return means the LSP backend is unavailable or errored
+            // (never started, crashed, not ready, or timed out), so we fall back to
+            // the per-scan CLI. An empty list is a real result and is NOT a fallback.
+            val findings = collectedInfo.project.service<dev.oauthlint.scan.OpenGrepLspClient>()
+                .scan(engine, rulesDir, collectedInfo.rootUri, collectedInfo.uri, collectedInfo.languageId, collectedInfo.text)
+                ?: OpenGrepScanner(engine, rulesDir).scan(collectedInfo.filePath)
             EngineNotifications.resetWarning()
             findings.filter { it.severity.ordinal >= collectedInfo.minSeverity.ordinal }
         } catch (e: EngineUnavailableException) {
@@ -159,4 +179,31 @@ class OAuthLintExternalAnnotator : ExternalAnnotator<CollectedInfo, List<Finding
 
     private fun parseSeverity(raw: String): Severity =
         runCatching { Severity.valueOf(raw.uppercase()) }.getOrDefault(Severity.MEDIUM)
+
+    /**
+     * Derive an LSP language id (VS Code style) from the file's extension. Opengrep
+     * selects a language mainly from the uri's extension, but the LSP `didOpen`
+     * carries a languageId too, so we send a sensible one and fall back to the
+     * lowercased extension for anything not in the common map.
+     */
+    private fun languageIdFor(file: PsiFile): String {
+        val ext = file.virtualFile?.extension?.lowercase() ?: return "plaintext"
+        return when (ext) {
+            "js", "cjs", "mjs" -> "javascript"
+            "jsx" -> "javascriptreact"
+            "ts", "cts", "mts" -> "typescript"
+            "tsx" -> "typescriptreact"
+            "py", "pyi" -> "python"
+            "go" -> "go"
+            "java" -> "java"
+            "rs" -> "rust"
+            "cs" -> "csharp"
+            "php" -> "php"
+            "rb" -> "ruby"
+            "kt", "kts" -> "kotlin"
+            "swift" -> "swift"
+            "xml" -> "xml"
+            else -> ext
+        }
+    }
 }
