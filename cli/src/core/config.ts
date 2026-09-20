@@ -36,6 +36,23 @@ export const DEFAULT_EXCLUDES: readonly string[] = [
   '**/*.e2e.*',
   '**/e2e/**',
   '**/cypress/**',
+  // Cross-language test conventions. The JS-centric globs above miss the way
+  // other ecosystems name tests, so their fixtures (placeholder secrets, mock
+  // tokens) leaked as false positives. Path-based only; inline test blocks that
+  // can't be path-excluded (e.g. Rust `#[cfg(test)]`) are guarded in-rule.
+  '**/tests.rs',
+  '**/*_test.rs',
+  '**/*_test.go',
+  '**/test_*.py',
+  '**/*_test.py',
+  '**/conftest.py',
+  '**/*Test.java',
+  '**/*Tests.java',
+  '**/*Test.kt',
+  '**/*Tests.kt',
+  '**/*Test.cs',
+  '**/*Tests.cs',
+  '**/*.Tests/**',
   '**/node_modules/**',
   '**/dist/**',
   '**/build/**',
