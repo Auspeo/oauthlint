@@ -23,7 +23,7 @@ rules:
           - pattern: SameSite = SameSiteMode.None
           - pattern: $X.SameSite = SameSiteMode.None
       # SameSite=None WITH Secure (or SecurePolicy = Always) is the correct,
-      # required pattern for a genuine cross-site cookie — e.g. an OAuth state
+      # required pattern for a genuine cross-site cookie, e.g. an OAuth state
       # cookie on a server like OpenIddict. Only the downgrade WITHOUT Secure is
       # the low-false-positive signal, mirroring the JS samesite-none rule.
       - pattern-not-inside: "{..., Secure = true, ...}"
