@@ -20,6 +20,10 @@ rules:
     pattern-either:
       - pattern: RequireSignedTokens = false
       - pattern: $X.RequireSignedTokens = false
+    # No autofix: the rule matches both an object-initializer (`X = false`) and a
+    # member assignment (`$X.RequireSignedTokens = false`). No single fix template
+    # rewrites both without dropping the `$X.` receiver, so a fix would corrupt
+    # source. Left unfixed on purpose.
     paths:
       exclude:
         - "**/test/**"

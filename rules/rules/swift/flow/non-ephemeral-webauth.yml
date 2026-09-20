@@ -24,6 +24,10 @@ rules:
         - "**/*Test.swift"
         - "**/example/**"
         - "**/examples/**"
+    # Safe, deterministic autofix: opt into an ephemeral web session. The pattern
+    # is a single member assignment, so the fix reuses $S and the receiver is
+    # preserved.
+    fix: '$S.prefersEphemeralWebBrowserSession = true'
     metadata:
       oauthlint-rule-id: AUTH-SWIFT-FLOW-001
       oauthlint-doc-url: https://oauthlint.dev/rules/swift-flow-non-ephemeral-webauth

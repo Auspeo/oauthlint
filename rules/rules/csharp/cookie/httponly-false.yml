@@ -28,6 +28,10 @@ rules:
         - "**/examples/**"
         - "**/demo/**"
         - "**/benchmark/**"
+    # Safe, deterministic autofix: flip the disabled flag back to its secure
+    # value. The bare `HttpOnly = false` pattern matches only the object-initializer
+    # form (not a `$X.HttpOnly = false` member assignment), so no receiver is lost.
+    fix: 'HttpOnly = true'
     metadata:
       oauthlint-rule-id: AUTH-CSHARP-COOKIE-002
       oauthlint-doc-url: https://oauthlint.dev/rules/csharp-cookie-httponly-false

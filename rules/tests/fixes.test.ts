@@ -129,6 +129,74 @@ const FIXED_RULES: FixedRule[] = [
     absent: ['verify=False'],
     survives: ['fetch_token(TOKEN_URL, code=code', 'refresh_token=rt'],
   },
+  {
+    // C# JWT bearer: an explicitly-disabled validation flag is flipped back to
+    // its secure default. Single object-initializer form, scoped to the finding.
+    dir: 'csharp-jwt-validate-audience-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-audience-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateAudience = true'],
+    absent: ['ValidateAudience = false'],
+    survives: ['ValidateIssuer = true', 'ValidateLifetime = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-issuer-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-issuer-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateIssuer = true'],
+    absent: ['ValidateIssuer = false'],
+    survives: ['ValidateAudience = true', 'ValidateLifetime = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-lifetime-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-lifetime-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateLifetime = true'],
+    absent: ['ValidateLifetime = false'],
+    survives: ['ValidateIssuer = true', 'ValidateAudience = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-signing-key-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-signing-key-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateIssuerSigningKey = true'],
+    absent: ['ValidateIssuerSigningKey = false'],
+    survives: ['ValidateIssuer = true', 'ValidateAudience = true', 'TokenValidationParameters'],
+  },
+  {
+    // Rust jsonwebtoken: a disabled claim check ($V.validate_* = false) is
+    // re-enabled; the member-assignment metavariable preserves the receiver.
+    dir: 'rust-jwt-no-expiration-validation',
+    ruleFile: join(rulesRoot, 'rust', 'jwt', 'no-expiration-validation.yml'),
+    ext: 'rs',
+    contains: ['validate_exp = true'],
+    absent: ['validate_exp = false'],
+    survives: ['Validation::new(Algorithm::HS256)', 'Validation::default()'],
+  },
+  {
+    dir: 'rust-jwt-no-aud-validation',
+    ruleFile: join(rulesRoot, 'rust', 'jwt', 'no-aud-validation.yml'),
+    ext: 'rs',
+    contains: ['validate_aud = true'],
+    absent: ['validate_aud = false'],
+    survives: ['Validation::new(Algorithm::HS256)', 'decode::<Claims>(token, key'],
+  },
+  {
+    dir: 'swift-flow-non-ephemeral-webauth',
+    ruleFile: join(rulesRoot, 'swift', 'flow', 'non-ephemeral-webauth.yml'),
+    ext: 'swift',
+    contains: ['prefersEphemeralWebBrowserSession = true'],
+    absent: ['prefersEphemeralWebBrowserSession = false'],
+    survives: ['ASWebAuthenticationSession(url: url', 'session.start()'],
+  },
+  {
+    dir: 'csharp-cookie-httponly-false',
+    ruleFile: join(rulesRoot, 'csharp', 'cookie', 'httponly-false.yml'),
+    ext: 'cs',
+    contains: ['HttpOnly = true'],
+    absent: ['HttpOnly = false'],
+    survives: ['Secure = true', 'response.Cookies.Append("session"'],
+  },
 ];
 
 const workDirs: string[] = [];

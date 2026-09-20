@@ -22,6 +22,10 @@ rules:
     patterns:
       - pattern: ValidateAudience = false
       - pattern-inside: $A.AddJwtBearer(...)
+    # Safe, deterministic autofix: flip the explicitly-disabled check back to its
+    # secure default. Only an explicit `= false` inside the JWT bearer setup
+    # matches, so the rewrite never touches a deliberate framework default.
+    fix: 'ValidateAudience = true'
     paths:
       exclude:
         - "**/test/**"

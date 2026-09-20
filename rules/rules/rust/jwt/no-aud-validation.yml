@@ -20,6 +20,10 @@ rules:
     # rest (`..`), and a text regex would false-positive on comments, kept
     # AST-only for precision.
     pattern: $V.validate_aud = false
+    # Safe, deterministic autofix: re-enable audience validation. The pattern is a
+    # single member assignment ($V.validate_aud = false), so the fix reuses $V and
+    # the receiver is preserved. Pair it with `$V.set_audience(...)` (see message).
+    fix: '$V.validate_aud = true'
     metadata:
       oauthlint-rule-id: AUTH-RUST-JWT-004
       oauthlint-doc-url: https://oauthlint.dev/rules/rust-jwt-no-aud-validation
