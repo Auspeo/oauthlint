@@ -19,6 +19,10 @@ rules:
     pattern-either:
       - pattern: RequireExpirationTime = false
       - pattern: $X.RequireExpirationTime = false
+    # No autofix: the rule matches both an object-initializer (`X = false`) and a
+    # member assignment (`$X.RequireExpirationTime = false`). No single fix
+    # template rewrites both without dropping the `$X.` receiver, so a fix would
+    # corrupt source. Left unfixed on purpose.
     paths:
       exclude:
         - "**/test/**"

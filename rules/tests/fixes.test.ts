@@ -129,6 +129,40 @@ const FIXED_RULES: FixedRule[] = [
     absent: ['verify=False'],
     survives: ['fetch_token(TOKEN_URL, code=code', 'refresh_token=rt'],
   },
+  {
+    // C# JWT bearer: an explicitly-disabled validation flag is flipped back to
+    // its secure default. Single object-initializer form, scoped to the finding.
+    dir: 'csharp-jwt-validate-audience-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-audience-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateAudience = true'],
+    absent: ['ValidateAudience = false'],
+    survives: ['ValidateIssuer = true', 'ValidateLifetime = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-issuer-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-issuer-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateIssuer = true'],
+    absent: ['ValidateIssuer = false'],
+    survives: ['ValidateAudience = true', 'ValidateLifetime = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-lifetime-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-lifetime-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateLifetime = true'],
+    absent: ['ValidateLifetime = false'],
+    survives: ['ValidateIssuer = true', 'ValidateAudience = true', 'TokenValidationParameters'],
+  },
+  {
+    dir: 'csharp-jwt-validate-signing-key-disabled',
+    ruleFile: join(rulesRoot, 'csharp', 'jwt', 'validate-signing-key-disabled.yml'),
+    ext: 'cs',
+    contains: ['ValidateIssuerSigningKey = true'],
+    absent: ['ValidateIssuerSigningKey = false'],
+    survives: ['ValidateIssuer = true', 'ValidateAudience = true', 'TokenValidationParameters'],
+  },
 ];
 
 const workDirs: string[] = [];

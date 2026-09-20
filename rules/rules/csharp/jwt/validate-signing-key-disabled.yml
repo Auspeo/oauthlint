@@ -18,6 +18,10 @@ rules:
     # initializer or property set). The secure default is `true`, so only an
     # explicit disable fires; no bare property read can trip it.
     pattern: ValidateIssuerSigningKey = false
+    # Safe, deterministic autofix: flip the explicitly-disabled check back to its
+    # secure default. Only an explicit `= false` matches (the default is true), so
+    # the rewrite only ever re-enables a disabled signature check.
+    fix: 'ValidateIssuerSigningKey = true'
     paths:
       exclude:
         - "**/test/**"
