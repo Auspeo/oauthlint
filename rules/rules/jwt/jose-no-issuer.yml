@@ -1,0 +1,53 @@
+rules:
+  - id: auth.jwt.jose-no-issuer
+    languages:
+      - javascript
+      - typescript
+    severity: WARNING
+    message: |
+      A JWT is verified with jose `jwtVerify(...)` but no `issuer` option is
+      passed, so the `iss` claim is never checked. Any authorization server the
+      key material chains to (or an attacker who controls one issuer in a
+      multi-issuer setup) can mint a token this server will accept: an
+      authorization-server mix-up (CWE-345), the class RFC 9207 exists to close.
+
+      Pin the issuer you trust:
+        await jwtVerify(token, JWKS, {
+          issuer: 'https://auth.example.com',
+          audience: 'https://mcp.example.com/mcp',
+        });
+    # Scoped to jose's `jwtVerify` (its canonical export name), the verifier MCP
+    # TypeScript servers use for RFC 9068 tokens. jsonwebtoken's `jwt.verify` is
+    # handled by auth.jwt.no-issuer; jose `decodeJwt` (no verification) is out of
+    # scope. Both the bare import call and the `jose.jwtVerify(...)` member form
+    # are covered.
+    pattern-either:
+      - pattern: jwtVerify($T, $K)
+      - pattern: $J.jwtVerify($T, $K)
+      - patterns:
+          - pattern: jwtVerify($T, $K, $OPTS)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., issuer: ..., ...}'
+                - pattern: '{...}'
+      - patterns:
+          - pattern: $J.jwtVerify($T, $K, $OPTS)
+          - metavariable-pattern:
+              metavariable: $OPTS
+              patterns:
+                - pattern-not: '{..., issuer: ..., ...}'
+                - pattern: '{...}'
+    metadata:
+      oauthlint-rule-id: AUTH-JWT-014
+      oauthlint-doc-url: https://oauthlint.dev/rules/jwt-jose-no-issuer
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - jose
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9207
+        - https://datatracker.ietf.org/doc/html/rfc9068
+        - https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1
