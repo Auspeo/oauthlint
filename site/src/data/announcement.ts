@@ -18,7 +18,7 @@ export interface Announcement {
 
 export const announcement: Announcement | null = {
   version: 'v0.16',
-  text: 'v0.16 is out: MCP OAuth conformance (a live probe plus new rules), broader auto-fixes, and the tool is now supply-chain hardened (OpenSSF Scorecard + SBOM).',
+  text: 'v0.16 is out: live linting as you type in VS Code, new Infrastructure-as-Code auth rules (CI/CD OIDC trust, Terraform OAuth), MCP OAuth conformance, and supply-chain hardening (Scorecard + SBOM).',
   href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.16.0',
 };
 

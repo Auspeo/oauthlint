@@ -110,7 +110,7 @@ const MAX_OUTPUT_BYTES = 20 * 1024 * 1024;
  * in `dist/rules` alongside the bundled `dist/extension.js`. `__dirname` is
  * `dist/` in the packaged extension.
  */
-function bundledRulesDir(): string {
+export function bundledRulesDir(): string {
   return join(__dirname, 'rules');
 }
 

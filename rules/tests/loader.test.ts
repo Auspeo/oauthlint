@@ -44,7 +44,13 @@ describe('loadAllRules', () => {
                         ? 'swift'
                         : rule.languages.includes('xml')
                           ? 'xml'
-                          : 'ts';
+                          : rule.languages.includes('json')
+                            ? 'json'
+                            : rule.languages.includes('terraform')
+                              ? 'tf'
+                              : rule.languages.includes('yaml')
+                                ? 'yaml'
+                                : 'ts';
       const vuln = `${fixturesRoot}${fixtureName}/vulnerable.${ext}`;
       const safe = `${fixturesRoot}${fixtureName}/safe.${ext}`;
       expect(existsSync(vuln), `Missing vulnerable fixture for ${rule.id} at ${vuln}`).toBe(true);

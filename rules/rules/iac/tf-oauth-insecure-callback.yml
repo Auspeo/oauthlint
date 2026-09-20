@@ -1,0 +1,37 @@
+rules:
+  - id: auth.iac.tf-oauth-insecure-callback
+    languages: [terraform]
+    severity: ERROR
+    message: >
+      This Terraform resource registers an OAuth redirect/callback URL that is
+      either plaintext http:// (not on localhost) or uses a wildcard host. A
+      non-TLS callback exposes the authorization code or token to network
+      interception, and a wildcard-host redirect lets an attacker who controls
+      any matching subdomain steal the code (open redirect, CWE-601).
+
+      Register exact https:// callback URLs with fixed hosts. Keep http:// only
+      for localhost/127.0.0.1 during local development, and never register a
+      redirect target with a `*` in the host.
+    patterns:
+      - pattern-either:
+          - pattern: callbacks = [..., "$URL", ...]
+          - pattern: callback_urls = [..., "$URL", ...]
+          - pattern: redirect_uris = [..., "$URL", ...]
+      - metavariable-regex:
+          metavariable: $URL
+          regex: (http://(?!localhost|127\.0\.0\.1)|https?://\*)
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-004
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-tf-oauth-insecure-callback
+      category: security
+      cwe: CWE-601
+      owasp: A01:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - terraform
+        - oauth
+        - auth0
+        - cognito
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc6819
+        - https://datatracker.ietf.org/doc/html/rfc9700

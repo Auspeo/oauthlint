@@ -102,7 +102,7 @@ the download.
 - **oauthlint: Retry scan engine setup**
 
 The editor integration scans every language OAuthLint supports. The full oauthlint rule
-pack covers **270+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more)**
+pack covers **280+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more)**
 plus **mobile auth (Swift/iOS, Android)**,
 including a dedicated **MCP server-auth pack** (token pass-through, RFC 8707 audience
 binding, unauthenticated transports, tool-handler SSRF) and dataflow (taint) rules for

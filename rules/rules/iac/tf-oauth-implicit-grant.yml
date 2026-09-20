@@ -1,0 +1,34 @@
+rules:
+  - id: auth.iac.tf-oauth-implicit-grant
+    languages: [terraform]
+    severity: ERROR
+    message: >
+      This Terraform resource provisions an OAuth client with the implicit
+      grant enabled (grant_types or allowed_oauth_flows contains "implicit").
+      The implicit flow returns access tokens in the URL fragment, has no
+      client authentication, and cannot use refresh-token rotation. It is
+      removed from OAuth 2.1 and disallowed by the OAuth security BCP
+      (RFC 9700) precisely because those tokens leak through browser history,
+      referrers, and logs.
+
+      Use the authorization_code grant with PKCE instead. Drop "implicit" from
+      the flow list and let the client exchange a code for tokens over the
+      back channel.
+    pattern-either:
+      - pattern: grant_types = [..., "implicit", ...]
+      - pattern: allowed_oauth_flows = [..., "implicit", ...]
+    metadata:
+      oauthlint-rule-id: AUTH-IAC-003
+      oauthlint-doc-url: https://oauthlint.dev/rules/iac-tf-oauth-implicit-grant
+      category: security
+      cwe: CWE-287
+      owasp: A07:2021
+      llm-prevalence: MEDIUM
+      technology:
+        - terraform
+        - oauth
+        - auth0
+        - cognito
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9700
+        - https://oauth.net/2/grant-types/implicit/

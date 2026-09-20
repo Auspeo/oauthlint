@@ -4,7 +4,7 @@ A focused, auth-only rule library targeting the OAuth/OIDC/JWT/MCP anti-patterns
 AI coding tools (Cursor, Claude Code, Copilot, Gemini Code Assist) produce on a
 recurring basis.
 
-The full pack ships 270+ rules across eleven languages (JavaScript, TypeScript,
+The full pack ships 280+ rules across eleven languages (JavaScript, TypeScript,
 Python, Go, C#, and more) plus mobile auth (Swift/iOS, Android), with
 framework-aware coverage (ASP.NET Core,
 Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security,

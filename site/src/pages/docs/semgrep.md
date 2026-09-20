@@ -34,6 +34,9 @@ If you only care about one language, use the matching subset so Semgrep loads fe
 | Ruby | `https://oauthlint.dev/r/oauthlint-ruby.yaml` |
 | Kotlin | `https://oauthlint.dev/r/oauthlint-kotlin.yaml` |
 | Swift | `https://oauthlint.dev/r/oauthlint-swift.yaml` |
+| Terraform | `https://oauthlint.dev/r/oauthlint-terraform.yaml` |
+| YAML (CI workflows) | `https://oauthlint.dev/r/oauthlint-yaml.yaml` |
+| JSON (IAM trust policies) | `https://oauthlint.dev/r/oauthlint-json.yaml` |
 
 ```bash
 # Python-only example

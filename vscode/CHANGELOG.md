@@ -8,10 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- MCP OAuth conformance rules. The bundled pack (275 rules) flags a resource
+- Live linting as you type. Findings now appear while you edit and the moment a
+  file opens, powered by a resident scan engine that scans the in-memory buffer
+  in about 10 to 20 ms. Two new settings: `oauthlint.run` (`onType` by default,
+  or `onSave`) and `oauthlint.debounceMs`. Saving still runs the full scan so
+  autofixes stay available.
+- MCP OAuth conformance rules. The bundled pack (281 rules) flags a resource
   server that does not bind tokens to its own audience (RFC 8707) and JWT
   verification that skips the audience or issuer check (RFC 9068 / 9207), across
   the jose and PyJWT verifiers MCP servers use.
+- Infrastructure-as-Code auth rules: CI/CD OIDC trust misconfiguration, Terraform
+  OAuth client mistakes, and hardcoded OAuth secrets in CI and Terraform.
 - More quick fixes. Eight more rules now carry a safe fix that re-enables a
   disabled validation flag, each proven to leave compliant code unchanged.
 

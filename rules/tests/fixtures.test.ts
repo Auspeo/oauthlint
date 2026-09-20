@@ -77,8 +77,26 @@ function ruleFileFor(dir: string): string {
   return join(rulesRoot, dir.slice(0, sep), `${dir.slice(sep + 1)}.yml`);
 }
 
+// The IaC pack lives under `rules/iac/<name>.yml` like the JS/TS pack (a flat
+// `<category>/<name>` tree, category = iac), but its fixtures are json /
+// terraform / yaml rather than `.ts`, and the extension varies per rule. So it
+// is not a `LANG_DIRS` language pack: the fixture extension is taken from the
+// rule's own `languages:` declaration instead of the dir prefix.
+const LANG_EXT: Record<string, string> = {
+  json: 'json',
+  terraform: 'tf',
+  yaml: 'yaml',
+};
+
+function extFromRule(dir: string): string {
+  const ruleFile = ruleFileFor(dir);
+  if (!existsSync(ruleFile)) return 'ts';
+  const lang = readFileSync(ruleFile, 'utf8').match(/languages:\s*\[?\s*([a-z]+)/)?.[1];
+  return (lang && LANG_EXT[lang]) ?? 'ts';
+}
+
 function fixtureKinds(dir: string): [string, string] {
-  const ext = langOf(dir)?.ext ?? 'ts';
+  const ext = langOf(dir)?.ext ?? extFromRule(dir);
   return [`safe.${ext}`, `vulnerable.${ext}`];
 }
 

@@ -49,6 +49,9 @@ const LANGUAGE_SUBSETS = [
   'ruby',
   'kotlin',
   'swift',
+  'json',
+  'terraform',
+  'yaml',
 ] as const;
 
 /**

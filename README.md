@@ -41,7 +41,7 @@ AI coding assistants (tools like GitHub Copilot, Cursor, and Claude Code, and ot
 - `Math.random()` used for CSRF tokens
 - untrusted input flowing into a redirect or an outbound request (**open-redirect / SSRF**), caught by **dataflow (taint) analysis** rather than plain pattern-matching
 - **MCP server auth**: token pass-through (confused deputy), missing RFC 8707 audience/resource binding, unauthenticated MCP transports, and SSRF from tool-handler arguments, for the official TypeScript and Python MCP SDKs
-- …and many more: 270+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more), including mobile auth (Swift/iOS, Android) and framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS, MCP, and more)
+- …and many more: 280+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more), including mobile auth (Swift/iOS, Android) and framework-aware coverage (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS, MCP, and more)
 
 oauthlint sits between generic SAST (Snyk, Semgrep) and enterprise IAM ($50K+/year): free, focused, and built for the developer who has to fix the finding. Every finding links to a page explaining *why it matters* and *how to fix it*.
 
@@ -152,7 +152,7 @@ Wholesale silencing (`oauthlint-disable-file *`) is intentionally unsupported. T
 
 ## Rules
 
-**270+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets, session hygiene and **MCP server auth**, spanning eleven languages from JavaScript and Python to Go, C#, and Kotlin, plus mobile auth (Swift/iOS, Android), with framework-aware coverage (ASP.NET Core, Laravel, Rails, Ktor, and more). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. A dedicated **MCP rule pack** catches the OAuth 2.1 resource-server mistakes MCP servers ship (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the official TypeScript (`@modelcontextprotocol/sdk`) and Python (`mcp` / FastMCP) SDKs. The catalogue grows with every release.
+**280+ rules** across OAuth 2.0, OIDC, JWT, cookies, CORS, secrets, session hygiene and **MCP server auth**, spanning eleven languages from JavaScript and Python to Go, C#, and Kotlin, plus mobile auth (Swift/iOS, Android), with framework-aware coverage (ASP.NET Core, Laravel, Rails, Ktor, and more). Each is mapped to CWE and OWASP and has a documentation page. Some are **taint-mode dataflow rules** that follow untrusted input to its sink rather than matching a single line: an OAuth credential reaching a log sink, request input reaching a JWT verification key, or a value flowing into a redirect or outbound request (open-redirect, SSRF). SSRF coverage now spans JS/TS, Python, Go, Java (Spring) and Rust (reqwest), and a dedicated rule catches `Authorization: Basic` credentials written to logs. A dedicated **MCP rule pack** catches the OAuth 2.1 resource-server mistakes MCP servers ship (token pass-through, missing RFC 8707 audience binding, unauthenticated transports, tool-handler SSRF) for the official TypeScript (`@modelcontextprotocol/sdk`) and Python (`mcp` / FastMCP) SDKs. The catalogue grows with every release.
 
 👉 **Browse the full catalogue at [oauthlint.dev/rules](https://oauthlint.dev/rules/).**
 
@@ -173,6 +173,7 @@ oauthlint is built on [Semgrep](https://semgrep.dev), whose engine is **language
 | Kotlin (Ktor, java-jwt, nimbus-jose-jwt) | ✅ shipping |
 | Swift (iOS, Vapor) | ✅ shipping |
 | Android (Kotlin, manifest/config XML) | ✅ shipping |
+| IaC / config auth (Terraform, GitHub Actions YAML, AWS IAM JSON) | ✅ shipping |
 | More (open an issue to request your stack) | 🔜 planned |
 
 **Why JS/TS first?** That's where AI coding tools generate the most code, and so the most OAuth/JWT bugs. It's the densest place to start, not the ceiling. Want your stack covered? [Open an issue](https://github.com/Auspeo/oauthlint/issues).
@@ -215,7 +216,7 @@ especially welcome.
 
 ### Shipped
 
-- 270+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more), including mobile auth (Swift/iOS, Android), a dedicated MCP server-auth pack, and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS)
+- 280+ rules across eleven languages (JavaScript, TypeScript, Python, Go, C#, and more), including mobile auth (Swift/iOS, Android), a dedicated MCP server-auth pack, and framework-aware packs (ASP.NET Core, Gin/Echo/Fiber, Hono + better-auth, FastAPI, Django/Flask, Ktor, Spring Security, Laravel/Socialite, Rails/Devise/OmniAuth/Doorkeeper, NextAuth/Passport, Express/Fastify/NestJS)
 - Autofix with a dry-run preview, plus dataflow (taint) analysis
 - SARIF output and GitHub code scanning, a GitHub Action, and GitLab CI
 - VS Code extension, also on Open VSX for Cursor, Windsurf, and similar editors

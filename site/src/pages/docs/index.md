@@ -53,6 +53,7 @@ OAuthLint meets your code where it already lives:
 - **Your editor (VS Code, Cursor, Windsurf, and more)**: inline diagnostics as you type, with Quick Fix suppressions. The extension ships via OpenVSX too, so it runs in other VS Code forks and agentic editors. → [VS Code extension](/docs/vscode)
 - **AI coding tools**: an MCP server so Claude Code, Cursor, Windsurf and others scan the auth code they generate, in the loop. → [MCP server](/docs/mcp)
 - **Building MCP servers**: a rule pack for OAuth 2.1 resource-server mistakes (token pass-through, missing audience binding, unauthenticated transports, tool-handler SSRF) plus a live `probe` command. → [Scanning MCP servers](/docs/mcp-server-auth)
+- **Infrastructure as code**: a rule pack for the auth mistakes in Terraform, GitHub Actions YAML, and AWS IAM trust JSON (wildcard OIDC trust, implicit-grant OAuth clients, insecure callbacks, hard-coded secrets). → [Scanning IaC auth](/docs/iac-auth)
 
 ## Tune it to your project
 
