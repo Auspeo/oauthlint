@@ -1,0 +1,47 @@
+rules:
+  - id: auth.py.mcp.token-audience-unchecked
+    languages:
+      - python
+    severity: ERROR
+    message: |
+      This MCP server declares a `resource_server_url` but does not set
+      `validate_token_resource=True` on `AuthSettings`. Per the MCP
+      authorization spec an OAuth 2.1 resource server MUST reject a token that
+      was not issued for it (RFC 8707 audience binding). Left unset,
+      `validate_token_resource` behaves as False, so a token minted for a
+      DIFFERENT resource is accepted here: a confused deputy (CWE-863), the
+      exact class behind the MCP token reuse advisories.
+
+      Set it explicitly, and keep `resource_server_url` the exact URL clients
+      connect to:
+        AuthSettings(
+            issuer_url=ISSUER,
+            resource_server_url=THIS_MCP_URL,
+            validate_token_resource=True,
+        )
+      If your authorization server uses its own audience identifiers (an Auth0
+      API identifier, an Entra application ID), check `aud` in your
+      TokenVerifier instead and return None for a token that is not for this
+      server.
+    # Scoped to the MCP Python SDK symbol AuthSettings(...). Fires only when a
+    # resource_server_url is declared (so this really is a resource server) and
+    # validate_token_resource=True is absent. Any explicit True clears it. A
+    # value the linter cannot prove is True (a config variable, or False) still
+    # fires: the spec requires an explicit True on a resource server.
+    patterns:
+      - pattern: AuthSettings(..., resource_server_url=$U, ...)
+      - pattern-not: AuthSettings(..., validate_token_resource=True, ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-MCP-006
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-mcp-token-audience-unchecked
+      category: security
+      cwe: CWE-863
+      owasp: API5:2023
+      llm-prevalence: HIGH
+      technology:
+        - mcp
+        - modelcontextprotocol
+      references:
+        - https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization
+        - https://datatracker.ietf.org/doc/html/rfc8707
+        - https://datatracker.ietf.org/doc/html/rfc9068

@@ -1,0 +1,40 @@
+rules:
+  - id: auth.py.jwt.pyjwt-no-audience
+    languages:
+      - python
+    severity: WARNING
+    message: |
+      PyJWT `jwt.decode(...)` verifies the signature (an `algorithms` list is
+      given) but passes no `audience`, so the `aud` claim is not checked. PyJWT
+      validates `aud` only when you pass `audience=`, so a token minted for a
+      different service that trusts the same issuer or key is accepted here: a
+      confused deputy (CWE-345). For an MCP or OAuth 2.1 resource server this is
+      the RFC 9068 / RFC 8707 audience binding the spec requires.
+
+      Pass the audience you expect (your resource identifier):
+        jwt.decode(token, key, algorithms=["RS256"], audience="https://mcp.example.com/mcp")
+    # Scoped to a real verification path: `algorithms=` is present (the signature
+    # IS checked), yet `audience=` is absent. Calls that pass an `options` dict
+    # are skipped: the explicit `options={"verify_aud": False}` disable is
+    # reported by auth.py.jwt.verify-claims-disabled, so we avoid double findings.
+    patterns:
+      - pattern-either:
+          - pattern: jwt.decode(..., algorithms=$A, ...)
+          - pattern: decode(..., algorithms=$A, ...)
+      - pattern-not: jwt.decode(..., audience=$AUD, ...)
+      - pattern-not: decode(..., audience=$AUD, ...)
+      - pattern-not: jwt.decode(..., options=$O, ...)
+      - pattern-not: decode(..., options=$O, ...)
+    metadata:
+      oauthlint-rule-id: AUTH-PY-JWT-009
+      oauthlint-doc-url: https://oauthlint.dev/rules/py-jwt-pyjwt-no-audience
+      category: security
+      cwe: CWE-345
+      owasp: API2:2023
+      llm-prevalence: MEDIUM
+      technology:
+        - pyjwt
+      references:
+        - https://datatracker.ietf.org/doc/html/rfc9068
+        - https://datatracker.ietf.org/doc/html/rfc8707
+        - https://pyjwt.readthedocs.io/en/stable/api.html#jwt.decode
