@@ -142,13 +142,13 @@ npx oauthlint doctor --json
 
 ## `probe`
 
-Probe a running MCP server for OAuth 2.1 resource-server conformance. Unlike `scan`, which reads your source, `probe` tests a live server's deployed behaviour. It is credential-free: every check is a negative test (unauthenticated and invalid-token requests) plus RFC 9728 metadata discovery, so it never needs a token and never writes anything.
+Probe a running MCP server for OAuth 2.1 resource-server conformance. Unlike `scan`, which reads your source, `probe` tests a live server's deployed behaviour. It is credential-free: every check is a negative test (unauthenticated and invalid-token requests) plus RFC 9728 and authorization-server metadata discovery, so it never needs a token and never writes anything.
 
 ```bash
 npx oauthlint probe <url>
 ```
 
-The `<url>` is the endpoint of a running MCP server, for example `https://host/mcp`. It runs four checks: the server requires a token (401 / 403, not 200), the 401 `WWW-Authenticate` challenge advertises `resource_metadata`, the Protected Resource Metadata is discoverable at `/.well-known/oauth-protected-resource` (RFC 9728), and a bogus bearer token is rejected.
+The `<url>` is the endpoint of a running MCP server, for example `https://host/mcp`. It checks that the server requires a token (401 / 403, not 200), that the 401 `WWW-Authenticate` challenge advertises `resource_metadata`, that the Protected Resource Metadata is discoverable at `/.well-known/oauth-protected-resource` (RFC 9728) with an absolute https `resource` (RFC 8707), that the authorization server advertises PKCE `S256` and a non-empty `scopes_supported`, and that a bogus bearer token is rejected.
 
 ```bash
 # probe a deployed server
@@ -158,7 +158,7 @@ npx oauthlint probe https://mcp.example.com/mcp
 npx oauthlint probe https://mcp.example.com/mcp --json
 ```
 
-`probe` exits `1` if any check hard-fails (an unauthenticated endpoint, an accepted invalid token, or no Protected Resource Metadata), and `0` otherwise. An invalid or unreachable URL exits `2`. See [Scanning MCP servers](/docs/mcp-server-auth) for how it pairs with the static MCP rule pack.
+`probe` exits `1` if any check hard-fails (an unauthenticated endpoint, an accepted invalid token, no Protected Resource Metadata, or PKCE S256 not advertised), and `0` otherwise. An invalid or unreachable URL exits `2`. See [Scanning MCP servers](/docs/mcp-server-auth) for how it pairs with the static MCP rule pack.
 
 ## Exit codes
 

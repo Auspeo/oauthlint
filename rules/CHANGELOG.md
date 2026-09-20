@@ -1,5 +1,15 @@
 # oauthlint-rules
 
+## 0.12.0
+
+### Minor Changes
+
+- Add MCP OAuth 2.1 conformance rules and expand safe autofixes.
+
+  - New MCP auth conformance rules (275 total). `auth.py.mcp.token-audience-unchecked` flags an MCP Python SDK `AuthSettings` that sets `resource_server_url` without `validate_token_resource=True` (RFC 8707 audience binding, the confused-deputy class). New jose and PyJWT audience/issuer checks (`auth.jwt.jose-no-audience`, `auth.jwt.jose-no-issuer`, `auth.py.jwt.pyjwt-no-audience`) cover RFC 9068 audience and RFC 9207 issuer validation, the verifiers MCP servers actually use.
+  - Safe autofixes for eight more disabled-flag rules (11 to 19). Each is proven to resolve the finding and leave compliant code byte-for-byte unchanged, so `oauthlint scan --fix` now repairs more findings.
+  - Fewer false positives on reference auth libraries: hardened Rust and C# hardcoded-secret rules.
+
 ## 0.11.1
 
 ### Patch Changes

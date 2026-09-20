@@ -3,7 +3,7 @@
   "private": true,
   "displayName": "oauthlint",
   "description": "Catch the OAuth/OIDC/JWT/MCP anti-patterns AI coding tools produce across eleven languages (JS/TS, Python, Go, C#, and more) plus mobile (Swift/iOS, Android), right inside VS Code, Cursor, Windsurf, and other VS Code forks.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "icon": "icon.png",
   "publisher": "auspeo",
   "type": "commonjs",
