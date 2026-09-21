@@ -95,19 +95,32 @@ for (const f of COVERAGE_SURFACES) {
   }
 }
 
-// 3) The site announcement bar must point at the CURRENT release, not a stale one.
-//    (It advertises only the latest feature, so it moves every release — the check
-//    is version-freshness, not a fixed coverage term.)
-const cliVersion = JSON.parse(read('cli/package.json')).version; // e.g. 0.12.0
-const expectedAnnounce = `v${cliVersion.split('.').slice(0, 2).join('.')}`; // v0.12
+// 3) The site announcement bar must advertise the latest PUBLISHED release, never a
+//    version that is not out yet. `main` can carry prepared-but-unpublished version
+//    bumps (a "version packages" commit merged before publishing), so the banner may
+//    LAG the package version, but it must never be AHEAD of it: a banner ahead of the
+//    package points at a release that does not exist (a 404 link). The release process
+//    bumps the banner to the new version at publish time.
+const cliVersion = JSON.parse(read('cli/package.json')).version; // e.g. 0.16.0
+const expectedAnnounce = `v${cliVersion.split('.').slice(0, 2).join('.')}`; // v0.16
 const annSrc = read('site/src/data/announcement.ts');
+const annHidden = /export const announcement[^=]*=\s*null/.test(annSrc);
 const annVer = annSrc.match(/version:\s*['"]([^'"]+)['"]/)?.[1];
-if (!annVer) problems.push('site/src/data/announcement.ts: no announcement version found');
-else if (annVer !== expectedAnnounce)
-  problems.push(
-    `site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`,
-  );
-else passes.push(`announcement bar: ${annVer} (matches release)`);
+const minorTuple = (v) => v.replace(/^v/, '').split('.').map(Number);
+if (annHidden) {
+  passes.push('announcement bar: hidden (no release advertised)');
+} else if (!annVer) {
+  problems.push('site/src/data/announcement.ts: no announcement version found');
+} else {
+  const [aMaj, aMin] = minorTuple(annVer);
+  const [pMaj, pMin] = minorTuple(expectedAnnounce);
+  const ahead = aMaj > pMaj || (aMaj === pMaj && aMin > pMin);
+  if (ahead)
+    problems.push(
+      `site announcement bar advertises "${annVer}", ahead of the prepared version "${expectedAnnounce}" (CLI ${cliVersion}): it points at a release that is not published yet`,
+    );
+  else passes.push(`announcement bar: ${annVer} (published; prepared ${expectedAnnounce})`);
+}
 
 // 4) Every language in the pack must appear in the two CANONICAL exhaustive lists:
 //    the README "Language support" table and the docs per-language bundle table.

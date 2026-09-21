@@ -16,10 +16,13 @@ export interface Announcement {
   href: string;
 }
 
+// Advertises the latest PUBLISHED release. Keep it here at 0.15 (the version live
+// on npm and GitHub) until 0.16.0 is actually published, so the banner never links
+// to a release that does not exist. Bump to the v0.16 object at publish time.
 export const announcement: Announcement | null = {
-  version: 'v0.16',
-  text: 'v0.16 is out: live linting as you type in VS Code, new Infrastructure-as-Code auth rules (CI/CD OIDC trust, Terraform OAuth), MCP OAuth conformance, and supply-chain hardening (Scorecard + SBOM).',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.16.0',
+  version: 'v0.15',
+  text: 'v0.15 is out: rules that were silently dropped on the shipped engine now run, and scans skip your test and mock files by default.',
+  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.15.0',
 };
 
 /**
