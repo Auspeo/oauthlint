@@ -101,13 +101,21 @@ for (const f of COVERAGE_SURFACES) {
 const cliVersion = JSON.parse(read('cli/package.json')).version; // e.g. 0.12.0
 const expectedAnnounce = `v${cliVersion.split('.').slice(0, 2).join('.')}`; // v0.12
 const annSrc = read('site/src/data/announcement.ts');
-const annVer = annSrc.match(/version:\s*['"]([^'"]+)['"]/)?.[1];
-if (!annVer) problems.push('site/src/data/announcement.ts: no announcement version found');
-else if (annVer !== expectedAnnounce)
-  problems.push(
-    `site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`,
-  );
-else passes.push(`announcement bar: ${annVer} (matches release)`);
+// The banner may be intentionally hidden (`announcement = null`) while a release
+// is prepared on main but not yet published, so it never advertises a version
+// that is not on npm. A hidden banner is always valid; a shown one must be fresh.
+const annHidden = /export const announcement[^=]*=\s*null/.test(annSrc);
+if (annHidden) {
+  passes.push('announcement bar: hidden (no release advertised)');
+} else {
+  const annVer = annSrc.match(/version:\s*['"]([^'"]+)['"]/)?.[1];
+  if (!annVer) problems.push('site/src/data/announcement.ts: no announcement version found');
+  else if (annVer !== expectedAnnounce)
+    problems.push(
+      `site announcement bar is stale: says "${annVer}", but the current release is "${expectedAnnounce}" (CLI ${cliVersion})`,
+    );
+  else passes.push(`announcement bar: ${annVer} (matches release)`);
+}
 
 // 4) Every language in the pack must appear in the two CANONICAL exhaustive lists:
 //    the README "Language support" table and the docs per-language bundle table.

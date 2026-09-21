@@ -16,11 +16,11 @@ export interface Announcement {
   href: string;
 }
 
-export const announcement: Announcement | null = {
-  version: 'v0.16',
-  text: 'v0.16 is out: live linting as you type in VS Code, new Infrastructure-as-Code auth rules (CI/CD OIDC trust, Terraform OAuth), MCP OAuth conformance, and supply-chain hardening (Scorecard + SBOM).',
-  href: 'https://github.com/Auspeo/oauthlint/releases/tag/oauthlint%400.16.0',
-};
+// No banner while the next release is prepared but not yet published: advertising
+// a version that is not on npm (and a release-notes link that 404s) would be
+// false. Set this to the v0.16 object (see git history) at the moment 0.16.0 is
+// actually published.
+export const announcement: Announcement | null = null;
 
 /**
  * Pure decision: should the banner show, given the current announcement version
