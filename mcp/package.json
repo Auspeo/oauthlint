@@ -41,13 +41,13 @@
     "static-analysis"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "oauthlint": "workspace:*",
     "oauthlint-rules": "workspace:*",
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@types/node": "22.20.1",
+    "@types/node": "22.20.4",
     "typescript": "5.9.3",
     "vitest": "2.1.9"
   },
